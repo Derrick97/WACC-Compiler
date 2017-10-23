@@ -1,2 +1,0 @@
-true : bin_annot,debug
-true : package(llvm), package(llvm.analysis)
