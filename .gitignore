@@ -1,5 +1,7 @@
-*.cm[oax]
+*.cm[ioax]
+*.o
 *.native
 *.byte
 src/legacy/lib/
 _build
+_sdk
