@@ -21,7 +21,7 @@ JFLAGS	:= -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -cp lib/antlr-4.4-complete.
 all: build_deps
 	cd src/legacy && make driver.native
 
-build_deps: $(shell pwd)/src/legacy/lib/menhir-20170712/build/bin/menhir
+build_deps:
 	chmod u+x build.sh && ./build.sh
 
 # runs the antlr build script then attempts to compile all .java files within src
@@ -33,7 +33,7 @@ rules:
 	$(RM) rules
 
 clean:
-	$(RM) rules $(OUTPUT_DIR)
+	$(RM) rules $(OUTPUT_DIR) && rm -rf src/legacy/lib/menhir-20170712/build/ && rm -rf src/legacy/_build
 
 .PHONY: all rules clean
 

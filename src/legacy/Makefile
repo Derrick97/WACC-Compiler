@@ -27,8 +27,7 @@ wacclib.o: wacclib.c
 	$(OCB) wacclib.o
 
 clean:
-	$(OCB) -clean; \
-  find wacc_examples -name "*.ll" -exec rm {} \;
+	$(OCB) -clean;
 
 test: driver.byte
 	python run_test.py
