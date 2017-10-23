@@ -2,7 +2,7 @@
 
 # build a local version of menhir since it is NA on HXLY machines
 OCB_FLAGS = -use-ocamlfind -I src -use-menhir -yaccflags --dump,--graph,--explain
-PATH := $(PWD)/src/legacy/lib/menhir-20170712/build/bin:$(PATH)
+PATH := $(PWD)/lib/menhir-20170712/build/bin:$(PATH)
 
 OBJDIR := _build
 VPATH = src
