@@ -5,3 +5,4 @@
 src/legacy/lib/
 _build
 _sdk
+test/wacc_examples

@@ -19,6 +19,9 @@ driver.byte: wacclib.o
 driver.native: wacclib.o
 	$(OCB) driver.native
 
+test_env:
+	$(OCB) env.byte
+
 test_codegen.byte: wacclib.o
 	$(OCB) translate_ast.byte
 

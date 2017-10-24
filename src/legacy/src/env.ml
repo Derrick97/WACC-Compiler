@@ -1,3 +1,5 @@
+open Ast
+
 module Bindings = struct
   type t = string
   let compare = String.compare
@@ -134,7 +136,7 @@ module Tree: sig
   type binop
   type relop
 end = struct
-  type binop = PLUE | MINUS | MUL | DIV | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
+  type binop = PLUS | MINUS | MUL | DIV | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
   and relop = EQ | NE | LT | GT | LE | GE | ULT | UGT | UGE
   and exp =
     | Const of int
@@ -160,16 +162,13 @@ module Frame: sig
 
   val new_frame: level -> frame
   val formals: frame -> unit
-  val allocate_local: frame -> access
   val outtermost: level
-  val trans_exp: frame -> Tree.exp -> unit
-
 end = struct
   type level = int
 
   type access =
     | InMem of int
-    | InReg of int
+    | InReg of ArmInst.reg
 
   type frame = {
     mutable counter: int;
@@ -181,6 +180,10 @@ end = struct
   type inst =
     | Label
 
+  type operand =
+    | OperandReg of ArmInst.reg
+    | OperandImm of int
+
   let outtermost = 0
   let static_links = ref []
 
@@ -190,28 +193,61 @@ end = struct
   let allocate_local frame = (
     frame.counter <- frame.counter + 1;
     assert (frame.counter < 13);
-    InReg frame.counter
+    let r = ArmInst.Reg frame.counter in
+    ignore(frame.locals = (InReg r)::frame.locals);
+    r
   )
 
-  let trans_lit lit = match lit with
-    | LitString s -> ArmInst.Imm 0
-    | LitBool b -> (if b then ArmInst.Imm 1 else ArmInst.Imm 0 )
-    | LitInt i -> ArmInst.Imm 1
-    | LitChar c -> ArmInst.Imm (ord c)
+  let lookup_local table name = raise (Failure "TODO lookup_local")
 
-  let trans_exp frame exp = match exp with
+
+  let trans_lit lit = match lit with
+    | LitBool b -> (if b then OperandImm 1 else OperandImm 0 )
+    | LitInt i -> OperandImm i
+    | LitChar c -> OperandImm (Char.code c)
+    | _ -> raise (Failure "TODO")
+
+
+  (* translation follows the following rule:
+     trans(e) = <c, p>
+  *)
+  let rec trans_exp table frame exp = let open ArmInst in (match exp with
     | BinOpExp (lhs, op, rhs, _) -> (
-        let lhse = trans_exp frame lhs in
-        let rhse = trans_exp frame rhs in
+        let tr = trans_exp table frame in
+        let (lhsc, lhsp) = tr lhs in  (*-- *c denotes commands, *p denotes pure expressions --*)
+        let (rhsc, rhsp) = tr rhs in
         let o = (match op with
-        | PlusOp -> PLUS
-        | MinusOp -> MINUS
-        | TimesOp -> MUL
-        | DivideOp -> DIV) in
-        ())
-  let trans_stmt frame exp = ()
-  let trans_decl frame decl = ()
-  let trans_call frame fn = ()
+        | PlusOp -> Add
+        | MinusOp -> Sub
+        | TimesOp -> Mul
+        | _ -> raise (Failure "TODO op")) in
+        let dst = allocate_local frame in
+        let op2 = (match rhsp with
+            | OperandReg r -> Rm r
+            | OperandImm num -> Imm num
+        ) in
+        let inst = InstDp (o, dst, op2) in
+        (lhsc @ rhsc @ [inst], OperandReg dst)
+      )
+    | IdentExp (ident, _) -> (
+        let InReg r = lookup_local table ident in
+        ([], OperandReg r)
+      )
+    | LiteralExp (lit, _) -> ([], trans_lit lit)
+    | UnOpExp (op, exp, _) -> raise (Failure "TODO")
+    | _ -> raise (Failure "TODO other expression"))
+
+  let rec trans_stmt table frame exp = ()
+
+  let trans_decl table frame decl = match decl with
+    | VarDeclStmt (_, name, exp, _) -> (
+        let (expc, expp) = trans_exp table frame exp in
+        let table' = Symbol.insert name expp table in
+        (table', expc, expp)
+      )
+    | _ -> raise (Failure "only declaration supported")
+
+  let trans_call table frame fn = ()
 end
 
 module InstructionPrinter = struct
@@ -221,7 +257,15 @@ module InstructionPrinter = struct
 end
 
 let () =
-  let out_file = (open_out "foo.txt") in
+  let verbose = ref false in
+  let filename = ref "" in
+  let spec = [
+    ("-v", Arg.Set verbose, "verbose output")
+  ] in
+  Arg.parse spec (fun x -> filename := x) "wacc";
+  if (!verbose) then print_string "enable verbose\n" else ();
+  print_string !filename; print_newline ();
+  let out_file = stdout in
   let code = [
     ArmInst.InstLabel "label1";
     ArmInst.InstDp (ArmInst.Add, ArmInst.Reg 1, ArmInst.Imm 1)]
