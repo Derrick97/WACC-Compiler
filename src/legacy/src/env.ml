@@ -58,6 +58,7 @@ module ArmInst = struct
     | Bgt
     | Ble
     | B
+    | Bl
     (* Special opcodes *)
     | OpLsl
     | Andeq
@@ -91,6 +92,7 @@ module ArmInst = struct
     | Bgt -> "bgt"
     | Ble -> "ble"
     | B -> "b"
+    | Bl -> "bl"
     | OpLsl -> "lsl"
     | Andeq -> "andeq"
   let string_of_reg reg = match reg with
@@ -181,6 +183,7 @@ end = struct
      trans(e) = <c, p>
   *)
   let (++) x y = List.concat [x; y]
+  let texts = ref []
 
   let rec trans_exp (table: codegen_env) (frame: frame) (exp: Ast.exp)  = let open ArmInst in (match exp with
     | BinOpExp (lhs, op, rhs, _) -> (
@@ -206,7 +209,8 @@ end = struct
     | LiteralExp (lit, _) -> ([], trans_lit lit)
     | _ -> raise (Failure "TODO other expression"))
 
-  let rec trans_stmt table commands frame stmt = match stmt with
+  let rec trans_stmt table commands frame stmt =
+    let open ArmInst in match stmt with
     | VarDeclStmt (ty,name,exp,_) -> (
         let (table', cs, p) = trans_decl table frame stmt in
         (table', commands ++ cs)
@@ -218,6 +222,11 @@ end = struct
         (table'',  commands ++ expc' ++ expc'')
       )
     | AssignStmt (lhs, rhs, _) -> raise (Failure "TODO assignment")
+    | PrintStmt ((LiteralExp (LitString s, _)), _) -> (
+        let insts = [
+          InstBr (Bl, s)
+        ] in
+        texts := s::!texts; (table, commands ++ insts))
     | _ -> raise (Failure "TODO trans_stmt")
 
   and trans_decl (table: codegen_env) frame decl = match decl with
