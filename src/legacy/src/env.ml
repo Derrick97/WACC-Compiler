@@ -113,15 +113,12 @@ module ArmInst = struct
 end
 
 
-module Codegen: sig
-  type 'a t
-  val create: unit -> 'a t
-  val add: 'a t -> 'a -> 'a t
-end = struct
-  type 'a t = 'a list
-  let create () = []
-  let add c inst = c @ [inst]
+module InstructionPrinter = struct
+  let print_instr (out: out_channel) (inst: ArmInst.inst): unit = (
+    Printf.fprintf out "%s\n" (ArmInst.string_of_instr inst)
+  )
 end
+
 
 module Frame: sig
   (* We use a frame to organize codegen *)
@@ -132,6 +129,7 @@ module Frame: sig
   val new_frame: level -> frame
   val formals: frame -> unit
   val outtermost: level
+  val trans: Ast.stmt -> unit
 end = struct
   type level = int
 
@@ -167,9 +165,9 @@ end = struct
     r
   )
 
-  type codegen_env = operand S.table
+  type codegen_env = access S.table
 
-  let lookup_local table name = raise (Failure "TODO lookup_local")
+  let lookup_local table name = Symbol.lookup' name table
 
   let trans_lit lit = match lit with
     | LitBool b -> (if b then OperandImm 1 else OperandImm 0 )
@@ -210,38 +208,48 @@ end = struct
     | VarDeclStmt (ty,name,exp,_) -> (
         trans_decl table frame stmt
       )
+    | AssignStmt (lhs, rhs, _) -> raise (Failure "TODO assignment")
+    | SeqStmt (s::ss) -> (
+        let (table', expc, expe) = trans_stmt table frame s in
+        let (table'', expc'', expe'') = trans_stmt table' frame (SeqStmt ss) in
+        (table'', List.concat [expc; expc''], expe'')
+      )
     | _ -> raise (Failure "TODO trans_stmt")
 
-  and trans_decl table frame decl = match decl with
+  and trans_decl (table: codegen_env) frame decl = match decl with
     | VarDeclStmt (_, name, exp, _) -> (
         let (expc, expp) = trans_exp table frame exp in
-        let table' = Symbol.insert name expp table in
+        let OperandReg r = expp in
+        let table' = Symbol.insert name (InReg r) table in
         (table', expc, expp)
       )
     | _ -> raise (Failure "only declaration supported")
 
   let trans_call table frame fn = raise (Failure "TODO trans_call")
+
+  let trans stmt =
+    let table = Symbol.empty in
+    let frame = new_frame outtermost in
+    let (_, commands, _) = trans_stmt table frame stmt in
+    InstructionPrinter.print_instr stderr (List.hd commands)
 end
 
-module InstructionPrinter = struct
-  let print_instr (out: out_channel) (inst: ArmInst.inst): unit = (
-    Printf.fprintf out "%s\n" (ArmInst.string_of_instr inst)
-  )
-end
 
 let () =
   let verbose = ref false in
+  let print_ast = ref false in
   let filename = ref "" in
   let spec = [
-    ("-v", Arg.Set verbose, "verbose output")
+    ("-v", Arg.Set verbose, "verbose output");
+    ("--print-ast", Arg.Set print_ast, "print the AST")
   ] in
   Arg.parse spec (fun x -> filename := x) "wacc";
-  if (!verbose) then print_string "enable verbose\n" else ();
-  print_string !filename; print_newline ();
+  let lexbuf = Lexing.from_channel (open_in !filename) in
+  let (decs, ast) = Parser.prog Lexer.main lexbuf in
+  if (!print_ast) then (
+    print_string "-----AST output-----\n";
+    print_string (Ast.pp_stmt ast); print_newline ();
+    print_string "-----end output-----\n");
   let out_file = stdout in
-  let code = [
-    ArmInst.InstLabel "label1";
-    ArmInst.InstDp (ArmInst.Add, ArmInst.Reg 1, ArmInst.Imm 1)]
-  in
-  List.iter (fun c -> InstructionPrinter.print_instr out_file c) code;
+  let () = Frame.trans ast in
   (close_out out_file)
