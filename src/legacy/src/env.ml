@@ -1,11 +1,5 @@
+module S = Symbol
 open Ast
-
-module Bindings = struct
-  type t = string
-  let compare = String.compare
-end;;
-
-module Environment = Map.Make(Bindings);;
 
 module Temp: sig
   type temp
@@ -129,31 +123,6 @@ end = struct
   let add c inst = c @ [inst]
 end
 
-(* Tree is an IR *)
-module Tree: sig
-  type exp
-  type stmt
-  type binop
-  type relop
-end = struct
-  type binop = PLUS | MINUS | MUL | DIV | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
-  and relop = EQ | NE | LT | GT | LE | GE | ULT | UGT | UGE
-  and exp =
-    | Const of int
-    | Name of Temp.label
-    | Temp of Temp.temp
-    | Binop of binop * exp * exp
-    | Mem of exp
-    | Eseq of stmt * exp
-  and stmt =
-    | Move of exp * exp
-    | Exp of exp
-    | Jump of exp * Temp.label list
-    | Seq of stmt * stmt
-    | Label of Temp.label
-end
-
-
 module Frame: sig
   (* We use a frame to organize codegen *)
   type frame
@@ -198,8 +167,9 @@ end = struct
     r
   )
 
-  let lookup_local table name = raise (Failure "TODO lookup_local")
+  type codegen_env = operand S.table
 
+  let lookup_local table name = raise (Failure "TODO lookup_local")
 
   let trans_lit lit = match lit with
     | LitBool b -> (if b then OperandImm 1 else OperandImm 0 )
@@ -207,20 +177,19 @@ end = struct
     | LitChar c -> OperandImm (Char.code c)
     | _ -> raise (Failure "TODO")
 
-
   (* translation follows the following rule:
      trans(e) = <c, p>
   *)
-  let rec trans_exp table frame exp = let open ArmInst in (match exp with
+  let rec trans_exp (table: codegen_env) frame exp = let open ArmInst in (match exp with
     | BinOpExp (lhs, op, rhs, _) -> (
         let tr = trans_exp table frame in
-        let (lhsc, lhsp) = tr lhs in  (*-- *c denotes commands, *p denotes pure expressions --*)
+        let (lhsc, lhsp) = tr lhs in  (*-- *c denotes commands, *p denotes pure expressions, see CMU fp's notes --*)
         let (rhsc, rhsp) = tr rhs in
         let o = (match op with
         | PlusOp -> Add
         | MinusOp -> Sub
         | TimesOp -> Mul
-        | _ -> raise (Failure "TODO op")) in
+        | _ -> raise (Failure "TODO match op")) in
         let dst = allocate_local frame in
         let op2 = (match rhsp with
             | OperandReg r -> Rm r
@@ -234,12 +203,16 @@ end = struct
         ([], OperandReg r)
       )
     | LiteralExp (lit, _) -> ([], trans_lit lit)
-    | UnOpExp (op, exp, _) -> raise (Failure "TODO")
     | _ -> raise (Failure "TODO other expression"))
 
-  let rec trans_stmt table frame exp = ()
+  let rec trans_stmt table frame stmt = match stmt with
+    (* | SeqStmt (stmt::stmts) -> () *)
+    | VarDeclStmt (ty,name,exp,_) -> (
+        trans_decl table frame stmt
+      )
+    | _ -> raise (Failure "TODO trans_stmt")
 
-  let trans_decl table frame decl = match decl with
+  and trans_decl table frame decl = match decl with
     | VarDeclStmt (_, name, exp, _) -> (
         let (expc, expp) = trans_exp table frame exp in
         let table' = Symbol.insert name expp table in
@@ -247,7 +220,7 @@ end = struct
       )
     | _ -> raise (Failure "only declaration supported")
 
-  let trans_call table frame fn = ()
+  let trans_call table frame fn = raise (Failure "TODO trans_call")
 end
 
 module InstructionPrinter = struct

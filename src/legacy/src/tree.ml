@@ -1,41 +1,27 @@
 (* The Tree IR, similar to that from the TIGER compiler in
    'Modern Compiler Implementation in ML`
  *)
-module Tree = struct
-  type exp =
+
+(* Tree is an IR *)
+module Tree: sig
+  type exp
+  type stmt
+  type binop
+  type relop
+end = struct
+  type binop = PLUS | MINUS | MUL | DIV | AND | OR | LSHIFT | RSHIFT | ARSHIFT | XOR
+  and relop = EQ | NE | LT | GT | LE | GE | ULT | UGT | UGE
+  and exp =
     | Const of int
     | Name of Temp.label
     | Temp of Temp.temp
-    | Binop of exp * exp
+    | Binop of binop * exp * exp
     | Mem of exp
-    | Call * Temp.label * exp list
-  type stmt =
+    | Eseq of stmt * exp
+  and stmt =
     | Move of exp * exp
     | Exp of exp
-    | Jump * exp * Temp.label
-    | CJump of relop * exp * exp * Temp.label * Temp.label
-    | Seq of stm * stm
+    | Jump of exp * Temp.label list
+    | Seq of stmt * stmt
     | Label of Temp.label
-  type binop =
-    | Plus
-    | Minus
-    | Mul
-    | Div
-    | And
-    | Or
-    | Xor
-    | Lshift
-    | Rshift
-    | Arshift
-  type relop =
-    | Eq
-    | Ne
-    | Lt
-    | Gt
-    | Le
-    | Ge
-    | Ult
-    | Ule
-    | Ugt
-    | Uge
 end

@@ -2,6 +2,7 @@ type symbol
 type 'a table
 
 val symbol : string -> symbol
+(** A symbol table with parents**)
 val name : symbol -> string
 
 (* alias for symbol *)

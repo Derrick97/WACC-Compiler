@@ -58,17 +58,16 @@ let () =
       let stmt = match stmt with
         | A.SeqStmt stmt -> A.SeqStmt stmt
         | others -> A.SeqStmt [others] in
-      (* if (print_ast) *)
-      (*  then print_string (A.pp_stmt stmt) *)
-      (*  else (); *)
+      if (print_ast)
+      then print_string (A.pp_stmt stmt)
+      else ();
       (* setup_builtin_functions; *)
       let table' = Symbol.new_scope (add_func_declarations table decs) in
       (* (\* function declarations *\) *)
       (* ignore(List.map codegen_decl decs); *)
       (* built-in functions *)
-
       (* the Semantic checking phase *)
-      ignore(Semantic.check_stmt table' stmt);
+      (* ignore(Semantic.check_stmt table' stmt); *)
       (* the main function as entry point*)
       (* let ft = function_type i1_type (Array.make 1 i1_type) in *)
       (* let main_func = declare_function "main" ft the_module in *)

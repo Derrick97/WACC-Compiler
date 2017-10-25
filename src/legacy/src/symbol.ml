@@ -14,7 +14,7 @@ end
 module ST = Map.Make(SymbolEqualSig)
 
 (* table with itself and parent *)
-type 'a table = Table of ('a ST.t) * ('a table option)
+type 'a table = Table of 'a ST.t * 'a table option
 
 let empty = Table (ST.empty, None)
 
@@ -22,23 +22,14 @@ let parent = function
   | Table (t, Some parent) -> Some parent
   | Table (t, None) -> None
 
-let new_scope table = Table (ST.empty, Some table)
+let new_scope (table: 'a table): 'a table = Table (ST.empty, Some table)
 
 let rec lookup symbol = function
-  | Table (table, Some parent) ->
-    begin
-      try
-        ST.find symbol table
-      with
-      | Not_found ->
-        begin
-          (* print_string ("looking for:" ^ (string_of_symbol symbol) ^ "\n"); *)
-          lookup symbol parent
-        end
-    end
-  | Table (table, None) ->
-    (* (print_string ("looking for:" ^ (string_of_symbol symbol) ^ "\n"); *)
-    ST.find symbol table
+  | Table (table, Some parent) -> (
+      try ST.find symbol table with
+      | Not_found -> lookup symbol parent
+    )
+  | Table (table, None) -> ST.find symbol table
 
 let lookup' symbol table =
   let Table (table', parent) = table in
@@ -46,6 +37,4 @@ let lookup' symbol table =
 
 let insert symbol entry table =
   let Table (table', parent) = table in
-    (* print_string ("inserted: " ^ (string_of_symbol symbol) ^ "\n"); *)
-    Table ((ST.add symbol entry table'), parent)
-
+  Table ((ST.add symbol entry table'), parent)
