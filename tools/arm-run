@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# use QEMU to run the generated assembly
+qemu-arm -L /usr/arm-linux-gnueabi/ $@
+

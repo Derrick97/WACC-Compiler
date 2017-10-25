@@ -1,6 +1,0 @@
-#!/usr/bin/env bash
-# use QEMU to run the generated assembly
-output=a.out
-arm-linux-gnueabi-gcc -o $output -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $1
-qemu-arm -L /usr/arm-linux-gnueabi/ $output
-

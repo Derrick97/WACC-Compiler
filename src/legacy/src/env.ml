@@ -182,7 +182,7 @@ end = struct
   *)
   let (++) x y = List.concat [x; y]
 
-  let rec trans_exp (table: codegen_env) frame exp = let open ArmInst in (match exp with
+  let rec trans_exp (table: codegen_env) (frame: frame) (exp: Ast.exp)  = let open ArmInst in (match exp with
     | BinOpExp (lhs, op, rhs, _) -> (
         let tr = trans_exp table frame in
         let (lhsc, lhsp) = tr lhs in  (*-- *c denotes commands, *p denotes pure expressions, see CMU fp's notes --*)

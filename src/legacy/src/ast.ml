@@ -32,16 +32,16 @@ and unop =
   | OrdOp                         (* ord *)
   | ChrOp                         (* chr *)
 and exp =
-  | IdentExp    of symbol * pos
+  | IdentExp      of symbol * pos
   | ArrayIndexExp of symbol * exp list * pos
-  | LiteralExp  of literal * pos
-  | BinOpExp    of exp * binop * exp * pos
-  | UnOpExp     of unop * exp * pos
-  | NullExp     of pos
-  | NewPairExp  of exp * exp * pos
-  | CallExp     of symbol * (exp list) * pos            (* call a function *)
-  | FstExp      of exp * pos
-  | SndExp      of exp * pos
+  | LiteralExp    of literal * pos
+  | BinOpExp      of exp * binop * exp * pos
+  | UnOpExp       of unop * exp * pos
+  | NullExp       of pos
+  | NewPairExp    of exp * exp * pos
+  | CallExp       of symbol * (exp list) * pos            (* call a function *)
+  | FstExp        of exp * pos
+  | SndExp        of exp * pos
 and stmt =
   | SkipStmt of pos
   | VarDeclStmt of ty * symbol * exp * pos
