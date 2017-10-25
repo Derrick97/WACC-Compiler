@@ -28,6 +28,7 @@ module ArmInst = struct
     | InstBr of opcode * string
     | InstSp of inst_sp
     | InstLabel of string
+    | InstNoOp
   and inst_sp =
     | Lsl of reg * reg
     | Halt
@@ -175,9 +176,12 @@ end = struct
     | LitChar c -> OperandImm (Char.code c)
     | _ -> raise (Failure "TODO")
 
+  (* Below are WIP *)
   (* translation follows the following rule:
      trans(e) = <c, p>
   *)
+  let (++) x y = List.concat [x; y]
+
   let rec trans_exp (table: codegen_env) frame exp = let open ArmInst in (match exp with
     | BinOpExp (lhs, op, rhs, _) -> (
         let tr = trans_exp table frame in
@@ -191,37 +195,45 @@ end = struct
         let dst = allocate_local frame in
         let op2 = (match rhsp with
             | OperandReg r -> Rm r
-            | OperandImm num -> Imm num
-        ) in
+            | OperandImm num -> Imm num) in
         let inst = InstDp (o, dst, op2) in
-        (lhsc @ rhsc @ [inst], OperandReg dst)
+        (lhsc ++ rhsc ++ [inst], OperandReg dst)
       )
     | IdentExp (ident, _) -> (
-        let InReg r = lookup_local table ident in
+        let InReg r = lookup_local table ident in (* FIXME *)
         ([], OperandReg r)
       )
     | LiteralExp (lit, _) -> ([], trans_lit lit)
     | _ -> raise (Failure "TODO other expression"))
 
-  let rec trans_stmt table frame stmt = match stmt with
-    (* | SeqStmt (stmt::stmts) -> () *)
+  let rec trans_stmt table commands frame stmt = match stmt with
     | VarDeclStmt (ty,name,exp,_) -> (
-        trans_decl table frame stmt
+        let (table', cs, p) = trans_decl table frame stmt in
+        (table', commands ++ cs)
+      )
+    | SeqStmt [] -> (table, commands)
+    | SeqStmt (s::ss) -> (
+        let (table', expc') = trans_stmt table commands frame s in
+        let (table'', expc'') = trans_stmt table' commands frame (SeqStmt ss) in
+        (table'',  commands ++ expc' ++ expc'')
       )
     | AssignStmt (lhs, rhs, _) -> raise (Failure "TODO assignment")
-    | SeqStmt (s::ss) -> (
-        let (table', expc, expe) = trans_stmt table frame s in
-        let (table'', expc'', expe'') = trans_stmt table' frame (SeqStmt ss) in
-        (table'', List.concat [expc; expc''], expe'')
-      )
     | _ -> raise (Failure "TODO trans_stmt")
 
   and trans_decl (table: codegen_env) frame decl = match decl with
     | VarDeclStmt (_, name, exp, _) -> (
+        let open ArmInst in
         let (expc, expp) = trans_exp table frame exp in
-        let OperandReg r = expp in
-        let table' = Symbol.insert name (InReg r) table in
-        (table', expc, expp)
+        let store: access = InReg (allocate_local frame) in
+        let r = (match store with
+            | InReg rr -> rr
+            | _ -> raise (Failure "unsupported rvalue access")) in
+        let op2 = (match expp with
+            | OperandImm i -> Imm i
+            | OperandReg r -> Rm r) in
+        let store_inst = ArmInst.InstDp (ArmInst.Str, r, op2) in
+        let table' = Symbol.insert name store table in
+        (table', expc ++ [store_inst], expp)
       )
     | _ -> raise (Failure "only declaration supported")
 
@@ -230,8 +242,8 @@ end = struct
   let trans stmt =
     let table = Symbol.empty in
     let frame = new_frame outtermost in
-    let (_, commands, _) = trans_stmt table frame stmt in
-    InstructionPrinter.print_instr stderr (List.hd commands)
+    let (_, commands) = trans_stmt table [] frame stmt in
+    List.iter (InstructionPrinter.print_instr stderr) commands
 end
 
 
