@@ -1,4 +1,4 @@
-type symbol
+type symbol = String.t
 type 'a table
 
 val symbol : string -> symbol
