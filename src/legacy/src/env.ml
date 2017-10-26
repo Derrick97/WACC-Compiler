@@ -1,25 +1,6 @@
 module S = Symbol
 open Ast
 
-module Temp: sig
-  type temp
-  val newtemp: unit -> temp
-  (* module Table *)
-  type label = string
-  val newlabel: unit -> label
-  val namedlabel: string -> label
-end = struct
-  type label = string
-  type temp =
-    | Reg of int
-    | Memory of int
-  let newtemp () = Reg 1
-  let newlabel () = "foo"
-  let namedlabel name = name
-end
-
-
-module ArmInst = struct
   (* 4.1.2 might useful *)
   type inst =
     | InstDp of opcode * reg * operand2
@@ -30,38 +11,38 @@ module ArmInst = struct
     | InstLabel of string
     | InstNoOp
   and inst_sp =
-    | Lsl of reg * reg
+    | Sp_lsl of reg * reg
     | Halt
   and opcode =
     (* Data processing opcodes *)
-    | Add
-    | Sub
-    | Rsb
-    | And
-    | Eor
-    | Orr
-    | Mov
-    | Tst
-    | Teq
-    | Cmp
+    | ADD
+    | SUB
+    | RSB
+    | AND
+    | EOR
+    | ORR
+    | MOV
+    | TST
+    | TEQ
+    | CMP
     (* Single Data Transfer opcodes *)
-    | Ldr
-    | Str
+    | LDR
+    | STR
     (* Multiply opcodes *)
-    | Mul
-    | Mla
+    | MUL
+    | MLA
     (* Branching opcodes *)
-    | Beq
-    | Bne
-    | Bge
-    | Blt
-    | Bgt
-    | Ble
+    | BEQ
+    | BNE
+    | BGE
+    | BLT
+    | BGT
+    | BLE
     | B
-    | Bl
+    | BL
     (* Special opcodes *)
-    | OpLsl
-    | Andeq
+    | LSL
+    | ANDEQ
   and operand2 =
     | Rm of reg
     | Imm of int
@@ -71,30 +52,30 @@ module ArmInst = struct
     | RegShift of reg
 
   let string_of_opcode code = match code with
-    | Add -> "add"
-    | Sub -> "sub"
-    | Rsb -> "rsb"
-    | And -> "and"
-    | Eor -> "eor"
-    | Orr -> "orr"
-    | Mov -> "mov"
-    | Tst -> "tst"
-    | Teq -> "teq"
-    | Cmp -> "cmp"
-    | Ldr -> "ldr"
-    | Str -> "str"
-    | Mul -> "mul"
-    | Mla -> "mla"
-    | Beq -> "beq"
-    | Bne -> "bne"
-    | Bge -> "bge"
-    | Blt -> "blt"
-    | Bgt -> "bgt"
-    | Ble -> "ble"
+    | ADD -> "add"
+    | SUB -> "sub"
+    | RSB -> "rsb"
+    | AND -> "and"
+    | EOR -> "eor"
+    | ORR -> "orr"
+    | MOV -> "mov"
+    | TST -> "tst"
+    | TEQ -> "teq"
+    | CMP -> "cmp"
+    | LDR -> "ldr"
+    | STR -> "str"
+    | MUL -> "mul"
+    | MLA -> "mla"
+    | BEQ -> "beq"
+    | BNE -> "bne"
+    | BGE -> "bge"
+    | BLT -> "blt"
+    | BGT -> "bgt"
+    | BLE -> "ble"
     | B -> "b"
-    | Bl -> "bl"
-    | OpLsl -> "lsl"
-    | Andeq -> "andeq"
+    | BL -> "bl"
+    | LSL -> "lsl"
+    | ANDEQ -> "andeq"
   let string_of_reg reg = match reg with
     | Reg 13 -> "rsp"           (* Stack pointer *)
     | Reg 14 -> "rlr"           (* Link register *)
@@ -113,148 +94,137 @@ module ArmInst = struct
     | InstLabel label -> label ^ ":"
     | InstBr (cond, label) -> (string_of_opcode cond) ^ " " ^ label
     | _ -> "TODO"
-end
 
+let print_instr (out: out_channel) (inst: inst): unit = (
+  Printf.fprintf out "%s\n" (string_of_instr inst)
+)
 
-module InstructionPrinter = struct
-  let print_instr (out: out_channel) (inst: ArmInst.inst): unit = (
-    Printf.fprintf out "%s\n" (ArmInst.string_of_instr inst)
-  )
-end
+type level = int
 
+type access =
+  | InMem of int
+  | InReg of reg
 
-module Frame: sig
-  (* We use a frame to organize codegen *)
-  type frame
-  type level
-  type access
+type frame = {
+  mutable counter: int;
+  mutable locals: access list;
+  level: int;
+}
 
-  val new_frame: level -> frame
-  val formals: frame -> unit
-  val outtermost: level
-  val trans: Ast.stmt -> unit
-end = struct
-  type level = int
+type operand =
+  | OperandReg of reg
+  | OperandImm of int
 
-  type access =
-    | InMem of int
-    | InReg of ArmInst.reg
+let outtermost = 0
 
-  type frame = {
-    mutable counter: int;
-    mutable locals: access list;
-    level: int;
+let new_frame level = { counter=(-1); locals=[]; level=level}
+
+let allocate_local frame = (
+  frame.counter <- frame.counter + 1;
+  assert (frame.counter < 13);
+  let r = Reg frame.counter in
+  ignore(frame.locals = (InReg r)::frame.locals);
+  r
+)
+
+type codegen_env = access S.table
+
+type codegen_ctx = {
+  mutable ctx_counter: int;
+  mutable ctx_text: (string, string) Hashtbl.t;
+  mutable ctx_data: inst list;
+  mutable ctx_env: access Symbol.table;
+  mutable ctx_frame: frame;
+}
+
+let new_context (): codegen_ctx =
+  {
+    ctx_counter = 0;
+    ctx_text = Hashtbl.create 0;
+    ctx_data = [];
+    ctx_env = Symbol.empty;
+    ctx_frame = new_frame outtermost
   }
 
-  (* Type representing ARM instructions *)
-  type inst =
-    | Label
+let add_text (ctx: codegen_ctx) (text: string): string = (
+  let key = "msg_" ^ (string_of_int ctx.ctx_counter) in
+  Hashtbl.add ctx.ctx_text key text;
+  key
+)
 
-  type operand =
-    | OperandReg of ArmInst.reg
-    | OperandImm of int
+let lookup_local ctx name = Symbol.lookup' name ctx.ctx_env
 
-  let outtermost = 0
-  let static_links = ref []
+let trans_lit lit = match lit with
+  | LitBool b -> (if b then OperandImm 1 else OperandImm 0 )
+  | LitInt i -> OperandImm i
+  | LitChar c -> OperandImm (Char.code c)
+  | _ -> raise (Failure "TODO")
 
-  let new_frame level = { counter=(-1); locals=[]; level=level}
-  let formals frame = ()
+(* Below are WIP *)
+(* translation follows the following rule:
+   trans(e) = <c, p>
+*)
+let (++) x y = List.concat [x; y]
 
-  let allocate_local frame = (
-    frame.counter <- frame.counter + 1;
-    assert (frame.counter < 13);
-    let r = ArmInst.Reg frame.counter in
-    ignore(frame.locals = (InReg r)::frame.locals);
-    r
-  )
-
-  type codegen_env = access S.table
-
-  let lookup_local table name = Symbol.lookup' name table
-
-  let trans_lit lit = match lit with
-    | LitBool b -> (if b then OperandImm 1 else OperandImm 0 )
-    | LitInt i -> OperandImm i
-    | LitChar c -> OperandImm (Char.code c)
-    | _ -> raise (Failure "TODO")
-
-  (* Below are WIP *)
-  (* translation follows the following rule:
-     trans(e) = <c, p>
-  *)
-  let (++) x y = List.concat [x; y]
-  let texts = ref []
-
-  let rec trans_exp (table: codegen_env) (frame: frame) (exp: Ast.exp)  = let open ArmInst in (match exp with
+let rec trans_exp (ctx: codegen_ctx) (exp: Ast.exp): operand  = match exp with
     | BinOpExp (lhs, op, rhs, _) -> (
-        let tr = trans_exp table frame in
-        let (lhsc, lhsp) = tr lhs in  (*-- *c denotes commands, *p denotes pure expressions, see CMU fp's notes --*)
-        let (rhsc, rhsp) = tr rhs in
+        let tr = trans_exp ctx in
+        let lhsp = tr lhs in  (*-- *c denotes commands, *p denotes pure expressions, see CMU fp's notes --*)
+        let rhsp = tr rhs in
         let o = (match op with
-        | PlusOp -> Add
-        | MinusOp -> Sub
-        | TimesOp -> Mul
-        | _ -> raise (Failure "TODO match op")) in
-        let dst = allocate_local frame in
+            | PlusOp -> ADD
+            | MinusOp -> SUB
+            | TimesOp -> MUL
+            | _ -> raise (Failure "TODO match op")) in
+        let dst = allocate_local ctx.ctx_frame in
         let op2 = (match rhsp with
             | OperandReg r -> Rm r
             | OperandImm num -> Imm num) in
         let inst = InstDp (o, dst, op2) in
-        (lhsc ++ rhsc ++ [inst], OperandReg dst)
+        ctx.ctx_data <- (ctx.ctx_data @ [inst]);
+        (OperandReg dst)
       )
     | IdentExp (ident, _) -> (
-        let InReg r = lookup_local table ident in (* FIXME *)
-        ([], OperandReg r)
+        let InReg r = lookup_local ctx ident in (* FIXME *)
+        (OperandReg r)
       )
-    | LiteralExp (lit, _) -> ([], trans_lit lit)
-    | _ -> raise (Failure "TODO other expression"))
+    | LiteralExp (lit, _) -> trans_lit lit
+    | _ -> raise (Failure "TODO other expression")
 
-  let rec trans_stmt table commands frame stmt =
-    let open ArmInst in match stmt with
-    | VarDeclStmt (ty,name,exp,_) -> (
-        let (table', cs, p) = trans_decl table frame stmt in
-        (table', commands ++ cs)
-      )
-    | SeqStmt [] -> (table, commands)
-    | SeqStmt (s::ss) -> (
-        let (table', expc') = trans_stmt table commands frame s in
-        let (table'', expc'') = trans_stmt table' commands frame (SeqStmt ss) in
-        (table'',  commands ++ expc' ++ expc'')
-      )
-    | AssignStmt (lhs, rhs, _) -> raise (Failure "TODO assignment")
-    | PrintStmt ((LiteralExp (LitString s, _)), _) -> (
-        let insts = [
-          InstBr (Bl, s)
-        ] in
-        texts := s::!texts; (table, commands ++ insts))
-    | _ -> raise (Failure "TODO trans_stmt")
+let rec trans_stmt (ctx: codegen_ctx) (stmt: Ast.stmt) : unit = match stmt with
+  | VarDeclStmt (ty,name,exp,_) -> trans_decl ctx stmt
+  | SeqStmt [] -> ()
+  | SeqStmt (s::ss) -> (
+      trans_stmt ctx s;
+      trans_stmt ctx (SeqStmt ss))
+  | AssignStmt (lhs, rhs, _) -> raise (Failure "TODO assignment")
+  | PrintStmt ((LiteralExp (LitString s, _)), _) -> begin
+      let l = add_text ctx s in
+      ctx.ctx_data <- (ctx.ctx_data @ [InstBr (BL, l)])
+    end
+  | _ -> raise (Failure "TODO trans_stmt")
 
-  and trans_decl (table: codegen_env) frame decl = match decl with
-    | VarDeclStmt (_, name, exp, _) -> (
-        let open ArmInst in
-        let (expc, expp) = trans_exp table frame exp in
-        let store: access = InReg (allocate_local frame) in
-        let r = (match store with
-            | InReg rr -> rr
-            | _ -> raise (Failure "unsupported rvalue access")) in
-        let op2 = (match expp with
-            | OperandImm i -> Imm i
-            | OperandReg r -> Rm r) in
-        let store_inst = ArmInst.InstDp (ArmInst.Str, r, op2) in
-        let table' = Symbol.insert name store table in
-        (table', expc ++ [store_inst], expp)
-      )
-    | _ -> raise (Failure "only declaration supported")
+and trans_decl (ctx: codegen_ctx) decl = match decl with
+  | VarDeclStmt (_, name, exp, _) -> (
+      let expp = trans_exp ctx exp in
+      let store: access = InReg (allocate_local ctx.ctx_frame) in
+      let r = (match store with
+          | InReg rr -> rr
+          | _ -> raise (Failure "unsupported rvalue access")) in
+      let op2 = (match expp with
+          | OperandImm i -> Imm i
+          | OperandReg r -> Rm r) in
+      let store_inst = InstDp (STR, r, op2) in
+      ctx.ctx_data <- (ctx.ctx_data @ [store_inst])
+    )
+  | _ -> raise (Failure "only declaration supported")
 
-  let trans_call table frame fn = raise (Failure "TODO trans_call")
+let trans_call table frame fn = raise (Failure "TODO trans_call")
 
-  let trans stmt =
-    let table = Symbol.empty in
-    let frame = new_frame outtermost in
-    let (_, commands) = trans_stmt table [] frame stmt in
-    List.iter (InstructionPrinter.print_instr stderr) commands
-end
-
+let trans stmt =
+  let ctx = new_context () in
+  let () = trans_stmt ctx stmt in
+  List.iter (fun x -> print_instr stderr x) ctx.ctx_data
 
 let () =
   let verbose = ref false in
@@ -272,5 +242,5 @@ let () =
     print_string (Ast.pp_stmt ast); print_newline ();
     print_string "-----end output-----\n");
   let out_file = stdout in
-  let () = Frame.trans ast in
+  let () = trans ast in
   (close_out out_file)
