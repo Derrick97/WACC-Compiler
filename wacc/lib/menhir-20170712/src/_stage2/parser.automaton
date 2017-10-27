@@ -1,0 +1,2095 @@
+State 0:
+grammar' -> . grammar [ # ]
+-- On TYPE shift to state 1
+-- On TOKEN shift to state 33
+-- On START shift to state 44
+-- On RIGHT shift to state 52
+-- On PUBLIC shift to state 53
+-- On PERCENTATTRIBUTE shift to state 54
+-- On PARAMETER shift to state 73
+-- On ON_ERROR_REDUCE shift to state 75
+-- On NONASSOC shift to state 77
+-- On LEFT shift to state 78
+-- On INLINE shift to state 79
+-- On HEADER shift to state 80
+-- On GRAMMARATTRIBUTE shift to state 81
+-- On EOF shift to state 82
+-- On COLON shift to state 83
+-- On priority_keyword shift to state 84
+-- On list(declaration) shift to state 91
+-- On grammar shift to state 186
+-- On declaration shift to state 187
+-- On PERCENTPERCENT reduce production list(declaration) -> 
+
+State 1:
+declaration -> TYPE . OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On OCAMLTYPE shift to state 2
+
+State 2:
+declaration -> TYPE OCAMLTYPE . separated_nonempty_list(option(COMMA),strict_actual) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On UID shift to state 3
+-- On LID shift to state 4
+-- On symbol shift to state 5
+-- On strict_actual shift to state 24
+-- On separated_nonempty_list(option(COMMA),strict_actual) shift to state 32
+
+State 3:
+symbol -> UID . [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LPAREN LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production symbol -> UID 
+-- On TYPE reduce production symbol -> UID 
+-- On TOKEN reduce production symbol -> UID 
+-- On START reduce production symbol -> UID 
+-- On STAR reduce production symbol -> UID 
+-- On RIGHT reduce production symbol -> UID 
+-- On QUESTION reduce production symbol -> UID 
+-- On PUBLIC reduce production symbol -> UID 
+-- On PLUS reduce production symbol -> UID 
+-- On PERCENTPERCENT reduce production symbol -> UID 
+-- On PERCENTATTRIBUTE reduce production symbol -> UID 
+-- On PARAMETER reduce production symbol -> UID 
+-- On ON_ERROR_REDUCE reduce production symbol -> UID 
+-- On NONASSOC reduce production symbol -> UID 
+-- On LPAREN reduce production symbol -> UID 
+-- On LID reduce production symbol -> UID 
+-- On LEFT reduce production symbol -> UID 
+-- On INLINE reduce production symbol -> UID 
+-- On HEADER reduce production symbol -> UID 
+-- On GRAMMARATTRIBUTE reduce production symbol -> UID 
+-- On EOF reduce production symbol -> UID 
+-- On COMMA reduce production symbol -> UID 
+-- On COLON reduce production symbol -> UID 
+
+State 4:
+symbol -> LID . [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LPAREN LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production symbol -> LID 
+-- On TYPE reduce production symbol -> LID 
+-- On TOKEN reduce production symbol -> LID 
+-- On START reduce production symbol -> LID 
+-- On STAR reduce production symbol -> LID 
+-- On RIGHT reduce production symbol -> LID 
+-- On QUESTION reduce production symbol -> LID 
+-- On PUBLIC reduce production symbol -> LID 
+-- On PLUS reduce production symbol -> LID 
+-- On PERCENTPERCENT reduce production symbol -> LID 
+-- On PERCENTATTRIBUTE reduce production symbol -> LID 
+-- On PARAMETER reduce production symbol -> LID 
+-- On ON_ERROR_REDUCE reduce production symbol -> LID 
+-- On NONASSOC reduce production symbol -> LID 
+-- On LPAREN reduce production symbol -> LID 
+-- On LID reduce production symbol -> LID 
+-- On LEFT reduce production symbol -> LID 
+-- On INLINE reduce production symbol -> LID 
+-- On HEADER reduce production symbol -> LID 
+-- On GRAMMARATTRIBUTE reduce production symbol -> LID 
+-- On EOF reduce production symbol -> LID 
+-- On COMMA reduce production symbol -> LID 
+-- On COLON reduce production symbol -> LID 
+
+State 5:
+strict_actual -> symbol . loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On LPAREN shift to state 6
+-- On loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) shift to state 23
+-- On UID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On TYPE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On TOKEN reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On START reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On RIGHT reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On PUBLIC reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On PERCENTPERCENT reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On PERCENTATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On PARAMETER reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On ON_ERROR_REDUCE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On NONASSOC reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On LID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On LEFT reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On INLINE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On HEADER reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On GRAMMARATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On EOF reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On COMMA reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On COLON reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+
+State 6:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN . separated_nonempty_list(COMMA,strict_actual) RPAREN [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID shift to state 7
+-- On LID shift to state 8
+-- On symbol shift to state 9
+-- On strict_actual shift to state 11
+-- On separated_nonempty_list(COMMA,strict_actual) shift to state 21
+
+State 7:
+symbol -> UID . [ STAR RPAREN QUESTION PLUS LPAREN COMMA ]
+-- On STAR reduce production symbol -> UID 
+-- On RPAREN reduce production symbol -> UID 
+-- On QUESTION reduce production symbol -> UID 
+-- On PLUS reduce production symbol -> UID 
+-- On LPAREN reduce production symbol -> UID 
+-- On COMMA reduce production symbol -> UID 
+
+State 8:
+symbol -> LID . [ STAR RPAREN QUESTION PLUS LPAREN COMMA ]
+-- On STAR reduce production symbol -> LID 
+-- On RPAREN reduce production symbol -> LID 
+-- On QUESTION reduce production symbol -> LID 
+-- On PLUS reduce production symbol -> LID 
+-- On LPAREN reduce production symbol -> LID 
+-- On COMMA reduce production symbol -> LID 
+
+State 9:
+strict_actual -> symbol . loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On LPAREN shift to state 10
+-- On loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) shift to state 20
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On RPAREN reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On COMMA reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+
+State 10:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN . separated_nonempty_list(COMMA,strict_actual) RPAREN [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On UID shift to state 7
+-- On LID shift to state 8
+-- On symbol shift to state 9
+-- On strict_actual shift to state 11
+-- On separated_nonempty_list(COMMA,strict_actual) shift to state 18
+
+State 11:
+separated_nonempty_list(COMMA,strict_actual) -> strict_actual . [ RPAREN ]
+separated_nonempty_list(COMMA,strict_actual) -> strict_actual . COMMA separated_nonempty_list(COMMA,strict_actual) [ RPAREN ]
+strict_actual -> strict_actual . modifier [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On STAR shift to state 12
+-- On QUESTION shift to state 13
+-- On PLUS shift to state 14
+-- On COMMA shift to state 15
+-- On modifier shift to state 17
+-- On RPAREN reduce production separated_nonempty_list(COMMA,strict_actual) -> strict_actual 
+
+State 12:
+modifier -> STAR . [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On STAR reduce production modifier -> STAR 
+-- On RPAREN reduce production modifier -> STAR 
+-- On QUESTION reduce production modifier -> STAR 
+-- On PLUS reduce production modifier -> STAR 
+-- On COMMA reduce production modifier -> STAR 
+
+State 13:
+modifier -> QUESTION . [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On STAR reduce production modifier -> QUESTION 
+-- On RPAREN reduce production modifier -> QUESTION 
+-- On QUESTION reduce production modifier -> QUESTION 
+-- On PLUS reduce production modifier -> QUESTION 
+-- On COMMA reduce production modifier -> QUESTION 
+
+State 14:
+modifier -> PLUS . [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On STAR reduce production modifier -> PLUS 
+-- On RPAREN reduce production modifier -> PLUS 
+-- On QUESTION reduce production modifier -> PLUS 
+-- On PLUS reduce production modifier -> PLUS 
+-- On COMMA reduce production modifier -> PLUS 
+
+State 15:
+separated_nonempty_list(COMMA,strict_actual) -> strict_actual COMMA . separated_nonempty_list(COMMA,strict_actual) [ RPAREN ]
+-- On UID shift to state 7
+-- On LID shift to state 8
+-- On symbol shift to state 9
+-- On strict_actual shift to state 11
+-- On separated_nonempty_list(COMMA,strict_actual) shift to state 16
+
+State 16:
+separated_nonempty_list(COMMA,strict_actual) -> strict_actual COMMA separated_nonempty_list(COMMA,strict_actual) . [ RPAREN ]
+-- On RPAREN reduce production separated_nonempty_list(COMMA,strict_actual) -> strict_actual COMMA separated_nonempty_list(COMMA,strict_actual) 
+
+State 17:
+strict_actual -> strict_actual modifier . [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On STAR reduce production strict_actual -> strict_actual modifier 
+-- On RPAREN reduce production strict_actual -> strict_actual modifier 
+-- On QUESTION reduce production strict_actual -> strict_actual modifier 
+-- On PLUS reduce production strict_actual -> strict_actual modifier 
+-- On COMMA reduce production strict_actual -> strict_actual modifier 
+
+State 18:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) . RPAREN [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On RPAREN shift to state 19
+
+State 19:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN . [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On RPAREN reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On COMMA reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+
+State 20:
+strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) . [ STAR RPAREN QUESTION PLUS COMMA ]
+-- On STAR reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On RPAREN reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On QUESTION reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On PLUS reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On COMMA reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+
+State 21:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) . RPAREN [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On RPAREN shift to state 22
+
+State 22:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN . [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On TYPE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On TOKEN reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On START reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On RIGHT reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On PUBLIC reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On PERCENTPERCENT reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On PERCENTATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On PARAMETER reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On ON_ERROR_REDUCE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On NONASSOC reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On LID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On LEFT reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On INLINE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On HEADER reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On GRAMMARATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On EOF reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On COMMA reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On COLON reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+
+State 23:
+strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) . [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On TYPE reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On TOKEN reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On START reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On STAR reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On RIGHT reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On QUESTION reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On PUBLIC reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On PLUS reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On PERCENTPERCENT reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On PERCENTATTRIBUTE reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On PARAMETER reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On ON_ERROR_REDUCE reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On NONASSOC reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On LID reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On LEFT reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On INLINE reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On HEADER reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On GRAMMARATTRIBUTE reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On EOF reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On COMMA reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On COLON reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+
+State 24:
+separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual . option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+strict_actual -> strict_actual . modifier [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On STAR shift to state 25
+-- On QUESTION shift to state 26
+-- On PLUS shift to state 27
+-- On COMMA shift to state 28
+-- On option(COMMA) shift to state 29
+-- On modifier shift to state 31
+-- On UID reduce production option(COMMA) -> 
+-- On TYPE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On TOKEN reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On START reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On RIGHT reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On PUBLIC reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On PERCENTATTRIBUTE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On PARAMETER reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On ON_ERROR_REDUCE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On NONASSOC reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On LID reduce production option(COMMA) -> 
+-- On LEFT reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On INLINE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On HEADER reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On GRAMMARATTRIBUTE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On EOF reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+-- On COLON reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+
+State 25:
+modifier -> STAR . [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production modifier -> STAR 
+-- On TYPE reduce production modifier -> STAR 
+-- On TOKEN reduce production modifier -> STAR 
+-- On START reduce production modifier -> STAR 
+-- On STAR reduce production modifier -> STAR 
+-- On RIGHT reduce production modifier -> STAR 
+-- On QUESTION reduce production modifier -> STAR 
+-- On PUBLIC reduce production modifier -> STAR 
+-- On PLUS reduce production modifier -> STAR 
+-- On PERCENTPERCENT reduce production modifier -> STAR 
+-- On PERCENTATTRIBUTE reduce production modifier -> STAR 
+-- On PARAMETER reduce production modifier -> STAR 
+-- On ON_ERROR_REDUCE reduce production modifier -> STAR 
+-- On NONASSOC reduce production modifier -> STAR 
+-- On LID reduce production modifier -> STAR 
+-- On LEFT reduce production modifier -> STAR 
+-- On INLINE reduce production modifier -> STAR 
+-- On HEADER reduce production modifier -> STAR 
+-- On GRAMMARATTRIBUTE reduce production modifier -> STAR 
+-- On EOF reduce production modifier -> STAR 
+-- On COMMA reduce production modifier -> STAR 
+-- On COLON reduce production modifier -> STAR 
+
+State 26:
+modifier -> QUESTION . [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production modifier -> QUESTION 
+-- On TYPE reduce production modifier -> QUESTION 
+-- On TOKEN reduce production modifier -> QUESTION 
+-- On START reduce production modifier -> QUESTION 
+-- On STAR reduce production modifier -> QUESTION 
+-- On RIGHT reduce production modifier -> QUESTION 
+-- On QUESTION reduce production modifier -> QUESTION 
+-- On PUBLIC reduce production modifier -> QUESTION 
+-- On PLUS reduce production modifier -> QUESTION 
+-- On PERCENTPERCENT reduce production modifier -> QUESTION 
+-- On PERCENTATTRIBUTE reduce production modifier -> QUESTION 
+-- On PARAMETER reduce production modifier -> QUESTION 
+-- On ON_ERROR_REDUCE reduce production modifier -> QUESTION 
+-- On NONASSOC reduce production modifier -> QUESTION 
+-- On LID reduce production modifier -> QUESTION 
+-- On LEFT reduce production modifier -> QUESTION 
+-- On INLINE reduce production modifier -> QUESTION 
+-- On HEADER reduce production modifier -> QUESTION 
+-- On GRAMMARATTRIBUTE reduce production modifier -> QUESTION 
+-- On EOF reduce production modifier -> QUESTION 
+-- On COMMA reduce production modifier -> QUESTION 
+-- On COLON reduce production modifier -> QUESTION 
+
+State 27:
+modifier -> PLUS . [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production modifier -> PLUS 
+-- On TYPE reduce production modifier -> PLUS 
+-- On TOKEN reduce production modifier -> PLUS 
+-- On START reduce production modifier -> PLUS 
+-- On STAR reduce production modifier -> PLUS 
+-- On RIGHT reduce production modifier -> PLUS 
+-- On QUESTION reduce production modifier -> PLUS 
+-- On PUBLIC reduce production modifier -> PLUS 
+-- On PLUS reduce production modifier -> PLUS 
+-- On PERCENTPERCENT reduce production modifier -> PLUS 
+-- On PERCENTATTRIBUTE reduce production modifier -> PLUS 
+-- On PARAMETER reduce production modifier -> PLUS 
+-- On ON_ERROR_REDUCE reduce production modifier -> PLUS 
+-- On NONASSOC reduce production modifier -> PLUS 
+-- On LID reduce production modifier -> PLUS 
+-- On LEFT reduce production modifier -> PLUS 
+-- On INLINE reduce production modifier -> PLUS 
+-- On HEADER reduce production modifier -> PLUS 
+-- On GRAMMARATTRIBUTE reduce production modifier -> PLUS 
+-- On EOF reduce production modifier -> PLUS 
+-- On COMMA reduce production modifier -> PLUS 
+-- On COLON reduce production modifier -> PLUS 
+
+State 28:
+option(COMMA) -> COMMA . [ UID LID ]
+-- On UID reduce production option(COMMA) -> COMMA 
+-- On LID reduce production option(COMMA) -> COMMA 
+
+State 29:
+separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) . separated_nonempty_list(option(COMMA),strict_actual) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On UID shift to state 3
+-- On LID shift to state 4
+-- On symbol shift to state 5
+-- On strict_actual shift to state 24
+-- On separated_nonempty_list(option(COMMA),strict_actual) shift to state 30
+
+State 30:
+separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On TOKEN reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On START reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On RIGHT reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PUBLIC reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PERCENTATTRIBUTE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PARAMETER reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On ON_ERROR_REDUCE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On NONASSOC reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On LEFT reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On INLINE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On HEADER reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On GRAMMARATTRIBUTE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On EOF reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+-- On COLON reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+
+State 31:
+strict_actual -> strict_actual modifier . [ UID TYPE TOKEN START STAR RIGHT QUESTION PUBLIC PLUS PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production strict_actual -> strict_actual modifier 
+-- On TYPE reduce production strict_actual -> strict_actual modifier 
+-- On TOKEN reduce production strict_actual -> strict_actual modifier 
+-- On START reduce production strict_actual -> strict_actual modifier 
+-- On STAR reduce production strict_actual -> strict_actual modifier 
+-- On RIGHT reduce production strict_actual -> strict_actual modifier 
+-- On QUESTION reduce production strict_actual -> strict_actual modifier 
+-- On PUBLIC reduce production strict_actual -> strict_actual modifier 
+-- On PLUS reduce production strict_actual -> strict_actual modifier 
+-- On PERCENTPERCENT reduce production strict_actual -> strict_actual modifier 
+-- On PERCENTATTRIBUTE reduce production strict_actual -> strict_actual modifier 
+-- On PARAMETER reduce production strict_actual -> strict_actual modifier 
+-- On ON_ERROR_REDUCE reduce production strict_actual -> strict_actual modifier 
+-- On NONASSOC reduce production strict_actual -> strict_actual modifier 
+-- On LID reduce production strict_actual -> strict_actual modifier 
+-- On LEFT reduce production strict_actual -> strict_actual modifier 
+-- On INLINE reduce production strict_actual -> strict_actual modifier 
+-- On HEADER reduce production strict_actual -> strict_actual modifier 
+-- On GRAMMARATTRIBUTE reduce production strict_actual -> strict_actual modifier 
+-- On EOF reduce production strict_actual -> strict_actual modifier 
+-- On COMMA reduce production strict_actual -> strict_actual modifier 
+-- On COLON reduce production strict_actual -> strict_actual modifier 
+
+State 32:
+declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On TOKEN reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On START reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On RIGHT reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PUBLIC reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PERCENTPERCENT reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PERCENTATTRIBUTE reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PARAMETER reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On ON_ERROR_REDUCE reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On NONASSOC reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On LEFT reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On INLINE reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On HEADER reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On GRAMMARATTRIBUTE reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On EOF reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On COLON reduce production declaration -> TYPE OCAMLTYPE separated_nonempty_list(option(COMMA),strict_actual) 
+
+State 33:
+declaration -> TOKEN . option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On OCAMLTYPE shift to state 34
+-- On option(OCAMLTYPE) shift to state 35
+-- On UID reduce production option(OCAMLTYPE) -> 
+
+State 34:
+option(OCAMLTYPE) -> OCAMLTYPE . [ UID ]
+-- On UID reduce production option(OCAMLTYPE) -> OCAMLTYPE 
+
+State 35:
+declaration -> TOKEN option(OCAMLTYPE) . separated_nonempty_list(option(COMMA),terminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On UID shift to state 36
+-- On separated_nonempty_list(option(COMMA),terminal) shift to state 43
+
+State 36:
+separated_nonempty_list(option(COMMA),terminal) -> UID . list(ATTRIBUTE) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+separated_nonempty_list(option(COMMA),terminal) -> UID . list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On ATTRIBUTE shift to state 37
+-- On list(ATTRIBUTE) shift to state 39
+-- On UID reduce production list(ATTRIBUTE) -> 
+-- On TYPE reduce production list(ATTRIBUTE) -> 
+-- On TOKEN reduce production list(ATTRIBUTE) -> 
+-- On START reduce production list(ATTRIBUTE) -> 
+-- On RIGHT reduce production list(ATTRIBUTE) -> 
+-- On PUBLIC reduce production list(ATTRIBUTE) -> 
+-- On PERCENTPERCENT reduce production list(ATTRIBUTE) -> 
+-- On PERCENTATTRIBUTE reduce production list(ATTRIBUTE) -> 
+-- On PARAMETER reduce production list(ATTRIBUTE) -> 
+-- On ON_ERROR_REDUCE reduce production list(ATTRIBUTE) -> 
+-- On NONASSOC reduce production list(ATTRIBUTE) -> 
+-- On LEFT reduce production list(ATTRIBUTE) -> 
+-- On INLINE reduce production list(ATTRIBUTE) -> 
+-- On HEADER reduce production list(ATTRIBUTE) -> 
+-- On GRAMMARATTRIBUTE reduce production list(ATTRIBUTE) -> 
+-- On EOF reduce production list(ATTRIBUTE) -> 
+-- On COMMA reduce production list(ATTRIBUTE) -> 
+-- On COLON reduce production list(ATTRIBUTE) -> 
+
+State 37:
+list(ATTRIBUTE) -> ATTRIBUTE . list(ATTRIBUTE) [ UID TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On ATTRIBUTE shift to state 37
+-- On list(ATTRIBUTE) shift to state 38
+-- On UID reduce production list(ATTRIBUTE) -> 
+-- On TYPE reduce production list(ATTRIBUTE) -> 
+-- On TOKEN reduce production list(ATTRIBUTE) -> 
+-- On START reduce production list(ATTRIBUTE) -> 
+-- On RIGHT reduce production list(ATTRIBUTE) -> 
+-- On PUBLIC reduce production list(ATTRIBUTE) -> 
+-- On PERCENTPERCENT reduce production list(ATTRIBUTE) -> 
+-- On PERCENTATTRIBUTE reduce production list(ATTRIBUTE) -> 
+-- On PARAMETER reduce production list(ATTRIBUTE) -> 
+-- On ON_ERROR_REDUCE reduce production list(ATTRIBUTE) -> 
+-- On NONASSOC reduce production list(ATTRIBUTE) -> 
+-- On LEFT reduce production list(ATTRIBUTE) -> 
+-- On INLINE reduce production list(ATTRIBUTE) -> 
+-- On HEADER reduce production list(ATTRIBUTE) -> 
+-- On GRAMMARATTRIBUTE reduce production list(ATTRIBUTE) -> 
+-- On EOF reduce production list(ATTRIBUTE) -> 
+-- On COMMA reduce production list(ATTRIBUTE) -> 
+-- On COLON reduce production list(ATTRIBUTE) -> 
+
+State 38:
+list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) . [ UID TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On TYPE reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On TOKEN reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On START reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On RIGHT reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On PUBLIC reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On PERCENTPERCENT reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On PERCENTATTRIBUTE reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On PARAMETER reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On ON_ERROR_REDUCE reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On NONASSOC reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On LEFT reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On INLINE reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On HEADER reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On GRAMMARATTRIBUTE reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On EOF reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On COMMA reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On COLON reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+
+State 39:
+separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) . option(COMMA) separated_nonempty_list(option(COMMA),terminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On COMMA shift to state 40
+-- On option(COMMA) shift to state 41
+-- On UID reduce production option(COMMA) -> 
+-- On TYPE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On TOKEN reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On START reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On RIGHT reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On PUBLIC reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On PERCENTATTRIBUTE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On PARAMETER reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On ON_ERROR_REDUCE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On NONASSOC reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On LEFT reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On INLINE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On HEADER reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On GRAMMARATTRIBUTE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On EOF reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+-- On COLON reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) 
+
+State 40:
+option(COMMA) -> COMMA . [ UID ]
+-- On UID reduce production option(COMMA) -> COMMA 
+
+State 41:
+separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) . separated_nonempty_list(option(COMMA),terminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On UID shift to state 36
+-- On separated_nonempty_list(option(COMMA),terminal) shift to state 42
+
+State 42:
+separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On TOKEN reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On START reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On RIGHT reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On PUBLIC reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On PERCENTATTRIBUTE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On PARAMETER reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On ON_ERROR_REDUCE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On NONASSOC reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On LEFT reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On INLINE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On HEADER reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On GRAMMARATTRIBUTE reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On EOF reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+-- On COLON reduce production separated_nonempty_list(option(COMMA),terminal) -> UID list(ATTRIBUTE) option(COMMA) separated_nonempty_list(option(COMMA),terminal) 
+
+State 43:
+declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On TOKEN reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On START reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On RIGHT reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On PUBLIC reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On PERCENTPERCENT reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On PERCENTATTRIBUTE reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On PARAMETER reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On ON_ERROR_REDUCE reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On NONASSOC reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On LEFT reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On INLINE reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On HEADER reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On GRAMMARATTRIBUTE reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On EOF reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+-- On COLON reduce production declaration -> TOKEN option(OCAMLTYPE) separated_nonempty_list(option(COMMA),terminal) 
+
+State 44:
+declaration -> START . option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On OCAMLTYPE shift to state 45
+-- On option(OCAMLTYPE) shift to state 46
+-- On LID reduce production option(OCAMLTYPE) -> 
+
+State 45:
+option(OCAMLTYPE) -> OCAMLTYPE . [ LID ]
+-- On LID reduce production option(OCAMLTYPE) -> OCAMLTYPE 
+
+State 46:
+declaration -> START option(OCAMLTYPE) . separated_nonempty_list(option(COMMA),nonterminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On LID shift to state 47
+-- On separated_nonempty_list(option(COMMA),nonterminal) shift to state 51
+
+State 47:
+separated_nonempty_list(option(COMMA),nonterminal) -> LID . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+separated_nonempty_list(option(COMMA),nonterminal) -> LID . option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On COMMA shift to state 48
+-- On option(COMMA) shift to state 49
+-- On TYPE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On TOKEN reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On START reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On RIGHT reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On PUBLIC reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On PERCENTATTRIBUTE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On PARAMETER reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On ON_ERROR_REDUCE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On NONASSOC reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On LID reduce production option(COMMA) -> 
+-- On LEFT reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On INLINE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On HEADER reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On GRAMMARATTRIBUTE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On EOF reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+-- On COLON reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID 
+
+State 48:
+option(COMMA) -> COMMA . [ LID ]
+-- On LID reduce production option(COMMA) -> COMMA 
+
+State 49:
+separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) . separated_nonempty_list(option(COMMA),nonterminal) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On LID shift to state 47
+-- On separated_nonempty_list(option(COMMA),nonterminal) shift to state 50
+
+State 50:
+separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On TOKEN reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On START reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On RIGHT reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On PUBLIC reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On PERCENTATTRIBUTE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On PARAMETER reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On ON_ERROR_REDUCE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On NONASSOC reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On LEFT reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On INLINE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On HEADER reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On GRAMMARATTRIBUTE reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On EOF reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On COLON reduce production separated_nonempty_list(option(COMMA),nonterminal) -> LID option(COMMA) separated_nonempty_list(option(COMMA),nonterminal) 
+
+State 51:
+declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On TOKEN reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On START reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On RIGHT reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On PUBLIC reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On PERCENTPERCENT reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On PERCENTATTRIBUTE reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On PARAMETER reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On ON_ERROR_REDUCE reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On NONASSOC reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On LEFT reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On INLINE reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On HEADER reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On GRAMMARATTRIBUTE reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On EOF reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+-- On COLON reduce production declaration -> START option(OCAMLTYPE) separated_nonempty_list(option(COMMA),nonterminal) 
+
+State 52:
+priority_keyword -> RIGHT . [ UID LID ]
+-- On UID reduce production priority_keyword -> RIGHT 
+-- On LID reduce production priority_keyword -> RIGHT 
+
+State 53:
+declaration -> PUBLIC . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> PUBLIC 
+-- On TOKEN reduce production declaration -> PUBLIC 
+-- On START reduce production declaration -> PUBLIC 
+-- On RIGHT reduce production declaration -> PUBLIC 
+-- On PUBLIC reduce production declaration -> PUBLIC 
+-- On PERCENTPERCENT reduce production declaration -> PUBLIC 
+-- On PERCENTATTRIBUTE reduce production declaration -> PUBLIC 
+-- On PARAMETER reduce production declaration -> PUBLIC 
+-- On ON_ERROR_REDUCE reduce production declaration -> PUBLIC 
+-- On NONASSOC reduce production declaration -> PUBLIC 
+-- On LEFT reduce production declaration -> PUBLIC 
+-- On INLINE reduce production declaration -> PUBLIC 
+-- On HEADER reduce production declaration -> PUBLIC 
+-- On GRAMMARATTRIBUTE reduce production declaration -> PUBLIC 
+-- On EOF reduce production declaration -> PUBLIC 
+-- On COLON reduce production declaration -> PUBLIC 
+
+State 54:
+declaration -> PERCENTATTRIBUTE . separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On UID shift to state 55
+-- On LID shift to state 56
+-- On symbol shift to state 57
+-- On strict_actual shift to state 62
+-- On separated_nonempty_list(option(COMMA),strict_actual) shift to state 69
+
+State 55:
+symbol -> UID . [ UID STAR QUESTION PLUS LPAREN LID COMMA ATTRIBUTE ]
+-- On UID reduce production symbol -> UID 
+-- On STAR reduce production symbol -> UID 
+-- On QUESTION reduce production symbol -> UID 
+-- On PLUS reduce production symbol -> UID 
+-- On LPAREN reduce production symbol -> UID 
+-- On LID reduce production symbol -> UID 
+-- On COMMA reduce production symbol -> UID 
+-- On ATTRIBUTE reduce production symbol -> UID 
+
+State 56:
+symbol -> LID . [ UID STAR QUESTION PLUS LPAREN LID COMMA ATTRIBUTE ]
+-- On UID reduce production symbol -> LID 
+-- On STAR reduce production symbol -> LID 
+-- On QUESTION reduce production symbol -> LID 
+-- On PLUS reduce production symbol -> LID 
+-- On LPAREN reduce production symbol -> LID 
+-- On LID reduce production symbol -> LID 
+-- On COMMA reduce production symbol -> LID 
+-- On ATTRIBUTE reduce production symbol -> LID 
+
+State 57:
+strict_actual -> symbol . loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On LPAREN shift to state 58
+-- On loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) shift to state 61
+-- On UID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On LID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On COMMA reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+-- On ATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> 
+
+State 58:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN . separated_nonempty_list(COMMA,strict_actual) RPAREN [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On UID shift to state 7
+-- On LID shift to state 8
+-- On symbol shift to state 9
+-- On strict_actual shift to state 11
+-- On separated_nonempty_list(COMMA,strict_actual) shift to state 59
+
+State 59:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) . RPAREN [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On RPAREN shift to state 60
+
+State 60:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN . [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On UID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On LID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On COMMA reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+-- On ATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,strict_actual) RPAREN 
+
+State 61:
+strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) . [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On UID reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On STAR reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On QUESTION reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On PLUS reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On LID reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On COMMA reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+-- On ATTRIBUTE reduce production strict_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,strict_actual),RPAREN)) 
+
+State 62:
+separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual . [ ATTRIBUTE ]
+separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual . option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) [ ATTRIBUTE ]
+strict_actual -> strict_actual . modifier [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On STAR shift to state 63
+-- On QUESTION shift to state 64
+-- On PLUS shift to state 65
+-- On COMMA shift to state 28
+-- On option(COMMA) shift to state 66
+-- On modifier shift to state 68
+-- On UID reduce production option(COMMA) -> 
+-- On LID reduce production option(COMMA) -> 
+-- On ATTRIBUTE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual 
+
+State 63:
+modifier -> STAR . [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On UID reduce production modifier -> STAR 
+-- On STAR reduce production modifier -> STAR 
+-- On QUESTION reduce production modifier -> STAR 
+-- On PLUS reduce production modifier -> STAR 
+-- On LID reduce production modifier -> STAR 
+-- On COMMA reduce production modifier -> STAR 
+-- On ATTRIBUTE reduce production modifier -> STAR 
+
+State 64:
+modifier -> QUESTION . [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On UID reduce production modifier -> QUESTION 
+-- On STAR reduce production modifier -> QUESTION 
+-- On QUESTION reduce production modifier -> QUESTION 
+-- On PLUS reduce production modifier -> QUESTION 
+-- On LID reduce production modifier -> QUESTION 
+-- On COMMA reduce production modifier -> QUESTION 
+-- On ATTRIBUTE reduce production modifier -> QUESTION 
+
+State 65:
+modifier -> PLUS . [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On UID reduce production modifier -> PLUS 
+-- On STAR reduce production modifier -> PLUS 
+-- On QUESTION reduce production modifier -> PLUS 
+-- On PLUS reduce production modifier -> PLUS 
+-- On LID reduce production modifier -> PLUS 
+-- On COMMA reduce production modifier -> PLUS 
+-- On ATTRIBUTE reduce production modifier -> PLUS 
+
+State 66:
+separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) . separated_nonempty_list(option(COMMA),strict_actual) [ ATTRIBUTE ]
+-- On UID shift to state 55
+-- On LID shift to state 56
+-- On symbol shift to state 57
+-- On strict_actual shift to state 62
+-- On separated_nonempty_list(option(COMMA),strict_actual) shift to state 67
+
+State 67:
+separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) . [ ATTRIBUTE ]
+-- On ATTRIBUTE reduce production separated_nonempty_list(option(COMMA),strict_actual) -> strict_actual option(COMMA) separated_nonempty_list(option(COMMA),strict_actual) 
+
+State 68:
+strict_actual -> strict_actual modifier . [ UID STAR QUESTION PLUS LID COMMA ATTRIBUTE ]
+-- On UID reduce production strict_actual -> strict_actual modifier 
+-- On STAR reduce production strict_actual -> strict_actual modifier 
+-- On QUESTION reduce production strict_actual -> strict_actual modifier 
+-- On PLUS reduce production strict_actual -> strict_actual modifier 
+-- On LID reduce production strict_actual -> strict_actual modifier 
+-- On COMMA reduce production strict_actual -> strict_actual modifier 
+-- On ATTRIBUTE reduce production strict_actual -> strict_actual modifier 
+
+State 69:
+declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) . nonempty_list(ATTRIBUTE) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On ATTRIBUTE shift to state 70
+-- On nonempty_list(ATTRIBUTE) shift to state 72
+
+State 70:
+nonempty_list(ATTRIBUTE) -> ATTRIBUTE . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+nonempty_list(ATTRIBUTE) -> ATTRIBUTE . nonempty_list(ATTRIBUTE) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On ATTRIBUTE shift to state 70
+-- On nonempty_list(ATTRIBUTE) shift to state 71
+-- On TYPE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On TOKEN reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On START reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On RIGHT reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On PUBLIC reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On PERCENTPERCENT reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On PERCENTATTRIBUTE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On PARAMETER reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On ON_ERROR_REDUCE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On NONASSOC reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On LEFT reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On INLINE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On HEADER reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On GRAMMARATTRIBUTE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On EOF reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+-- On COLON reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE 
+
+State 71:
+nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On TOKEN reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On START reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On RIGHT reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On PUBLIC reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On PERCENTPERCENT reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On PERCENTATTRIBUTE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On PARAMETER reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On ON_ERROR_REDUCE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On NONASSOC reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On LEFT reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On INLINE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On HEADER reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On GRAMMARATTRIBUTE reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On EOF reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+-- On COLON reduce production nonempty_list(ATTRIBUTE) -> ATTRIBUTE nonempty_list(ATTRIBUTE) 
+
+State 72:
+declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On TOKEN reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On START reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On RIGHT reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On PUBLIC reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On PERCENTPERCENT reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On PERCENTATTRIBUTE reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On PARAMETER reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On ON_ERROR_REDUCE reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On NONASSOC reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On LEFT reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On INLINE reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On HEADER reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On GRAMMARATTRIBUTE reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On EOF reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+-- On COLON reduce production declaration -> PERCENTATTRIBUTE separated_nonempty_list(option(COMMA),strict_actual) nonempty_list(ATTRIBUTE) 
+
+State 73:
+declaration -> PARAMETER . OCAMLTYPE [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On OCAMLTYPE shift to state 74
+
+State 74:
+declaration -> PARAMETER OCAMLTYPE . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On TOKEN reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On START reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On RIGHT reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On PUBLIC reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On PERCENTPERCENT reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On PERCENTATTRIBUTE reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On PARAMETER reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On ON_ERROR_REDUCE reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On NONASSOC reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On LEFT reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On INLINE reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On HEADER reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On GRAMMARATTRIBUTE reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On EOF reduce production declaration -> PARAMETER OCAMLTYPE 
+-- On COLON reduce production declaration -> PARAMETER OCAMLTYPE 
+
+State 75:
+declaration -> ON_ERROR_REDUCE . separated_nonempty_list(option(COMMA),strict_actual) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On UID shift to state 3
+-- On LID shift to state 4
+-- On symbol shift to state 5
+-- On strict_actual shift to state 24
+-- On separated_nonempty_list(option(COMMA),strict_actual) shift to state 76
+
+State 76:
+declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On TOKEN reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On START reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On RIGHT reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PUBLIC reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PERCENTPERCENT reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PERCENTATTRIBUTE reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On PARAMETER reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On ON_ERROR_REDUCE reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On NONASSOC reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On LEFT reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On INLINE reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On HEADER reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On GRAMMARATTRIBUTE reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On EOF reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+-- On COLON reduce production declaration -> ON_ERROR_REDUCE separated_nonempty_list(option(COMMA),strict_actual) 
+
+State 77:
+priority_keyword -> NONASSOC . [ UID LID ]
+-- On UID reduce production priority_keyword -> NONASSOC 
+-- On LID reduce production priority_keyword -> NONASSOC 
+
+State 78:
+priority_keyword -> LEFT . [ UID LID ]
+-- On UID reduce production priority_keyword -> LEFT 
+-- On LID reduce production priority_keyword -> LEFT 
+
+State 79:
+declaration -> INLINE . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> INLINE 
+-- On TOKEN reduce production declaration -> INLINE 
+-- On START reduce production declaration -> INLINE 
+-- On RIGHT reduce production declaration -> INLINE 
+-- On PUBLIC reduce production declaration -> INLINE 
+-- On PERCENTPERCENT reduce production declaration -> INLINE 
+-- On PERCENTATTRIBUTE reduce production declaration -> INLINE 
+-- On PARAMETER reduce production declaration -> INLINE 
+-- On ON_ERROR_REDUCE reduce production declaration -> INLINE 
+-- On NONASSOC reduce production declaration -> INLINE 
+-- On LEFT reduce production declaration -> INLINE 
+-- On INLINE reduce production declaration -> INLINE 
+-- On HEADER reduce production declaration -> INLINE 
+-- On GRAMMARATTRIBUTE reduce production declaration -> INLINE 
+-- On EOF reduce production declaration -> INLINE 
+-- On COLON reduce production declaration -> INLINE 
+
+State 80:
+declaration -> HEADER . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> HEADER 
+-- On TOKEN reduce production declaration -> HEADER 
+-- On START reduce production declaration -> HEADER 
+-- On RIGHT reduce production declaration -> HEADER 
+-- On PUBLIC reduce production declaration -> HEADER 
+-- On PERCENTPERCENT reduce production declaration -> HEADER 
+-- On PERCENTATTRIBUTE reduce production declaration -> HEADER 
+-- On PARAMETER reduce production declaration -> HEADER 
+-- On ON_ERROR_REDUCE reduce production declaration -> HEADER 
+-- On NONASSOC reduce production declaration -> HEADER 
+-- On LEFT reduce production declaration -> HEADER 
+-- On INLINE reduce production declaration -> HEADER 
+-- On HEADER reduce production declaration -> HEADER 
+-- On GRAMMARATTRIBUTE reduce production declaration -> HEADER 
+-- On EOF reduce production declaration -> HEADER 
+-- On COLON reduce production declaration -> HEADER 
+
+State 81:
+declaration -> GRAMMARATTRIBUTE . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> GRAMMARATTRIBUTE 
+-- On TOKEN reduce production declaration -> GRAMMARATTRIBUTE 
+-- On START reduce production declaration -> GRAMMARATTRIBUTE 
+-- On RIGHT reduce production declaration -> GRAMMARATTRIBUTE 
+-- On PUBLIC reduce production declaration -> GRAMMARATTRIBUTE 
+-- On PERCENTPERCENT reduce production declaration -> GRAMMARATTRIBUTE 
+-- On PERCENTATTRIBUTE reduce production declaration -> GRAMMARATTRIBUTE 
+-- On PARAMETER reduce production declaration -> GRAMMARATTRIBUTE 
+-- On ON_ERROR_REDUCE reduce production declaration -> GRAMMARATTRIBUTE 
+-- On NONASSOC reduce production declaration -> GRAMMARATTRIBUTE 
+-- On LEFT reduce production declaration -> GRAMMARATTRIBUTE 
+-- On INLINE reduce production declaration -> GRAMMARATTRIBUTE 
+-- On HEADER reduce production declaration -> GRAMMARATTRIBUTE 
+-- On GRAMMARATTRIBUTE reduce production declaration -> GRAMMARATTRIBUTE 
+-- On EOF reduce production declaration -> GRAMMARATTRIBUTE 
+-- On COLON reduce production declaration -> GRAMMARATTRIBUTE 
+
+State 82:
+declaration -> EOF . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> EOF 
+-- On TOKEN reduce production declaration -> EOF 
+-- On START reduce production declaration -> EOF 
+-- On RIGHT reduce production declaration -> EOF 
+-- On PUBLIC reduce production declaration -> EOF 
+-- On PERCENTPERCENT reduce production declaration -> EOF 
+-- On PERCENTATTRIBUTE reduce production declaration -> EOF 
+-- On PARAMETER reduce production declaration -> EOF 
+-- On ON_ERROR_REDUCE reduce production declaration -> EOF 
+-- On NONASSOC reduce production declaration -> EOF 
+-- On LEFT reduce production declaration -> EOF 
+-- On INLINE reduce production declaration -> EOF 
+-- On HEADER reduce production declaration -> EOF 
+-- On GRAMMARATTRIBUTE reduce production declaration -> EOF 
+-- On EOF reduce production declaration -> EOF 
+-- On COLON reduce production declaration -> EOF 
+
+State 83:
+declaration -> COLON . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> COLON 
+-- On TOKEN reduce production declaration -> COLON 
+-- On START reduce production declaration -> COLON 
+-- On RIGHT reduce production declaration -> COLON 
+-- On PUBLIC reduce production declaration -> COLON 
+-- On PERCENTPERCENT reduce production declaration -> COLON 
+-- On PERCENTATTRIBUTE reduce production declaration -> COLON 
+-- On PARAMETER reduce production declaration -> COLON 
+-- On ON_ERROR_REDUCE reduce production declaration -> COLON 
+-- On NONASSOC reduce production declaration -> COLON 
+-- On LEFT reduce production declaration -> COLON 
+-- On INLINE reduce production declaration -> COLON 
+-- On HEADER reduce production declaration -> COLON 
+-- On GRAMMARATTRIBUTE reduce production declaration -> COLON 
+-- On EOF reduce production declaration -> COLON 
+-- On COLON reduce production declaration -> COLON 
+
+State 84:
+declaration -> priority_keyword . separated_nonempty_list(option(COMMA),symbol) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On UID shift to state 85
+-- On LID shift to state 86
+-- On symbol shift to state 87
+-- On separated_nonempty_list(option(COMMA),symbol) shift to state 90
+
+State 85:
+symbol -> UID . [ UID TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production symbol -> UID 
+-- On TYPE reduce production symbol -> UID 
+-- On TOKEN reduce production symbol -> UID 
+-- On START reduce production symbol -> UID 
+-- On RIGHT reduce production symbol -> UID 
+-- On PUBLIC reduce production symbol -> UID 
+-- On PERCENTPERCENT reduce production symbol -> UID 
+-- On PERCENTATTRIBUTE reduce production symbol -> UID 
+-- On PARAMETER reduce production symbol -> UID 
+-- On ON_ERROR_REDUCE reduce production symbol -> UID 
+-- On NONASSOC reduce production symbol -> UID 
+-- On LID reduce production symbol -> UID 
+-- On LEFT reduce production symbol -> UID 
+-- On INLINE reduce production symbol -> UID 
+-- On HEADER reduce production symbol -> UID 
+-- On GRAMMARATTRIBUTE reduce production symbol -> UID 
+-- On EOF reduce production symbol -> UID 
+-- On COMMA reduce production symbol -> UID 
+-- On COLON reduce production symbol -> UID 
+
+State 86:
+symbol -> LID . [ UID TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LID LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COMMA COLON ]
+-- On UID reduce production symbol -> LID 
+-- On TYPE reduce production symbol -> LID 
+-- On TOKEN reduce production symbol -> LID 
+-- On START reduce production symbol -> LID 
+-- On RIGHT reduce production symbol -> LID 
+-- On PUBLIC reduce production symbol -> LID 
+-- On PERCENTPERCENT reduce production symbol -> LID 
+-- On PERCENTATTRIBUTE reduce production symbol -> LID 
+-- On PARAMETER reduce production symbol -> LID 
+-- On ON_ERROR_REDUCE reduce production symbol -> LID 
+-- On NONASSOC reduce production symbol -> LID 
+-- On LID reduce production symbol -> LID 
+-- On LEFT reduce production symbol -> LID 
+-- On INLINE reduce production symbol -> LID 
+-- On HEADER reduce production symbol -> LID 
+-- On GRAMMARATTRIBUTE reduce production symbol -> LID 
+-- On EOF reduce production symbol -> LID 
+-- On COMMA reduce production symbol -> LID 
+-- On COLON reduce production symbol -> LID 
+
+State 87:
+separated_nonempty_list(option(COMMA),symbol) -> symbol . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+separated_nonempty_list(option(COMMA),symbol) -> symbol . option(COMMA) separated_nonempty_list(option(COMMA),symbol) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On COMMA shift to state 28
+-- On option(COMMA) shift to state 88
+-- On UID reduce production option(COMMA) -> 
+-- On TYPE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On TOKEN reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On START reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On RIGHT reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On PUBLIC reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On PERCENTATTRIBUTE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On PARAMETER reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On ON_ERROR_REDUCE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On NONASSOC reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On LID reduce production option(COMMA) -> 
+-- On LEFT reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On INLINE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On HEADER reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On GRAMMARATTRIBUTE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On EOF reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+-- On COLON reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol 
+
+State 88:
+separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) . separated_nonempty_list(option(COMMA),symbol) [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On UID shift to state 85
+-- On LID shift to state 86
+-- On symbol shift to state 87
+-- On separated_nonempty_list(option(COMMA),symbol) shift to state 89
+
+State 89:
+separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On TOKEN reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On START reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On RIGHT reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On PUBLIC reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On PERCENTATTRIBUTE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On PARAMETER reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On ON_ERROR_REDUCE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On NONASSOC reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On LEFT reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On INLINE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On HEADER reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On GRAMMARATTRIBUTE reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On EOF reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+-- On COLON reduce production separated_nonempty_list(option(COMMA),symbol) -> symbol option(COMMA) separated_nonempty_list(option(COMMA),symbol) 
+
+State 90:
+declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) . [ TYPE TOKEN START RIGHT PUBLIC PERCENTPERCENT PERCENTATTRIBUTE PARAMETER ON_ERROR_REDUCE NONASSOC LEFT INLINE HEADER GRAMMARATTRIBUTE EOF COLON ]
+-- On TYPE reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On TOKEN reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On START reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On RIGHT reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On PUBLIC reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On PERCENTPERCENT reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On PERCENTATTRIBUTE reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On PARAMETER reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On ON_ERROR_REDUCE reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On NONASSOC reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On LEFT reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On INLINE reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On HEADER reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On GRAMMARATTRIBUTE reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On EOF reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+-- On COLON reduce production declaration -> priority_keyword separated_nonempty_list(option(COMMA),symbol) 
+
+State 91:
+grammar -> list(declaration) . PERCENTPERCENT list(rule) postlude [ # ]
+-- On PERCENTPERCENT shift to state 92
+
+State 92:
+grammar -> list(declaration) PERCENTPERCENT . list(rule) postlude [ # ]
+-- On PUBLIC shift to state 93
+-- On INLINE shift to state 95
+-- On rule shift to state 97
+-- On list(rule) shift to state 182
+-- On flags shift to state 99
+-- On UID reduce production flags -> 
+-- On PERCENTPERCENT reduce production list(rule) -> 
+-- On LID reduce production flags -> 
+-- On EOF reduce production list(rule) -> 
+
+State 93:
+flags -> PUBLIC . [ UID LID ]
+flags -> PUBLIC . INLINE [ UID LID ]
+-- On INLINE shift to state 94
+-- On UID reduce production flags -> PUBLIC 
+-- On LID reduce production flags -> PUBLIC 
+
+State 94:
+flags -> PUBLIC INLINE . [ UID LID ]
+-- On UID reduce production flags -> PUBLIC INLINE 
+-- On LID reduce production flags -> PUBLIC INLINE 
+
+State 95:
+flags -> INLINE . [ UID LID ]
+flags -> INLINE . PUBLIC [ UID LID ]
+-- On PUBLIC shift to state 96
+-- On UID reduce production flags -> INLINE 
+-- On LID reduce production flags -> INLINE 
+
+State 96:
+flags -> INLINE PUBLIC . [ UID LID ]
+-- On UID reduce production flags -> INLINE PUBLIC 
+-- On LID reduce production flags -> INLINE PUBLIC 
+
+State 97:
+list(rule) -> rule . list(rule) [ PERCENTPERCENT EOF ]
+-- On PUBLIC shift to state 93
+-- On INLINE shift to state 95
+-- On rule shift to state 97
+-- On list(rule) shift to state 98
+-- On flags shift to state 99
+-- On UID reduce production flags -> 
+-- On PERCENTPERCENT reduce production list(rule) -> 
+-- On LID reduce production flags -> 
+-- On EOF reduce production list(rule) -> 
+
+State 98:
+list(rule) -> rule list(rule) . [ PERCENTPERCENT EOF ]
+-- On PERCENTPERCENT reduce production list(rule) -> rule list(rule) 
+-- On EOF reduce production list(rule) -> rule list(rule) 
+
+State 99:
+rule -> flags . symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On UID shift to state 100
+-- On LID shift to state 101
+-- On symbol shift to state 102
+
+State 100:
+symbol -> UID . [ LPAREN COLON ATTRIBUTE ]
+-- On LPAREN reduce production symbol -> UID 
+-- On COLON reduce production symbol -> UID 
+-- On ATTRIBUTE reduce production symbol -> UID 
+
+State 101:
+symbol -> LID . [ LPAREN COLON ATTRIBUTE ]
+-- On LPAREN reduce production symbol -> LID 
+-- On COLON reduce production symbol -> LID 
+-- On ATTRIBUTE reduce production symbol -> LID 
+
+State 102:
+rule -> flags symbol . list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On ATTRIBUTE shift to state 103
+-- On list(ATTRIBUTE) shift to state 105
+-- On LPAREN reduce production list(ATTRIBUTE) -> 
+-- On COLON reduce production list(ATTRIBUTE) -> 
+
+State 103:
+list(ATTRIBUTE) -> ATTRIBUTE . list(ATTRIBUTE) [ LPAREN COLON ]
+-- On ATTRIBUTE shift to state 103
+-- On list(ATTRIBUTE) shift to state 104
+-- On LPAREN reduce production list(ATTRIBUTE) -> 
+-- On COLON reduce production list(ATTRIBUTE) -> 
+
+State 104:
+list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) . [ LPAREN COLON ]
+-- On LPAREN reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On COLON reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+
+State 105:
+rule -> flags symbol list(ATTRIBUTE) . loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On LPAREN shift to state 106
+-- On loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) shift to state 114
+-- On COLON reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) -> 
+
+State 106:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) -> LPAREN . separated_nonempty_list(COMMA,symbol) RPAREN [ COLON ]
+-- On UID shift to state 107
+-- On LID shift to state 108
+-- On symbol shift to state 109
+-- On separated_nonempty_list(COMMA,symbol) shift to state 112
+
+State 107:
+symbol -> UID . [ RPAREN COMMA ]
+-- On RPAREN reduce production symbol -> UID 
+-- On COMMA reduce production symbol -> UID 
+
+State 108:
+symbol -> LID . [ RPAREN COMMA ]
+-- On RPAREN reduce production symbol -> LID 
+-- On COMMA reduce production symbol -> LID 
+
+State 109:
+separated_nonempty_list(COMMA,symbol) -> symbol . [ RPAREN ]
+separated_nonempty_list(COMMA,symbol) -> symbol . COMMA separated_nonempty_list(COMMA,symbol) [ RPAREN ]
+-- On COMMA shift to state 110
+-- On RPAREN reduce production separated_nonempty_list(COMMA,symbol) -> symbol 
+
+State 110:
+separated_nonempty_list(COMMA,symbol) -> symbol COMMA . separated_nonempty_list(COMMA,symbol) [ RPAREN ]
+-- On UID shift to state 107
+-- On LID shift to state 108
+-- On symbol shift to state 109
+-- On separated_nonempty_list(COMMA,symbol) shift to state 111
+
+State 111:
+separated_nonempty_list(COMMA,symbol) -> symbol COMMA separated_nonempty_list(COMMA,symbol) . [ RPAREN ]
+-- On RPAREN reduce production separated_nonempty_list(COMMA,symbol) -> symbol COMMA separated_nonempty_list(COMMA,symbol) 
+
+State 112:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,symbol) . RPAREN [ COLON ]
+-- On RPAREN shift to state 113
+
+State 113:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,symbol) RPAREN . [ COLON ]
+-- On COLON reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,symbol) RPAREN 
+
+State 114:
+rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) . COLON optional_bar separated_nonempty_list(BAR,production_group) [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On COLON shift to state 115
+
+State 115:
+rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON . optional_bar separated_nonempty_list(BAR,production_group) [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On BAR shift to state 116
+-- On optional_bar shift to state 117
+-- On UID reduce production optional_bar -> 
+-- On PREC reduce production optional_bar -> 
+-- On LID reduce production optional_bar -> 
+-- On ACTION reduce production optional_bar -> 
+
+State 116:
+optional_bar -> BAR . [ UID PREC LID BAR ACTION ]
+-- On UID reduce production optional_bar -> BAR 
+-- On PREC reduce production optional_bar -> BAR 
+-- On LID reduce production optional_bar -> BAR 
+-- On BAR reduce production optional_bar -> BAR 
+-- On ACTION reduce production optional_bar -> BAR 
+
+State 117:
+rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar . separated_nonempty_list(BAR,production_group) [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On UID shift to state 118
+-- On LID shift to state 119
+-- On symbol shift to state 122
+-- On separated_nonempty_list(BAR,production_group) shift to state 172
+-- On separated_nonempty_list(BAR,production) shift to state 173
+-- On production_group shift to state 179
+-- On production shift to state 140
+-- On producer shift to state 143
+-- On list(producer) shift to state 153
+-- On actual shift to state 145
+-- On PREC reduce production list(producer) -> 
+-- On BAR reduce production list(producer) -> 
+-- On ACTION reduce production list(producer) -> 
+
+State 118:
+symbol -> UID . [ UID STAR QUESTION PREC PLUS LPAREN LID BAR ATTRIBUTE ACTION ]
+-- On UID reduce production symbol -> UID 
+-- On STAR reduce production symbol -> UID 
+-- On QUESTION reduce production symbol -> UID 
+-- On PREC reduce production symbol -> UID 
+-- On PLUS reduce production symbol -> UID 
+-- On LPAREN reduce production symbol -> UID 
+-- On LID reduce production symbol -> UID 
+-- On BAR reduce production symbol -> UID 
+-- On ATTRIBUTE reduce production symbol -> UID 
+-- On ACTION reduce production symbol -> UID 
+
+State 119:
+producer -> LID . EQUAL actual list(ATTRIBUTE) [ UID PREC LID BAR ACTION ]
+symbol -> LID . [ UID STAR QUESTION PREC PLUS LPAREN LID BAR ATTRIBUTE ACTION ]
+-- On EQUAL shift to state 120
+-- On UID reduce production symbol -> LID 
+-- On STAR reduce production symbol -> LID 
+-- On QUESTION reduce production symbol -> LID 
+-- On PREC reduce production symbol -> LID 
+-- On PLUS reduce production symbol -> LID 
+-- On LPAREN reduce production symbol -> LID 
+-- On LID reduce production symbol -> LID 
+-- On BAR reduce production symbol -> LID 
+-- On ATTRIBUTE reduce production symbol -> LID 
+-- On ACTION reduce production symbol -> LID 
+
+State 120:
+producer -> LID EQUAL . actual list(ATTRIBUTE) [ UID PREC LID BAR ACTION ]
+-- On UID shift to state 118
+-- On LID shift to state 121
+-- On symbol shift to state 122
+-- On actual shift to state 170
+
+State 121:
+symbol -> LID . [ UID STAR QUESTION PREC PLUS LPAREN LID BAR ATTRIBUTE ACTION ]
+-- On UID reduce production symbol -> LID 
+-- On STAR reduce production symbol -> LID 
+-- On QUESTION reduce production symbol -> LID 
+-- On PREC reduce production symbol -> LID 
+-- On PLUS reduce production symbol -> LID 
+-- On LPAREN reduce production symbol -> LID 
+-- On LID reduce production symbol -> LID 
+-- On BAR reduce production symbol -> LID 
+-- On ATTRIBUTE reduce production symbol -> LID 
+-- On ACTION reduce production symbol -> LID 
+
+State 122:
+actual -> symbol . loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On LPAREN shift to state 123
+-- On loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) shift to state 169
+-- On UID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On PREC reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On LID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On BAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On ATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On ACTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+
+State 123:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN . separated_nonempty_list(COMMA,lax_actual) RPAREN [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On UID shift to state 124
+-- On LID shift to state 125
+-- On symbol shift to state 126
+-- On separated_nonempty_list(COMMA,lax_actual) shift to state 167
+-- On separated_nonempty_list(BAR,production_group) shift to state 130
+-- On separated_nonempty_list(BAR,production) shift to state 131
+-- On production_group shift to state 137
+-- On production shift to state 140
+-- On producer shift to state 143
+-- On list(producer) shift to state 153
+-- On lax_actual shift to state 158
+-- On actual shift to state 161
+-- On PREC reduce production list(producer) -> 
+-- On BAR reduce production list(producer) -> 
+-- On ACTION reduce production list(producer) -> 
+
+State 124:
+symbol -> UID . [ UID STAR RPAREN QUESTION PREC PLUS LPAREN LID COMMA BAR ATTRIBUTE ACTION ]
+-- On UID reduce production symbol -> UID 
+-- On STAR reduce production symbol -> UID 
+-- On RPAREN reduce production symbol -> UID 
+-- On QUESTION reduce production symbol -> UID 
+-- On PREC reduce production symbol -> UID 
+-- On PLUS reduce production symbol -> UID 
+-- On LPAREN reduce production symbol -> UID 
+-- On LID reduce production symbol -> UID 
+-- On COMMA reduce production symbol -> UID 
+-- On BAR reduce production symbol -> UID 
+-- On ATTRIBUTE reduce production symbol -> UID 
+-- On ACTION reduce production symbol -> UID 
+
+State 125:
+producer -> LID . EQUAL actual list(ATTRIBUTE) [ UID PREC LID BAR ACTION ]
+symbol -> LID . [ UID STAR RPAREN QUESTION PREC PLUS LPAREN LID COMMA BAR ATTRIBUTE ACTION ]
+-- On EQUAL shift to state 120
+-- On UID reduce production symbol -> LID 
+-- On STAR reduce production symbol -> LID 
+-- On RPAREN reduce production symbol -> LID 
+-- On QUESTION reduce production symbol -> LID 
+-- On PREC reduce production symbol -> LID 
+-- On PLUS reduce production symbol -> LID 
+-- On LPAREN reduce production symbol -> LID 
+-- On LID reduce production symbol -> LID 
+-- On COMMA reduce production symbol -> LID 
+-- On BAR reduce production symbol -> LID 
+-- On ATTRIBUTE reduce production symbol -> LID 
+-- On ACTION reduce production symbol -> LID 
+
+State 126:
+actual -> symbol . loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+lax_actual -> symbol . loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) [ RPAREN COMMA ]
+-- On LPAREN shift to state 127
+-- On loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) shift to state 166
+-- On UID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On RPAREN reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On PREC reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On LID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On COMMA reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On BAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On ATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+-- On ACTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> 
+
+State 127:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN . separated_nonempty_list(COMMA,lax_actual) RPAREN [ UID STAR RPAREN QUESTION PREC PLUS LID COMMA BAR ATTRIBUTE ACTION ]
+-- On UID shift to state 124
+-- On LID shift to state 125
+-- On symbol shift to state 126
+-- On separated_nonempty_list(COMMA,lax_actual) shift to state 128
+-- On separated_nonempty_list(BAR,production_group) shift to state 130
+-- On separated_nonempty_list(BAR,production) shift to state 131
+-- On production_group shift to state 137
+-- On production shift to state 140
+-- On producer shift to state 143
+-- On list(producer) shift to state 153
+-- On lax_actual shift to state 158
+-- On actual shift to state 161
+-- On PREC reduce production list(producer) -> 
+-- On BAR reduce production list(producer) -> 
+-- On ACTION reduce production list(producer) -> 
+
+State 128:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) . RPAREN [ UID STAR RPAREN QUESTION PREC PLUS LID COMMA BAR ATTRIBUTE ACTION ]
+-- On RPAREN shift to state 129
+
+State 129:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN . [ UID STAR RPAREN QUESTION PREC PLUS LID COMMA BAR ATTRIBUTE ACTION ]
+-- On UID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On RPAREN reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On PREC reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On LID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On COMMA reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On BAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On ATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On ACTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+
+State 130:
+lax_actual -> separated_nonempty_list(BAR,production_group) . [ RPAREN COMMA ]
+-- On RPAREN reduce production lax_actual -> separated_nonempty_list(BAR,production_group) 
+-- On COMMA reduce production lax_actual -> separated_nonempty_list(BAR,production_group) 
+
+State 131:
+production_group -> separated_nonempty_list(BAR,production) . ACTION [ RPAREN COMMA BAR ]
+production_group -> separated_nonempty_list(BAR,production) . ACTION PREC symbol [ RPAREN COMMA BAR ]
+-- On ACTION shift to state 132
+
+State 132:
+production_group -> separated_nonempty_list(BAR,production) ACTION . [ RPAREN COMMA BAR ]
+production_group -> separated_nonempty_list(BAR,production) ACTION . PREC symbol [ RPAREN COMMA BAR ]
+-- On PREC shift to state 133
+-- On RPAREN reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+-- On COMMA reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+-- On BAR reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+
+State 133:
+production_group -> separated_nonempty_list(BAR,production) ACTION PREC . symbol [ RPAREN COMMA BAR ]
+-- On UID shift to state 134
+-- On LID shift to state 135
+-- On symbol shift to state 136
+
+State 134:
+symbol -> UID . [ RPAREN COMMA BAR ]
+-- On RPAREN reduce production symbol -> UID 
+-- On COMMA reduce production symbol -> UID 
+-- On BAR reduce production symbol -> UID 
+
+State 135:
+symbol -> LID . [ RPAREN COMMA BAR ]
+-- On RPAREN reduce production symbol -> LID 
+-- On COMMA reduce production symbol -> LID 
+-- On BAR reduce production symbol -> LID 
+
+State 136:
+production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol . [ RPAREN COMMA BAR ]
+-- On RPAREN reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+-- On COMMA reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+-- On BAR reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+
+State 137:
+separated_nonempty_list(BAR,production_group) -> production_group . [ RPAREN COMMA ]
+separated_nonempty_list(BAR,production_group) -> production_group . BAR separated_nonempty_list(BAR,production_group) [ RPAREN COMMA ]
+-- On BAR shift to state 138
+-- On RPAREN reduce production separated_nonempty_list(BAR,production_group) -> production_group 
+-- On COMMA reduce production separated_nonempty_list(BAR,production_group) -> production_group 
+
+State 138:
+separated_nonempty_list(BAR,production_group) -> production_group BAR . separated_nonempty_list(BAR,production_group) [ RPAREN COMMA ]
+-- On UID shift to state 118
+-- On LID shift to state 119
+-- On symbol shift to state 122
+-- On separated_nonempty_list(BAR,production_group) shift to state 139
+-- On separated_nonempty_list(BAR,production) shift to state 131
+-- On production_group shift to state 137
+-- On production shift to state 140
+-- On producer shift to state 143
+-- On list(producer) shift to state 153
+-- On actual shift to state 145
+-- On PREC reduce production list(producer) -> 
+-- On BAR reduce production list(producer) -> 
+-- On ACTION reduce production list(producer) -> 
+
+State 139:
+separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) . [ RPAREN COMMA ]
+-- On RPAREN reduce production separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) 
+-- On COMMA reduce production separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) 
+
+State 140:
+separated_nonempty_list(BAR,production) -> production . [ ACTION ]
+separated_nonempty_list(BAR,production) -> production . BAR separated_nonempty_list(BAR,production) [ ACTION ]
+-- On BAR shift to state 141
+-- On ACTION reduce production separated_nonempty_list(BAR,production) -> production 
+
+State 141:
+separated_nonempty_list(BAR,production) -> production BAR . separated_nonempty_list(BAR,production) [ ACTION ]
+-- On UID shift to state 118
+-- On LID shift to state 119
+-- On symbol shift to state 122
+-- On separated_nonempty_list(BAR,production) shift to state 142
+-- On production shift to state 140
+-- On producer shift to state 143
+-- On list(producer) shift to state 153
+-- On actual shift to state 145
+-- On PREC reduce production list(producer) -> 
+-- On BAR reduce production list(producer) -> 
+-- On ACTION reduce production list(producer) -> 
+
+State 142:
+separated_nonempty_list(BAR,production) -> production BAR separated_nonempty_list(BAR,production) . [ ACTION ]
+-- On ACTION reduce production separated_nonempty_list(BAR,production) -> production BAR separated_nonempty_list(BAR,production) 
+
+State 143:
+list(producer) -> producer . list(producer) [ PREC BAR ACTION ]
+-- On UID shift to state 118
+-- On LID shift to state 119
+-- On symbol shift to state 122
+-- On producer shift to state 143
+-- On list(producer) shift to state 144
+-- On actual shift to state 145
+-- On PREC reduce production list(producer) -> 
+-- On BAR reduce production list(producer) -> 
+-- On ACTION reduce production list(producer) -> 
+
+State 144:
+list(producer) -> producer list(producer) . [ PREC BAR ACTION ]
+-- On PREC reduce production list(producer) -> producer list(producer) 
+-- On BAR reduce production list(producer) -> producer list(producer) 
+-- On ACTION reduce production list(producer) -> producer list(producer) 
+
+State 145:
+actual -> actual . modifier [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+producer -> actual . list(ATTRIBUTE) [ UID PREC LID BAR ACTION ]
+-- On STAR shift to state 146
+-- On QUESTION shift to state 147
+-- On PLUS shift to state 148
+-- On ATTRIBUTE shift to state 149
+-- On modifier shift to state 151
+-- On list(ATTRIBUTE) shift to state 152
+-- On UID reduce production list(ATTRIBUTE) -> 
+-- On PREC reduce production list(ATTRIBUTE) -> 
+-- On LID reduce production list(ATTRIBUTE) -> 
+-- On BAR reduce production list(ATTRIBUTE) -> 
+-- On ACTION reduce production list(ATTRIBUTE) -> 
+
+State 146:
+modifier -> STAR . [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On UID reduce production modifier -> STAR 
+-- On STAR reduce production modifier -> STAR 
+-- On QUESTION reduce production modifier -> STAR 
+-- On PREC reduce production modifier -> STAR 
+-- On PLUS reduce production modifier -> STAR 
+-- On LID reduce production modifier -> STAR 
+-- On BAR reduce production modifier -> STAR 
+-- On ATTRIBUTE reduce production modifier -> STAR 
+-- On ACTION reduce production modifier -> STAR 
+
+State 147:
+modifier -> QUESTION . [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On UID reduce production modifier -> QUESTION 
+-- On STAR reduce production modifier -> QUESTION 
+-- On QUESTION reduce production modifier -> QUESTION 
+-- On PREC reduce production modifier -> QUESTION 
+-- On PLUS reduce production modifier -> QUESTION 
+-- On LID reduce production modifier -> QUESTION 
+-- On BAR reduce production modifier -> QUESTION 
+-- On ATTRIBUTE reduce production modifier -> QUESTION 
+-- On ACTION reduce production modifier -> QUESTION 
+
+State 148:
+modifier -> PLUS . [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On UID reduce production modifier -> PLUS 
+-- On STAR reduce production modifier -> PLUS 
+-- On QUESTION reduce production modifier -> PLUS 
+-- On PREC reduce production modifier -> PLUS 
+-- On PLUS reduce production modifier -> PLUS 
+-- On LID reduce production modifier -> PLUS 
+-- On BAR reduce production modifier -> PLUS 
+-- On ATTRIBUTE reduce production modifier -> PLUS 
+-- On ACTION reduce production modifier -> PLUS 
+
+State 149:
+list(ATTRIBUTE) -> ATTRIBUTE . list(ATTRIBUTE) [ UID PREC LID BAR ACTION ]
+-- On ATTRIBUTE shift to state 149
+-- On list(ATTRIBUTE) shift to state 150
+-- On UID reduce production list(ATTRIBUTE) -> 
+-- On PREC reduce production list(ATTRIBUTE) -> 
+-- On LID reduce production list(ATTRIBUTE) -> 
+-- On BAR reduce production list(ATTRIBUTE) -> 
+-- On ACTION reduce production list(ATTRIBUTE) -> 
+
+State 150:
+list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) . [ UID PREC LID BAR ACTION ]
+-- On UID reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On PREC reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On LID reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On BAR reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+-- On ACTION reduce production list(ATTRIBUTE) -> ATTRIBUTE list(ATTRIBUTE) 
+
+State 151:
+actual -> actual modifier . [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On UID reduce production actual -> actual modifier 
+-- On STAR reduce production actual -> actual modifier 
+-- On QUESTION reduce production actual -> actual modifier 
+-- On PREC reduce production actual -> actual modifier 
+-- On PLUS reduce production actual -> actual modifier 
+-- On LID reduce production actual -> actual modifier 
+-- On BAR reduce production actual -> actual modifier 
+-- On ATTRIBUTE reduce production actual -> actual modifier 
+-- On ACTION reduce production actual -> actual modifier 
+
+State 152:
+producer -> actual list(ATTRIBUTE) . [ UID PREC LID BAR ACTION ]
+-- On UID reduce production producer -> actual list(ATTRIBUTE) 
+-- On PREC reduce production producer -> actual list(ATTRIBUTE) 
+-- On LID reduce production producer -> actual list(ATTRIBUTE) 
+-- On BAR reduce production producer -> actual list(ATTRIBUTE) 
+-- On ACTION reduce production producer -> actual list(ATTRIBUTE) 
+
+State 153:
+production -> list(producer) . [ BAR ACTION ]
+production -> list(producer) . PREC symbol [ BAR ACTION ]
+-- On PREC shift to state 154
+-- On BAR reduce production production -> list(producer) 
+-- On ACTION reduce production production -> list(producer) 
+
+State 154:
+production -> list(producer) PREC . symbol [ BAR ACTION ]
+-- On UID shift to state 155
+-- On LID shift to state 156
+-- On symbol shift to state 157
+
+State 155:
+symbol -> UID . [ BAR ACTION ]
+-- On BAR reduce production symbol -> UID 
+-- On ACTION reduce production symbol -> UID 
+
+State 156:
+symbol -> LID . [ BAR ACTION ]
+-- On BAR reduce production symbol -> LID 
+-- On ACTION reduce production symbol -> LID 
+
+State 157:
+production -> list(producer) PREC symbol . [ BAR ACTION ]
+-- On BAR reduce production production -> list(producer) PREC symbol 
+-- On ACTION reduce production production -> list(producer) PREC symbol 
+
+State 158:
+separated_nonempty_list(COMMA,lax_actual) -> lax_actual . [ RPAREN ]
+separated_nonempty_list(COMMA,lax_actual) -> lax_actual . COMMA separated_nonempty_list(COMMA,lax_actual) [ RPAREN ]
+-- On COMMA shift to state 159
+-- On RPAREN reduce production separated_nonempty_list(COMMA,lax_actual) -> lax_actual 
+
+State 159:
+separated_nonempty_list(COMMA,lax_actual) -> lax_actual COMMA . separated_nonempty_list(COMMA,lax_actual) [ RPAREN ]
+-- On UID shift to state 124
+-- On LID shift to state 125
+-- On symbol shift to state 126
+-- On separated_nonempty_list(COMMA,lax_actual) shift to state 160
+-- On separated_nonempty_list(BAR,production_group) shift to state 130
+-- On separated_nonempty_list(BAR,production) shift to state 131
+-- On production_group shift to state 137
+-- On production shift to state 140
+-- On producer shift to state 143
+-- On list(producer) shift to state 153
+-- On lax_actual shift to state 158
+-- On actual shift to state 161
+-- On PREC reduce production list(producer) -> 
+-- On BAR reduce production list(producer) -> 
+-- On ACTION reduce production list(producer) -> 
+
+State 160:
+separated_nonempty_list(COMMA,lax_actual) -> lax_actual COMMA separated_nonempty_list(COMMA,lax_actual) . [ RPAREN ]
+-- On RPAREN reduce production separated_nonempty_list(COMMA,lax_actual) -> lax_actual COMMA separated_nonempty_list(COMMA,lax_actual) 
+
+State 161:
+actual -> actual . modifier [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+lax_actual -> actual . modifier [ RPAREN COMMA ]
+producer -> actual . list(ATTRIBUTE) [ UID PREC LID BAR ACTION ]
+-- On STAR shift to state 162
+-- On QUESTION shift to state 163
+-- On PLUS shift to state 164
+-- On ATTRIBUTE shift to state 149
+-- On modifier shift to state 165
+-- On list(ATTRIBUTE) shift to state 152
+-- On UID reduce production list(ATTRIBUTE) -> 
+-- On PREC reduce production list(ATTRIBUTE) -> 
+-- On LID reduce production list(ATTRIBUTE) -> 
+-- On BAR reduce production list(ATTRIBUTE) -> 
+-- On ACTION reduce production list(ATTRIBUTE) -> 
+
+State 162:
+modifier -> STAR . [ UID STAR RPAREN QUESTION PREC PLUS LID COMMA BAR ATTRIBUTE ACTION ]
+-- On UID reduce production modifier -> STAR 
+-- On STAR reduce production modifier -> STAR 
+-- On RPAREN reduce production modifier -> STAR 
+-- On QUESTION reduce production modifier -> STAR 
+-- On PREC reduce production modifier -> STAR 
+-- On PLUS reduce production modifier -> STAR 
+-- On LID reduce production modifier -> STAR 
+-- On COMMA reduce production modifier -> STAR 
+-- On BAR reduce production modifier -> STAR 
+-- On ATTRIBUTE reduce production modifier -> STAR 
+-- On ACTION reduce production modifier -> STAR 
+
+State 163:
+modifier -> QUESTION . [ UID STAR RPAREN QUESTION PREC PLUS LID COMMA BAR ATTRIBUTE ACTION ]
+-- On UID reduce production modifier -> QUESTION 
+-- On STAR reduce production modifier -> QUESTION 
+-- On RPAREN reduce production modifier -> QUESTION 
+-- On QUESTION reduce production modifier -> QUESTION 
+-- On PREC reduce production modifier -> QUESTION 
+-- On PLUS reduce production modifier -> QUESTION 
+-- On LID reduce production modifier -> QUESTION 
+-- On COMMA reduce production modifier -> QUESTION 
+-- On BAR reduce production modifier -> QUESTION 
+-- On ATTRIBUTE reduce production modifier -> QUESTION 
+-- On ACTION reduce production modifier -> QUESTION 
+
+State 164:
+modifier -> PLUS . [ UID STAR RPAREN QUESTION PREC PLUS LID COMMA BAR ATTRIBUTE ACTION ]
+-- On UID reduce production modifier -> PLUS 
+-- On STAR reduce production modifier -> PLUS 
+-- On RPAREN reduce production modifier -> PLUS 
+-- On QUESTION reduce production modifier -> PLUS 
+-- On PREC reduce production modifier -> PLUS 
+-- On PLUS reduce production modifier -> PLUS 
+-- On LID reduce production modifier -> PLUS 
+-- On COMMA reduce production modifier -> PLUS 
+-- On BAR reduce production modifier -> PLUS 
+-- On ATTRIBUTE reduce production modifier -> PLUS 
+-- On ACTION reduce production modifier -> PLUS 
+
+State 165:
+actual -> actual modifier . [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+lax_actual -> actual modifier . [ RPAREN COMMA ]
+-- On UID reduce production actual -> actual modifier 
+-- On STAR reduce production actual -> actual modifier 
+-- On RPAREN reduce production lax_actual -> actual modifier 
+-- On QUESTION reduce production actual -> actual modifier 
+-- On PREC reduce production actual -> actual modifier 
+-- On PLUS reduce production actual -> actual modifier 
+-- On LID reduce production actual -> actual modifier 
+-- On COMMA reduce production lax_actual -> actual modifier 
+-- On BAR reduce production actual -> actual modifier 
+-- On ATTRIBUTE reduce production actual -> actual modifier 
+-- On ACTION reduce production actual -> actual modifier 
+
+State 166:
+actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) . [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+lax_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) . [ RPAREN COMMA ]
+-- On UID reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On STAR reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On RPAREN reduce production lax_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On QUESTION reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On PREC reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On PLUS reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On LID reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On COMMA reduce production lax_actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On BAR reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On ATTRIBUTE reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On ACTION reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+
+State 167:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) . RPAREN [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On RPAREN shift to state 168
+
+State 168:
+loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN . [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On UID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On STAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On QUESTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On PREC reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On PLUS reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On LID reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On BAR reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On ATTRIBUTE reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+-- On ACTION reduce production loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) -> LPAREN separated_nonempty_list(COMMA,lax_actual) RPAREN 
+
+State 169:
+actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) . [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+-- On UID reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On STAR reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On QUESTION reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On PREC reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On PLUS reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On LID reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On BAR reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On ATTRIBUTE reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+-- On ACTION reduce production actual -> symbol loption(delimited(LPAREN,separated_nonempty_list(COMMA,lax_actual),RPAREN)) 
+
+State 170:
+actual -> actual . modifier [ UID STAR QUESTION PREC PLUS LID BAR ATTRIBUTE ACTION ]
+producer -> LID EQUAL actual . list(ATTRIBUTE) [ UID PREC LID BAR ACTION ]
+-- On STAR shift to state 146
+-- On QUESTION shift to state 147
+-- On PLUS shift to state 148
+-- On ATTRIBUTE shift to state 149
+-- On modifier shift to state 151
+-- On list(ATTRIBUTE) shift to state 171
+-- On UID reduce production list(ATTRIBUTE) -> 
+-- On PREC reduce production list(ATTRIBUTE) -> 
+-- On LID reduce production list(ATTRIBUTE) -> 
+-- On BAR reduce production list(ATTRIBUTE) -> 
+-- On ACTION reduce production list(ATTRIBUTE) -> 
+
+State 171:
+producer -> LID EQUAL actual list(ATTRIBUTE) . [ UID PREC LID BAR ACTION ]
+-- On UID reduce production producer -> LID EQUAL actual list(ATTRIBUTE) 
+-- On PREC reduce production producer -> LID EQUAL actual list(ATTRIBUTE) 
+-- On LID reduce production producer -> LID EQUAL actual list(ATTRIBUTE) 
+-- On BAR reduce production producer -> LID EQUAL actual list(ATTRIBUTE) 
+-- On ACTION reduce production producer -> LID EQUAL actual list(ATTRIBUTE) 
+
+State 172:
+rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) . [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On UID reduce production rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) 
+-- On PUBLIC reduce production rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) 
+-- On PERCENTPERCENT reduce production rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) 
+-- On LID reduce production rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) 
+-- On INLINE reduce production rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) 
+-- On EOF reduce production rule -> flags symbol list(ATTRIBUTE) loption(delimited(LPAREN,separated_nonempty_list(COMMA,symbol),RPAREN)) COLON optional_bar separated_nonempty_list(BAR,production_group) 
+
+State 173:
+production_group -> separated_nonempty_list(BAR,production) . ACTION [ UID PUBLIC PERCENTPERCENT LID INLINE EOF BAR ]
+production_group -> separated_nonempty_list(BAR,production) . ACTION PREC symbol [ UID PUBLIC PERCENTPERCENT LID INLINE EOF BAR ]
+-- On ACTION shift to state 174
+
+State 174:
+production_group -> separated_nonempty_list(BAR,production) ACTION . [ UID PUBLIC PERCENTPERCENT LID INLINE EOF BAR ]
+production_group -> separated_nonempty_list(BAR,production) ACTION . PREC symbol [ UID PUBLIC PERCENTPERCENT LID INLINE EOF BAR ]
+-- On PREC shift to state 175
+-- On UID reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+-- On PUBLIC reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+-- On PERCENTPERCENT reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+-- On LID reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+-- On INLINE reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+-- On EOF reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+-- On BAR reduce production production_group -> separated_nonempty_list(BAR,production) ACTION 
+
+State 175:
+production_group -> separated_nonempty_list(BAR,production) ACTION PREC . symbol [ UID PUBLIC PERCENTPERCENT LID INLINE EOF BAR ]
+-- On UID shift to state 176
+-- On LID shift to state 177
+-- On symbol shift to state 178
+
+State 176:
+symbol -> UID . [ UID PUBLIC PERCENTPERCENT LID INLINE EOF BAR ]
+-- On UID reduce production symbol -> UID 
+-- On PUBLIC reduce production symbol -> UID 
+-- On PERCENTPERCENT reduce production symbol -> UID 
+-- On LID reduce production symbol -> UID 
+-- On INLINE reduce production symbol -> UID 
+-- On EOF reduce production symbol -> UID 
+-- On BAR reduce production symbol -> UID 
+
+State 177:
+symbol -> LID . [ UID PUBLIC PERCENTPERCENT LID INLINE EOF BAR ]
+-- On UID reduce production symbol -> LID 
+-- On PUBLIC reduce production symbol -> LID 
+-- On PERCENTPERCENT reduce production symbol -> LID 
+-- On LID reduce production symbol -> LID 
+-- On INLINE reduce production symbol -> LID 
+-- On EOF reduce production symbol -> LID 
+-- On BAR reduce production symbol -> LID 
+
+State 178:
+production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol . [ UID PUBLIC PERCENTPERCENT LID INLINE EOF BAR ]
+-- On UID reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+-- On PUBLIC reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+-- On PERCENTPERCENT reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+-- On LID reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+-- On INLINE reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+-- On EOF reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+-- On BAR reduce production production_group -> separated_nonempty_list(BAR,production) ACTION PREC symbol 
+
+State 179:
+separated_nonempty_list(BAR,production_group) -> production_group . [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+separated_nonempty_list(BAR,production_group) -> production_group . BAR separated_nonempty_list(BAR,production_group) [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On BAR shift to state 180
+-- On UID reduce production separated_nonempty_list(BAR,production_group) -> production_group 
+-- On PUBLIC reduce production separated_nonempty_list(BAR,production_group) -> production_group 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(BAR,production_group) -> production_group 
+-- On LID reduce production separated_nonempty_list(BAR,production_group) -> production_group 
+-- On INLINE reduce production separated_nonempty_list(BAR,production_group) -> production_group 
+-- On EOF reduce production separated_nonempty_list(BAR,production_group) -> production_group 
+
+State 180:
+separated_nonempty_list(BAR,production_group) -> production_group BAR . separated_nonempty_list(BAR,production_group) [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On UID shift to state 118
+-- On LID shift to state 119
+-- On symbol shift to state 122
+-- On separated_nonempty_list(BAR,production_group) shift to state 181
+-- On separated_nonempty_list(BAR,production) shift to state 173
+-- On production_group shift to state 179
+-- On production shift to state 140
+-- On producer shift to state 143
+-- On list(producer) shift to state 153
+-- On actual shift to state 145
+-- On PREC reduce production list(producer) -> 
+-- On BAR reduce production list(producer) -> 
+-- On ACTION reduce production list(producer) -> 
+
+State 181:
+separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) . [ UID PUBLIC PERCENTPERCENT LID INLINE EOF ]
+-- On UID reduce production separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) 
+-- On PUBLIC reduce production separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) 
+-- On PERCENTPERCENT reduce production separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) 
+-- On LID reduce production separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) 
+-- On INLINE reduce production separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) 
+-- On EOF reduce production separated_nonempty_list(BAR,production_group) -> production_group BAR separated_nonempty_list(BAR,production_group) 
+
+State 182:
+grammar -> list(declaration) PERCENTPERCENT list(rule) . postlude [ # ]
+-- On PERCENTPERCENT shift to state 183
+-- On EOF shift to state 184
+-- On postlude shift to state 185
+
+State 183:
+postlude -> PERCENTPERCENT . [ # ]
+-- On # reduce production postlude -> PERCENTPERCENT 
+
+State 184:
+postlude -> EOF . [ # ]
+-- On # reduce production postlude -> EOF 
+
+State 185:
+grammar -> list(declaration) PERCENTPERCENT list(rule) postlude . [ # ]
+-- On # reduce production grammar -> list(declaration) PERCENTPERCENT list(rule) postlude 
+
+State 186:
+grammar' -> grammar . [ # ]
+-- On # accept grammar
+
+State 187:
+list(declaration) -> declaration . list(declaration) [ PERCENTPERCENT ]
+-- On TYPE shift to state 1
+-- On TOKEN shift to state 33
+-- On START shift to state 44
+-- On RIGHT shift to state 52
+-- On PUBLIC shift to state 53
+-- On PERCENTATTRIBUTE shift to state 54
+-- On PARAMETER shift to state 73
+-- On ON_ERROR_REDUCE shift to state 75
+-- On NONASSOC shift to state 77
+-- On LEFT shift to state 78
+-- On INLINE shift to state 79
+-- On HEADER shift to state 80
+-- On GRAMMARATTRIBUTE shift to state 81
+-- On EOF shift to state 82
+-- On COLON shift to state 83
+-- On priority_keyword shift to state 84
+-- On list(declaration) shift to state 188
+-- On declaration shift to state 187
+-- On PERCENTPERCENT reduce production list(declaration) -> 
+
+State 188:
+list(declaration) -> declaration list(declaration) . [ PERCENTPERCENT ]
+-- On PERCENTPERCENT reduce production list(declaration) -> declaration list(declaration) 
+
