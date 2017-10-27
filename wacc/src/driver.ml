@@ -24,16 +24,24 @@ let handle_syntax_error lexbuf =
     fprintf stderr "Near %d:%d\n" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1);
     exit(syntax_error_code)
 
-let rec add_func_declarations table = function
+let rec add_func_declarations table ff =
+  let table' = ref table in
+  List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt, pos) = f in
+                       let tys = List.map fst fields in
+                       (match Symbol.lookup_opt ident !table' with
+                       | Some _ -> raise (Semantic.SemanticError ("function redefined", pos))
+                       | _ -> ());
+                       table' := Symbol.insert ident (Semantic.FuncEntry (ty, tys)) !table'
+                      )) ff;
+  match ff with
   | [] -> table
-  | (f::fs) -> begin
-      match f with
+  | (f::fs) -> begin match f with
       | A.FuncDec (ty, ident, fields, stmt, pos) ->
-        let tys = List.map fst fields in
-        let table' = Symbol.insert ident (Semantic.FuncEntry (ty, tys)) table in
-        let table'' = List.fold_left (fun table (ty, ident) -> Symbol.insert ident (Semantic.VarEntry ty) table) table' fields in
-        ignore(Semantic.check_stmt table'' stmt);
-        (add_func_declarations table' fs)
+        let table'' = List.fold_left (fun table (ty, ident) -> Symbol.insert ident (Semantic.VarEntry ty) table) !table' fields in
+        let table''' = Semantic.check_stmt table'' stmt in
+        let Semantic.VarEntry (rt) = Symbol.lookup "$result" table''' in
+        if (rt != ty) then raise (Semantic.SemanticError ("result type mismatch", pos))
+        else !table'
     end
 
 let handle_semantic_error lexbuf =

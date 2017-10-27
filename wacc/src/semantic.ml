@@ -205,7 +205,7 @@ and check_stmt table stmt =
       let ty = exp_type table exp in
       if eq_type ty BoolTy then check_with_new_scope exp' else raise (TypeMismatch (BoolTy, ty, pos))
     end
-  | ExitStmt     (exp, pos) -> (if (exp_type table exp) != IntTy then raise (SemanticError ("Exit code not int", pos)) else table)
+  | ExitStmt     (exp, pos) -> (if (exp_type table exp) != IntTy then raise (SemanticError ("Exit code is not int", pos)) else table)
   | VarDeclStmt  (ty , symbol, exp, pos) ->
     begin
       let _: 'a table = check_exp table exp in
@@ -221,7 +221,9 @@ and check_stmt table stmt =
   (* TODO someof these need to be type check *)
   | PrintStmt    (exp, pos) -> check_in_this_scope exp
   | PrintLnStmt  (exp, pos) -> check_in_this_scope exp
-  | RetStmt      (exp, pos) -> check_in_this_scope exp
+  | RetStmt      (exp, pos) -> (let table'' = check_in_this_scope exp in
+                                Symbol.insert "$result" (VarEntry (exp_type table'' exp)) table''
+                               )
   | ReadStmt     (exp, pos) -> check_in_this_scope exp
   | FreeStmt     (exp, pos) -> check_in_this_scope exp
   | BlockStmt    (stmt, pos) -> (ignore(check_with_new_scope stmt);
