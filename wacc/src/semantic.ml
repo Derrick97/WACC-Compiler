@@ -140,10 +140,9 @@ and check_function_call table fname exps pos = try
   with
   | Not_found -> raise (UnknownIdentifier (fname, pos))
 (* Return type of an expression, will raise TypeMismatch if type mismatch *)
-and check_exp (table: 'a S.table) exp =
+and check_exp (table: 'a S.table) (exp: A.exp): 'a table = (
   let check_in_this_scope = check_exp table in
-  let table' = S.new_scope table in
-  let check_with_new_scope = check_exp table' in match exp with
+  match exp with
   | IdentExp    (name, pos) -> (
       try
         let _ = S.lookup name table in table
@@ -165,6 +164,7 @@ and check_exp (table: 'a S.table) exp =
   | ArrayIndexExp (name, exps, pos) -> table
   | FstExp _ -> table
   | SndExp _ -> table
+)
 and check_stmt table stmt =
   let check_in_this_scope = check_exp table in
   let table' = S.new_scope table in
@@ -178,6 +178,7 @@ and check_stmt table stmt =
       try
         if not (is_var table name) then raise (SemanticError ("Not a variable", pos))
         else
+          let _ = check_exp table exp in
           let ty = var_type table name in
           let ty' = exp_type table exp in
           if eq_type ty ty' then table else raise (TypeMismatch (ty, ty', pos))
@@ -185,10 +186,12 @@ and check_stmt table stmt =
     end
   | AssignStmt   (lhs, rhs, pos) -> begin
       try
+        let _ = check_exp table lhs in
+        let _ = check_exp table rhs in
         let ty = exp_type table lhs in
         let ty' = exp_type table rhs in
         if eq_type ty ty' then table else raise (TypeMismatch (ty, ty', pos))
-      with Not_found -> raise (SemanticError ("variable not found", pos))
+      with Not_found -> raise (SemanticError ("Variable not found", pos))
     end
   | IfStmt       (exp, exp', exp'', pos) -> begin
       ignore(check_in_this_scope exp);
@@ -205,7 +208,11 @@ and check_stmt table stmt =
   | ExitStmt     (exp, pos) -> (if (exp_type table exp) != IntTy then raise (SemanticError ("Exit code not int", pos)) else table)
   | VarDeclStmt  (ty , symbol, exp, pos) ->
     begin
-      check_in_this_scope exp;
+      let _: 'a table = check_exp table exp in
+      let _ = (match S.lookup_opt' symbol table with
+        | Some _ as v -> raise (SemanticError ("redeclared variable: " ^ symbol, pos))
+        | None -> ()
+        ) in
       let table' = S.insert symbol (VarEntry ty) table in
       let ty' = exp_type table' exp in
       if eq_type ty ty' then table' else raise (TypeMismatch (ty, ty', pos))
@@ -217,8 +224,8 @@ and check_stmt table stmt =
   | RetStmt      (exp, pos) -> check_in_this_scope exp
   | ReadStmt     (exp, pos) -> check_in_this_scope exp
   | FreeStmt     (exp, pos) -> check_in_this_scope exp
-  | BlockStmt    (exp, pos) -> (ignore(check_with_new_scope exp);
-                               table)
+  | BlockStmt    (stmt, pos) -> (ignore(check_with_new_scope stmt);
+                                 table)
 and check_function_decls decls =
   begin
   let ctx = ref Symbol.empty in

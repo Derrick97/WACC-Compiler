@@ -31,6 +31,27 @@ let rec lookup symbol = function
     )
   | Table (table, None) -> ST.find symbol table
 
+let rec lookup_opt (symbol: symbol) (t: 'a table): 'a option = match t with
+  | Table (table, Some parent) -> (
+      try let v = ST.find symbol table in
+        Some (v)
+      with
+      | Not_found -> lookup_opt symbol parent
+    )
+  | Table (table, None) -> (
+      try (let v = ST.find symbol table in
+           (Some v))
+      with
+      | Not_found -> None
+    )
+
+let rec lookup_opt' (symbol: symbol) (t: 'a table): 'a option = match t with
+  | Table (table, _) -> (
+      try let v = ST.find symbol table in
+        Some (v)
+      with
+      | Not_found -> None)
+
 let lookup' symbol table =
   let Table (table', parent) = table in
   ST.find symbol table'

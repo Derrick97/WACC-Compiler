@@ -32,7 +32,7 @@ let rec add_func_declarations table = function
         let tys = List.map fst fields in
         let table' = Symbol.insert ident (Semantic.FuncEntry (ty, tys)) table in
         let table'' = List.fold_left (fun table (ty, ident) -> Symbol.insert ident (Semantic.VarEntry ty) table) table' fields in
-        (* ignore(Semantic.check_stmt table'' stmt); *)
+        ignore(Semantic.check_stmt table'' stmt);
         (add_func_declarations table' fs)
     end
 
@@ -55,7 +55,6 @@ let () =
     let lexbuf = Lexing.from_channel (open_in filename) in
     try
       let (decs, stmt) = Parser.prog Lexer.main lexbuf in
-      let () = Interpreter.eval stmt in exit(0);
       (* setup_builtin_functions; *)
       (* let table' = Symbol.new_scope (add_func_declarations table decs) in *)
       (* (\* function declarations *\) *)
@@ -77,9 +76,7 @@ let () =
       (* (\* Llvm_analysis.assert_valid_module the_module; *\) *)
       (* let out_filename = (Filename.chop_extension filename) ^ ".ll" in *)
       (* print_module (Filename.basename out_filename) Codegen.the_module; *)
-
-      ignore(Semantic.check_function_decls decs);
-      ignore(Prettyprint.prettyprint_stmt stmt);
+      (* ignore(print_string (Prettyprint.prettyprint_stmt stmt)); *)
       let table = Symbol.empty in
       let table' = Symbol.new_scope (add_func_declarations table decs) in
       ignore(Semantic.check_stmt table' stmt); ()
