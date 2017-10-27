@@ -32,12 +32,10 @@ let rec lookup symbol = function
       with
       | Not_found ->
         begin
-          (* print_string ("looking for:" ^ (string_of_symbol symbol) ^ "\n"); *)
           lookup symbol parent
         end
     end
   | Table (table, None) ->
-    (* (print_string ("looking for:" ^ (string_of_symbol symbol) ^ "\n"); *)
     ST.find symbol table
 
 let lookup' symbol table =
