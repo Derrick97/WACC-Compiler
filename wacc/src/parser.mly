@@ -110,7 +110,7 @@ param:
 param_list:
 | (* can be empty *) { [] }
 | p = param; { [p] }
-| p = param; COMMA; pl = param_list { p :: pl }
+| p = param; COMMA; pl = param_list { if (pl == []) then raise (SyntaxError "Bad args") else p::pl }
 
 stat:
 | typ ID EQ rhs=assign_rhs                  { VarDeclStmt  ($1, symbol $2, rhs, $startpos) }

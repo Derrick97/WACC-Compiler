@@ -1,1 +1,0 @@
-syntax.mli: Action InputFile Lexing Positions Stretch StringMap
