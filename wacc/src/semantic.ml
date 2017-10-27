@@ -133,7 +133,8 @@ and check_function_call table fname exps pos = try
     | FuncEntry (retty, argtys) ->
       begin
         let exp_tys = List.map (exp_type table) exps in
-        if argtys == exp_tys then table else raise (SemanticError ("func call type mismatch", pos))
+        if argtys = exp_tys then table else (
+          raise (SemanticError ("func call type mismatch", pos)))
       end
     | _ -> raise (SemanticError ("not a valid function", pos))
   with
@@ -180,7 +181,7 @@ and check_stmt table stmt =
           let ty = var_type table name in
           let ty' = exp_type table exp in
           if eq_type ty ty' then table else raise (TypeMismatch (ty, ty', pos))
-      with Not_found -> raise (SemanticError ("variable not found", pos))
+      with Not_found -> raise (SemanticError ("Variable not found", pos))
     end
   | AssignStmt   (lhs, rhs, pos) -> begin
       try
@@ -202,7 +203,9 @@ and check_stmt table stmt =
       if eq_type ty BoolTy then check_with_new_scope exp' else raise (TypeMismatch (BoolTy, ty, pos))
     end
   | ExitStmt     (exp, pos) -> (if (exp_type table exp) != IntTy then raise (SemanticError ("Exit code not int", pos)) else table)
-  | VarDeclStmt  (ty , symbol, exp, pos) -> begin
+  | VarDeclStmt  (ty , symbol, exp, pos) ->
+    begin
+      check_in_this_scope exp;
       let table' = S.insert symbol (VarEntry ty) table in
       let ty' = exp_type table' exp in
       if eq_type ty ty' then table' else raise (TypeMismatch (ty, ty', pos))
@@ -216,10 +219,16 @@ and check_stmt table stmt =
   | FreeStmt     (exp, pos) -> check_in_this_scope exp
   | BlockStmt    (exp, pos) -> (ignore(check_with_new_scope exp);
                                table)
-and check_function_decls decls = (
+and check_function_decls decls =
+  begin
   let ctx = ref Symbol.empty in
   ignore(List.iter (fun x -> (match x with
       | FuncDec (ty, name, args, body, pos) ->
+        (try
+            let _ = lookup_function !ctx name in
+            raise (SemanticError ("Function redefined", pos))
+         with
+          | Not_found -> ());
         ctx := Symbol.insert name (FuncEntry (ty, List.map (fun (ft, name) -> ft) args)) !ctx
     )) decls);
   let check_dec decl = (match decl with
@@ -229,12 +238,13 @@ and check_function_decls decls = (
           let () = List.iter (fun x -> inner_ctx := (let (t, name) = x in Symbol.insert name (VarEntry t) !inner_ctx)) args in
           ignore(check_stmt !inner_ctx body)
         end) in
-  List.map check_dec decls; ()
-)
+  List.map check_dec decls;
+  ()
+  end
 
 let check_int_overflow num =
   let max_int = Int32.to_int Int32.max_int in
   let min_int = Int32.to_int Int32.min_int in
-  if num <= max_int && num >= min_int
+  (if num <= max_int && num >= min_int
   then num
-  else raise (SyntaxError ("Int overflow: " ^ string_of_int num));;
+  else raise (SyntaxError ("Int overflow: " ^ string_of_int num)));;

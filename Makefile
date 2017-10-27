@@ -18,7 +18,7 @@ JFLAGS	:= -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -cp lib/antlr-4.4-complete.
 
 # the make rules
 
-all: build_deps
+all:
 	cd wacc/ && make driver.native
 
 build_deps:
@@ -33,8 +33,7 @@ rules:
 	$(RM) rules
 
 clean:
-	$(RM) rules $(OUTPUT_DIR) && rm -rf src/legacy/lib/menhir-20170712/build/ && rm -rf src/legacy/_build
-
+	$(RM) rules $(OUTPUT_DIR) && cd wacc && make clean
 .PHONY: all rules clean
 
 download_wacc_examples:
