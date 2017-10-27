@@ -1,0 +1,174 @@
+### Starting build.
+# Target: parser.mly, tags: {  }
+cp -p fancy-parser.mly parser.mly # cached
+# Target: parser.mly.depends, tags: { bin_annot, debug, extension:mly, fancy_parser, file:parser.mly, infer, menhir_ocamldep, ocaml, ocamldep, quiet, safe_string, traverse }
+../_stage2/menhir.native -v -lg 1 -la 1 -lc 1 --table --infer --stdlib .. --strict --fixed-exception --canonical --raw-depend --ocamldep 'ocamldep.opt -modules' parser.mly > parser.mly.depends # cached
+# Target: action.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:action.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules action.mli > action.mli.depends # cached
+# Target: IL.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:IL.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules IL.mli > IL.mli.depends # cached
+# Target: stretch.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:stretch.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules stretch.mli > stretch.mli.depends # cached
+# Target: keyword.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:keyword.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules keyword.mli > keyword.mli.depends # cached
+# Target: keyword.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:keyword.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o keyword.cmi keyword.mli # cached
+# Target: stretch.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:stretch.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o stretch.cmi stretch.mli # cached
+# Target: IL.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:IL.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o IL.cmi IL.mli # cached
+# Target: action.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:action.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o action.cmi action.mli # cached
+# Target: error.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:error.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules error.mli > error.mli.depends # cached
+# Target: positions.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:positions.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules positions.mli > positions.mli.depends # cached
+# Target: positions.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:positions.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o positions.cmi positions.mli # cached
+# Target: error.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:error.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o error.cmi error.mli # cached
+# Target: misc.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:misc.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules misc.mli > misc.mli.depends # cached
+# Target: stringMap.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:stringMap.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules stringMap.mli > stringMap.mli.depends # cached
+# Target: stringSet.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:stringSet.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules stringSet.mli > stringSet.mli.depends # cached
+# Target: stringSet.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:stringSet.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o stringSet.cmi stringSet.mli # cached
+# Target: stringMap.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:stringMap.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o stringMap.cmi stringMap.mli # cached
+# Target: misc.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:misc.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o misc.cmi misc.mli # cached
+# Target: parameters.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:parameters.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules parameters.ml > parameters.ml.depends # cached
+# Target: syntax.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:syntax.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules syntax.mli > syntax.mli.depends # cached
+# Target: InputFile.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:InputFile.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules InputFile.mli > InputFile.mli.depends # cached
+# Target: InputFile.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:InputFile.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o InputFile.cmi InputFile.mli # cached
+# Target: syntax.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:syntax.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o syntax.cmi syntax.mli # cached
+# Target: parameters.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:parameters.cmo, file:parameters.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o parameters.cmo parameters.ml # cached
+# Target: parserAux.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:parserAux.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules parserAux.mli > parserAux.mli.depends # cached
+# Target: parserAux.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:parserAux.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o parserAux.cmi parserAux.mli # cached
+# Target: General.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:General.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules General.mli > General.mli.depends # cached
+# Target: General.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:General.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o General.cmi General.mli # cached
+# Target: General.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:General.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules General.ml > General.ml.depends # cached
+# Target: General.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:General.cmo, file:General.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o General.cmo General.ml # cached
+# Target: Convert.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:Convert.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules Convert.mli > Convert.mli.depends # cached
+# Target: Convert.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:Convert.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o Convert.cmi Convert.mli # cached
+# Target: Convert.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:Convert.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules Convert.ml > Convert.ml.depends # cached
+# Target: Convert.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:Convert.cmo, file:Convert.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o Convert.cmo Convert.ml # cached
+# Target: IncrementalEngine.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:IncrementalEngine.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules IncrementalEngine.ml > IncrementalEngine.ml.depends # cached
+# Target: IncrementalEngine.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:IncrementalEngine.cmo, file:IncrementalEngine.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o IncrementalEngine.cmo IncrementalEngine.ml # cached
+# Target: EngineTypes.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:EngineTypes.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules EngineTypes.ml > EngineTypes.ml.depends # cached
+# Target: EngineTypes.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:EngineTypes.cmo, file:EngineTypes.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o EngineTypes.cmo EngineTypes.ml # cached
+# Target: Engine.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:Engine.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules Engine.mli > Engine.mli.depends # cached
+# Target: Engine.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:Engine.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o Engine.cmi Engine.mli # cached
+# Target: Engine.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:Engine.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules Engine.ml > Engine.ml.depends # cached
+# Target: Engine.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:Engine.cmo, file:Engine.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o Engine.cmo Engine.ml # cached
+# Target: ErrorReports.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:ErrorReports.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules ErrorReports.mli > ErrorReports.mli.depends # cached
+# Target: ErrorReports.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:ErrorReports.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o ErrorReports.cmi ErrorReports.mli # cached
+# Target: ErrorReports.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:ErrorReports.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules ErrorReports.ml > ErrorReports.ml.depends # cached
+# Target: ErrorReports.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:ErrorReports.cmo, file:ErrorReports.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o ErrorReports.cmo ErrorReports.ml # cached
+# Target: Printers.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:Printers.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules Printers.mli > Printers.mli.depends # cached
+# Target: Printers.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:Printers.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o Printers.cmi Printers.mli # cached
+# Target: Printers.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:Printers.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules Printers.ml > Printers.ml.depends # cached
+# Target: Printers.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:Printers.cmo, file:Printers.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o Printers.cmo Printers.ml # cached
+# Target: InfiniteArray.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:InfiniteArray.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules InfiniteArray.mli > InfiniteArray.mli.depends # cached
+# Target: InfiniteArray.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:InfiniteArray.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o InfiniteArray.cmi InfiniteArray.mli # cached
+# Target: InfiniteArray.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:InfiniteArray.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules InfiniteArray.ml > InfiniteArray.ml.depends # cached
+# Target: InfiniteArray.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:InfiniteArray.cmo, file:InfiniteArray.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o InfiniteArray.cmo InfiniteArray.ml # cached
+# Target: PackedIntArray.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:PackedIntArray.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules PackedIntArray.mli > PackedIntArray.mli.depends # cached
+# Target: PackedIntArray.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:PackedIntArray.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o PackedIntArray.cmi PackedIntArray.mli # cached
+# Target: PackedIntArray.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:PackedIntArray.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules PackedIntArray.ml > PackedIntArray.ml.depends # cached
+# Target: PackedIntArray.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:PackedIntArray.cmo, file:PackedIntArray.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o PackedIntArray.cmo PackedIntArray.ml # cached
+# Target: RowDisplacement.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:RowDisplacement.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules RowDisplacement.mli > RowDisplacement.mli.depends # cached
+# Target: RowDisplacement.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:RowDisplacement.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o RowDisplacement.cmi RowDisplacement.mli # cached
+# Target: RowDisplacement.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:RowDisplacement.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules RowDisplacement.ml > RowDisplacement.ml.depends # cached
+# Target: RowDisplacement.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:RowDisplacement.cmo, file:RowDisplacement.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o RowDisplacement.cmo RowDisplacement.ml # cached
+# Target: LinearizedArray.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:LinearizedArray.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules LinearizedArray.mli > LinearizedArray.mli.depends # cached
+# Target: LinearizedArray.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:LinearizedArray.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o LinearizedArray.cmi LinearizedArray.mli # cached
+# Target: LinearizedArray.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:LinearizedArray.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules LinearizedArray.ml > LinearizedArray.ml.depends # cached
+# Target: LinearizedArray.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:LinearizedArray.cmo, file:LinearizedArray.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o LinearizedArray.cmo LinearizedArray.ml # cached
+# Target: TableFormat.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:TableFormat.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules TableFormat.ml > TableFormat.ml.depends # cached
+# Target: TableFormat.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:TableFormat.cmo, file:TableFormat.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o TableFormat.cmo TableFormat.ml # cached
+# Target: InspectionTableFormat.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:InspectionTableFormat.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules InspectionTableFormat.ml > InspectionTableFormat.ml.depends # cached
+# Target: InspectionTableFormat.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:InspectionTableFormat.cmo, file:InspectionTableFormat.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o InspectionTableFormat.cmo InspectionTableFormat.ml # cached
+# Target: InspectionTableInterpreter.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:InspectionTableInterpreter.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules InspectionTableInterpreter.mli > InspectionTableInterpreter.mli.depends # cached
+# Target: InspectionTableInterpreter.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:InspectionTableInterpreter.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o InspectionTableInterpreter.cmi InspectionTableInterpreter.mli # cached
+# Target: InspectionTableInterpreter.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:InspectionTableInterpreter.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules InspectionTableInterpreter.ml > InspectionTableInterpreter.ml.depends # cached
+# Target: InspectionTableInterpreter.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:InspectionTableInterpreter.cmo, file:InspectionTableInterpreter.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o InspectionTableInterpreter.cmo InspectionTableInterpreter.ml # cached
+# Target: TableInterpreter.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:TableInterpreter.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules TableInterpreter.mli > TableInterpreter.mli.depends # cached
+# Target: TableInterpreter.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:TableInterpreter.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o TableInterpreter.cmi TableInterpreter.mli # cached
+# Target: TableInterpreter.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:TableInterpreter.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules TableInterpreter.ml > TableInterpreter.ml.depends # cached
+# Target: TableInterpreter.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:TableInterpreter.cmo, file:TableInterpreter.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o TableInterpreter.cmo TableInterpreter.ml # cached
+# Target: StaticVersion.mli.depends, tags: { bin_annot, debug, extension:mli, fancy_parser, file:StaticVersion.mli, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules StaticVersion.mli > StaticVersion.mli.depends # cached
+# Target: StaticVersion.cmi, tags: { bin_annot, byte, compile, debug, extension:mli, fancy_parser, file:StaticVersion.mli, interf, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o StaticVersion.cmi StaticVersion.mli # cached
+# Target: StaticVersion.ml.depends, tags: { bin_annot, debug, extension:ml, fancy_parser, file:StaticVersion.ml, ocaml, ocamldep, quiet, safe_string, traverse }
+ocamldep.opt -modules StaticVersion.ml > StaticVersion.ml.depends # cached
+# Target: StaticVersion.cmo, tags: { bin_annot, byte, compile, debug, extension:cmo, extension:ml, fancy_parser, file:StaticVersion.cmo, file:StaticVersion.ml, implem, ocaml, quiet, safe_string, traverse }
+ocamlc.opt -c -g -bin-annot -safe-string -o StaticVersion.cmo StaticVersion.ml # cached
+# Target: menhirLib.cmo, tags: { bin_annot, byte, debug, extension:cmo, fancy_parser, file:menhirLib.cmo, ocaml, pack, quiet, safe_string, traverse }
+ocamlc.opt -pack -g -bin-annot General.cmo Convert.cmo IncrementalEngine.cmo EngineTypes.cmo Engine.cmo ErrorReports.cmo Printers.cmo InfiniteArray.cmo PackedIntArray.cmo RowDisplacement.cmo LinearizedArray.cmo TableFormat.cmo InspectionTableFormat.cmo InspectionTableInterpreter.cmo TableInterpreter.cmo StaticVersion.cmo -o menhirLib.cmo # cached
+# Target: parser.mly, tags: { bin_annot, byte, compile, debug, extension:ml, extension:mly, fancy_parser, file:parser.ml, file:parser.mly, infer, menhir, ocaml, parser, quiet, safe_string, traverse }
+../_stage2/menhir.native -v -lg 1 -la 1 -lc 1 --table --infer --stdlib .. --strict --fixed-exception --canonical --ocamlc 'ocamlc.opt -g -bin-annot -safe-string' --infer parser.mly # cached
+# Compilation successful.

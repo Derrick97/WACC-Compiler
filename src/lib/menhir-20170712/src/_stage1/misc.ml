@@ -1,0 +1,384 @@
+(******************************************************************************)
+(*                                                                            *)
+(*                                   Menhir                                   *)
+(*                                                                            *)
+(*                       François Pottier, Inria Paris                        *)
+(*              Yann Régis-Gianas, PPS, Université Paris Diderot              *)
+(*                                                                            *)
+(*  Copyright Inria. All rights reserved. This file is distributed under the  *)
+(*  terms of the GNU General Public License version 2, as described in the    *)
+(*  file LICENSE.                                                             *)
+(*                                                                            *)
+(******************************************************************************)
+
+let ( $$ ) x f = f x
+
+let unSome = function
+    None -> assert false
+  | Some x -> x
+
+let o2s o f =
+  match o with
+  | None ->
+      ""
+  | Some x ->
+      f x
+
+let single = function
+  | [ x ] ->
+      x
+  | _ ->
+      assert false
+
+let rec mapd f = function
+  | [] ->
+      []
+  | x :: xs ->
+      let y1, y2 = f x in
+      y1 :: y2 :: mapd f xs
+
+let tabulate n f =
+  let a = Array.init n f in
+  Array.get a
+
+let tabulateb n f =
+  let a = Array.init n f in
+  Array.get a,
+  Array.fold_left (fun count element ->
+    if element then count + 1 else count
+  ) 0 a
+
+let tabulatef number fold n dummy f =
+  let a = Array.make n dummy in
+  let () = fold (fun () element ->
+    a.(number element) <- f element
+  ) () in
+  let get element =
+    a.(number element)
+  in
+  get
+
+let tabulateo number fold n f =
+  let c = ref 0 in
+  let get =
+    tabulatef number fold n None (fun element ->
+      let image = f element in
+      begin match image with
+      | Some _ ->
+          incr c
+      | None ->
+          ()
+      end;
+      image
+    )
+  in
+  get, !c
+
+module IntSet = Set.Make (struct
+                            type t = int
+                            let compare = ( - )
+                          end)
+
+type 'a iter = ('a -> unit) -> unit
+
+let separated_iter_to_string printer separator iter =
+  let b = Buffer.create 32 in
+  let first = ref true in
+  iter (fun x ->
+    if !first then begin
+      Buffer.add_string b (printer x);
+      first := false
+    end
+    else begin
+      Buffer.add_string b separator;
+      Buffer.add_string b (printer x)
+    end
+  );
+  Buffer.contents b
+
+let separated_list_to_string printer separator xs =
+  separated_iter_to_string printer separator (fun f -> List.iter f xs)
+
+let terminated_iter_to_string printer terminator iter =
+  let b = Buffer.create 32 in
+  iter (fun x ->
+    Buffer.add_string b (printer x);
+    Buffer.add_string b terminator
+  );
+  Buffer.contents b
+
+let terminated_list_to_string printer terminator xs =
+  terminated_iter_to_string printer terminator (fun f -> List.iter f xs)
+
+let index_map string_map =
+  let n = StringMap.cardinal string_map in
+  let a = Array.make n None in
+  let conv, _ = StringMap.fold
+    (fun k v (conv, idx) ->
+       a.(idx) <- Some (k, v);
+       StringMap.add k idx conv, idx + 1)
+    string_map (StringMap.empty, 0)
+  in
+    ((fun n -> snd (unSome a.(n))),
+     (fun k -> StringMap.find k conv),
+     (fun n -> fst (unSome a.(n))))
+
+let support_assoc l x =
+  try
+    List.assoc x l
+  with Not_found -> x
+
+let index (strings : string list) : int * string array * int StringMap.t =
+  let name = Array.of_list strings
+  and n, map = List.fold_left (fun (n, map) s ->
+    n+1, StringMap.add s n map
+  ) (0, StringMap.empty) strings in
+  n, name, map
+
+(* Turning an implicit list, stored using pointers through a hash
+   table, into an explicit list. The head of the implicit list is
+   not included in the explicit list. *)
+
+let materialize (table : ('a, 'a option) Hashtbl.t) (x : 'a) : 'a list =
+  let rec loop x =
+    match Hashtbl.find table x with
+    | None ->
+        []
+    | Some x ->
+        x :: loop x
+  in
+  loop x
+
+(* [iteri] implements a [for] loop over integers, from 0 to
+   [n-1]. *)
+
+let iteri n f =
+  for i = 0 to n - 1 do
+    f i
+  done
+
+(* [foldi] implements a [for] loop over integers, from 0 to [n-1],
+   with an accumulator. [foldij] implements a [for] loop over
+   integers, from [start] to [n-1], with an accumulator. *)
+
+let foldij start n f accu =
+  let rec loop i accu =
+    if i = n then
+      accu
+    else
+      loop (i+1) (f i accu)
+  in
+  loop start accu
+
+let foldi n f accu =
+  foldij 0 n f accu
+
+(* [mapij start n f] produces the list [ f start; ... f (n-1) ]. *)
+
+let mapij start n f =
+  List.rev (
+    foldij start n (fun i accu ->
+      f i :: accu
+    ) []
+  )
+
+(* [mapi n f] produces the list [ f 0; ... f (n-1) ]. *)
+
+let mapi n f =
+  mapij 0 n f
+
+(* [qfold f accu q] repeatedly takes an element [x] off the queue [q]
+   and applies [f] to the accumulator and to [x], until [q] becomes
+   empty. Of course, [f] can add elements to [q] as a side-effect.
+
+   We allocate an option to ensure that [qfold] is tail-recursive. *)
+
+let rec qfold f accu q =
+  match
+    try
+      Some (Queue.take q)
+    with Queue.Empty ->
+      None
+  with
+  | Some x ->
+      qfold f (f accu x) q
+  | None ->
+      accu
+
+(* [qiter f q] repeatedly takes an element [x] off the queue [q] and
+   applies [f] to [x], until [q] becomes empty. Of course, [f] can add
+   elements to [q] as a side-effect. *)
+
+let qiter f q =
+  try
+    while true do
+      f (Queue.take q)
+    done
+  with Queue.Empty ->
+    ()
+
+let rec smap f = function
+  | [] ->
+      []
+  | (x :: xs) as l ->
+      let x' = f x
+      and xs' = smap f xs in
+      if x == x' && xs == xs' then
+        l
+      else
+        x' :: xs'
+
+let rec smapa f accu = function
+  | [] ->
+      accu, []
+  | (x :: xs) as l ->
+      let accu, x' = f accu x in
+      let accu, xs' = smapa f accu xs in
+      accu,
+      if x == x' && xs == xs' then
+        l
+      else
+        x' :: xs'
+
+let normalize s =
+  let s = Bytes.of_string s in
+  let n = Bytes.length s in
+  for i = 0 to n - 1 do
+    match Bytes.get s i with
+    | '('
+    | ')'
+    | ',' ->
+        Bytes.set s i '_'
+    | _ ->
+        ()
+  done;
+  Bytes.unsafe_to_string s
+
+(* [postincrement r] increments [r] and returns its original value. *)
+
+let postincrement r =
+  let x = !r in
+  r := x + 1;
+  x
+
+(* [map_opt f l] returns the list of [y]s such that [f x = Some y] where [x]
+   is in [l], preserving the order of elements of [l]. *)
+let map_opt f l =
+  List.(rev (fold_left (fun ys x ->
+    match f x with
+      | None -> ys
+      | Some y -> y :: ys
+  ) [] l))
+
+let new_intern capacity =
+  (* Set up a a hash table, mapping strings to unique integers. *)
+  let module H = Hashtbl.Make(struct
+    type t = string
+    let equal = (=)
+    let hash = Hashtbl.hash
+  end) in
+  let table = H.create capacity in
+  (* This counts the calls to [intern]. *)
+  let c = ref 0 in
+  (* A string is mapped to a unique string, as follows. *)
+  let intern s =
+    c := !c + 1;
+    try
+      H.find table s
+    with Not_found ->
+      H.add table s s;
+      s
+  and verbose () =
+    Printf.fprintf stderr
+      "%d calls to intern; %d unique strings.\n%!"
+      !c (H.length table)
+  in
+  intern, verbose
+
+let new_encode_decode capacity =
+  (* Set up a a hash table, mapping strings to unique integers. *)
+  let module H = Hashtbl.Make(struct
+    type t = string
+    let equal = (=)
+    let hash = Hashtbl.hash
+  end) in
+  let table = H.create capacity in
+  (* Set up a resizable array, mapping integers to strings. *)
+  let text = MenhirLib.InfiniteArray.make "" in
+  (* This counts the calls to [encode]. *)
+  let c = ref 0 in
+  (* A string is mapped to a unique integer, as follows. *)
+  let encode (s : string) : int =
+    c := !c + 1;
+    try
+      H.find table s
+    with Not_found ->
+      (* The number of elements in the hash table is the next available
+         unique integer code. *)
+      let i = H.length table in
+      H.add table s i;
+      MenhirLib.InfiniteArray.set text i s;
+      i
+  (* An integer code can be mapped back to a string, as follows. *)
+  and decode (i : int) : string =
+    MenhirLib.InfiniteArray.get text i
+  and verbose () =
+    Printf.fprintf stderr
+      "%d calls to intern; %d unique strings.\n%!"
+      !c (H.length table)
+  in
+  encode, decode, verbose
+
+let rec best (preferable : 'a -> 'a -> bool) (xs : 'a list) : 'a option =
+  match xs with
+  | [] ->
+      (* Special case: no elements at all, so no best element. This case
+         does not participate in the recursion. *)
+      None
+  | [x] ->
+      Some x
+  | x :: xs ->
+      (* If [x] is preferable to every element of [xs], then it is the
+         best element of [x :: xs]. *)
+      if List.for_all (preferable x) xs then
+        Some x
+      else
+        (* [xs] is nonempty, so the recursive call is permitted. *)
+        match best preferable xs with
+        | Some y ->
+            if preferable y x then
+              (* If [y] is the best element of [xs] and [y] is preferable to
+                 [x], then [y] is the best element of [x :: xs]. *)
+              Some y
+            else
+              (* There is no best element. *)
+              None
+        | None ->
+            (* There is no best element. *)
+            None
+
+let rec levels1 cmp x1 xs =
+  match xs with
+  | [] ->
+      [x1], []
+  | x2 :: xs ->
+      let ys1, yss = levels1 cmp x2 xs in
+      if cmp x1 x2 = 0 then
+        x1 :: ys1, yss
+      else
+        [x1], ys1 :: yss
+
+let levels cmp xs =
+  match xs with
+  | [] ->
+      []
+  | x1 :: xs ->
+      let ys1, yss = levels1 cmp x1 xs in
+      ys1 :: yss
+
+let once x y =
+  let s = ref x in
+  fun () ->
+    let result = !s in
+    s := y;
+    result
