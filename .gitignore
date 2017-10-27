@@ -2,7 +2,8 @@
 *.o
 *.native
 *.byte
-src/legacy/lib/
 _build
 _sdk
 test/wacc_examples
+wacc/lib/menhir-20170712/src/_*
+wacc/lib/menhir-20170712/build

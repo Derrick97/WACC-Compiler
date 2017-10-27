@@ -19,7 +19,7 @@ JFLAGS	:= -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -cp lib/antlr-4.4-complete.
 # the make rules
 
 all: build_deps
-	cd src/legacy && make driver.native
+	cd wacc/ && make driver.native
 
 build_deps:
 	chmod u+x build.sh && ./build.sh

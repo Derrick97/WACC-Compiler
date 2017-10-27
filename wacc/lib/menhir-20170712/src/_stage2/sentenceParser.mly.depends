@@ -1,2 +1,0 @@
-sentenceParser.ml: Grammar Lexing List Option Positions SentenceParserAux
-sentenceParser.mli: Grammar Lexing MenhirLib SentenceParserAux
