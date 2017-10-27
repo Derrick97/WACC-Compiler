@@ -4,6 +4,7 @@
 ANTLR_DIR	:= antlr_config
 SOURCE_DIR	:= src
 OUTPUT_DIR	:= bin 
+PATH := menhir-20170712/build/bin:$(PATH)
 
 # Tools
 
@@ -18,7 +19,7 @@ JFLAGS	:= -sourcepath $(SOURCE_DIR) -d $(OUTPUT_DIR) -cp lib/antlr-4.4-complete.
 
 # the make rules
 
-all:
+all: build_deps
 	cd wacc/ && make driver.native
 
 build_deps:
