@@ -1,12 +1,9 @@
+(** A symbol table with parents**)
 type symbol = String.t
 type 'a table
 
 val symbol : string -> symbol
-(** A symbol table with parents**)
-val name : symbol -> string
 
-(* alias for symbol *)
-val string_of_symbol : symbol -> string
 (* create an empty symbol table *)
 val empty  : 'a table
 

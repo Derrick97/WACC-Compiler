@@ -8,6 +8,34 @@ exception TypeMismatch of A.ty * A.ty * A.pos
 exception UnknownIdentifier of A.symbol * A.pos
 exception UnexpectedError of string * A.pos
 
+(* let var_name = function *)
+(*   | IdentExp (name, _) -> name *)
+(*   | ArrayIndexExp (name, _, _) -> name *)
+(*   | _ -> raise (Invalid_argument "not a var") *)
+
+(* UnOp ArgType ReturnType *)
+let unop_types = [
+  (NotOp, BoolTy, BoolTy);
+  (NegOp, IntTy, IntTy);
+  (LenOp, ArrayTy NullTy, IntTy);
+  (OrdOp, CharTy, IntTy);
+  (ChrOp, IntTy, CharTy)
+]
+
+let unop_arg_type = function
+  | NotOp -> BoolTy
+  | NegOp -> IntTy
+  | LenOp -> ArrayTy NullTy
+  | OrdOp -> CharTy
+  | ChrOp -> IntTy
+
+let unop_ret_type = function
+  | NotOp -> BoolTy
+  | NegOp -> IntTy
+  | LenOp -> IntTy
+  | OrdOp -> IntTy
+  | ChrOp -> CharTy
+
 type enventry =
   | VarEntry of A.ty               (* variable *)
   | FuncEntry of A.ty * A.ty list  (* types of params * type of result *)
@@ -72,7 +100,7 @@ let rec exp_type table exp =
       | Null      -> PairTyy
     end
   | BinOpExp    (exp, binop, exp', pos) -> binop_type binop
-  | UnOpExp     (unop, exp, pos) -> A.unop_ret_type unop
+  | UnOpExp     (unop, exp, pos) -> unop_ret_type unop
   | NullExp     (pos) -> PairTyy
   | NewPairExp  (exp, exp', pos) -> PairTy ((exp_type table exp), (exp_type table exp'))
   | CallExp     (fname, exps, pos) ->
@@ -136,7 +164,7 @@ let rec check_exp (table: 'a S.table) exp =
     begin
       check_in_this_scope exp;
       let ty = exp_type table exp in
-      let expected_ty = (A.unop_arg_type unop) in
+      let expected_ty = (unop_arg_type unop) in
       if eq_type ty expected_ty then table else raise (TypeMismatch (ty, expected_ty, pos))
     end
   | NullExp     pos -> table
@@ -150,9 +178,8 @@ and check_stmt table stmt =
   let table' = S.new_scope table in
   let check_with_new_scope = check_stmt table' in
   match stmt with
-  | SeqStmt ([])   -> table
-  | SeqStmt (x::xs) -> (let table' = check_stmt table x in
-                       (check_stmt table' (SeqStmt xs)))
+  | SeqStmt (stmt, stmtlist) -> (let table' = check_stmt table stmt in
+                                 (check_stmt table' stmtlist))
   | AssignStmt   (IdentExp (name, _), exp, pos) ->
     begin
       try
@@ -202,3 +229,9 @@ and check_stmt table stmt =
   | BlockStmt    (exp, pos) -> (ignore(check_with_new_scope exp);
                                table)
 
+let check_int_overflow num =
+  let max_int = Int32.to_int Int32.max_int in
+  let min_int = Int32.to_int Int32.min_int in
+  if num <= max_int && num >= min_int
+  then num
+  else raise (SyntaxError ("Int overflow: " ^ string_of_int num));;

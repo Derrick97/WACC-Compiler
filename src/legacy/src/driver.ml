@@ -55,11 +55,8 @@ let () =
     let lexbuf = Lexing.from_channel (open_in filename) in
     try
       let (decs, stmt) = Parser.prog Lexer.main lexbuf in
-      let stmt = match stmt with
-        | A.SeqStmt stmt -> A.SeqStmt stmt
-        | others -> A.SeqStmt [others] in
       if (print_ast)
-      then print_string (A.pp_stmt stmt)
+      then print_string (Prettyprint.prettyprint_stmt stmt)
       else ();
       (* setup_builtin_functions; *)
       let table' = Symbol.new_scope (add_func_declarations table decs) in
@@ -89,7 +86,6 @@ let () =
       begin
         let (lnum, cnum) = pos_lnum_cnum pos in
         fprintf stderr "Near %d:%d\n" lnum cnum;
-        fprintf stderr "Expected \"%s\", but got \"%s\"\n" (A.pp_type expected) (A.pp_type actual);
         exit(semantic_error_code);
       end
     | Semantic.UnknownIdentifier (err, pos) ->

@@ -17,3 +17,7 @@ val type_mismatch : A.ty -> A.ty -> A.pos -> 'a
 val check_function_call : enventry S.table -> S.symbol -> A.exp list -> A.pos -> enventry S.table
 val check_exp : enventry S.table -> A.exp -> enventry S.table
 val check_stmt : enventry S.table -> A.stmt -> enventry S.table
+val check_int_overflow : int -> int
+val unop_types : (A.unop * A.ty * A.ty) list
+val unop_arg_type : A.unop -> A.ty
+val unop_ret_type : A.unop -> A.ty

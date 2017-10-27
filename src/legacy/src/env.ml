@@ -236,10 +236,9 @@ let rec trans_stmt
     (ctx: codegen_ctx)
     (stmt: Ast.stmt) : unit = match stmt with
   | VarDeclStmt (ty,name,exp,_) -> trans_var_decl ctx stmt
-  | SeqStmt [] -> ()
-  | SeqStmt (s::ss) -> (
-      trans_stmt ctx s;
-      trans_stmt ctx (SeqStmt ss))
+  | SeqStmt (stmt, stmtlist) -> (
+      trans_stmt ctx stmt;
+      trans_stmt ctx stmtlist)
   | AssignStmt (lhs, rhs, _) -> failwith "TODO assignment"
   | PrintStmt (s,_) -> trans_print_stmt ctx stmt
   | _ -> failwith "TODO trans_stmt"
@@ -292,7 +291,7 @@ let () =
   let (decs, ast) = Parser.prog Lexer.main lexbuf in
   if (!print_ast) then (
     print_string "-----AST output-----\n";
-    print_string (Ast.pp_stmt ast); print_newline ();
+    print_string (Prettyprint.prettyprint_stmt ast); print_newline ();
     print_string "-----end output-----\n");
   let out_file = stdout in
   let () = trans ast in

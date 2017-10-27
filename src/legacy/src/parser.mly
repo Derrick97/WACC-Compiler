@@ -4,14 +4,14 @@ open Ast
 (* This is the function to convert string to symbol,
  * not the type `symbol` *)
 let symbol = Symbol.symbol
-
+           
 (* check if stmt is returnable. useful for checking func returns *)
 let rec stmt_returnable = function
   | ExitStmt _ | RetStmt _ -> true
   | WhileStmt (pred, body, _) -> (stmt_returnable body)
   | IfStmt (pred, tpart, epart, pos) -> (stmt_returnable tpart)
                                       && (stmt_returnable epart) (* conditional must return on both branch *)
-  | SeqStmt (s::ss) -> (stmt_returnable s) || (stmt_returnable (SeqStmt ss) )
+  | SeqStmt (stmt, stmtlist) -> (stmt_returnable stmt) || (stmt_returnable stmtlist )
   | _ -> false
 
 %}
@@ -125,11 +125,8 @@ stat:
 | BEGIN; s=stat; END                        { BlockStmt   (s, $startpos)                                                       }
 | WHILE; exp = expr; DO; s = stat; DONE     { WhileStmt (exp, s, $startpos)                                 }
 | IF pred=expr THEN thenp=stat ELSE elsep=stat FI  { IfStmt (pred, thenp, elsep, $startpos)                 }
-| fst=stat; SEMICOLON; rest=stat;           { match rest with
-                                              | SeqStmt l -> SeqStmt (fst::l)
-                                              | _ -> SeqStmt (fst :: [rest])
-                                            }
-| fst=stat; SEMICOLON;                      { fst                                         }
+| fst=stat; SEMICOLON; rest=stat;           { SeqStmt (fst, rest) }
+| fst=stat; SEMICOLON;                      { fst }
 
 %inline ident:
 | ID { symbol $1 }
@@ -231,7 +228,7 @@ int_liter:
 expr:
 | ID                          { IdentExp (symbol $1, $startpos)                       }
 | array_elem                  { $1                                                    }
-| i=int_liter                 { check_int_overflow i;
+| i=int_liter                 { Semantic.check_int_overflow i;
                                 LiteralExp (LitInt i, $startpos)                      }
 | bool_liter                  { LiteralExp (LitBool $1, $startpos)                    }
 | pair_liter                  { LiteralExp ($1, $startpos)                            }
