@@ -83,6 +83,10 @@ let is_var table name =
   | FuncEntry (retty, argtys) -> false
   | _ -> true
 
+let is_heap_type  = function
+  | A.ArrayTy _ | A.PairTy (_, _) -> true
+  | _ -> false
+
 let rec exp_type table exp =
   let exp_type' = exp_type table in
   match exp with
@@ -225,7 +229,12 @@ and check_stmt table stmt =
                                 Symbol.insert "$result" (VarEntry (exp_type table'' exp)) table''
                                )
   | ReadStmt     (exp, pos) -> check_in_this_scope exp
-  | FreeStmt     (exp, pos) -> check_in_this_scope exp
+  | FreeStmt     (exp, pos) -> (check_in_this_scope exp;
+                                let rty = exp_type table exp in
+                                if (not (is_heap_type rty)) then
+                                  raise (SemanticError ("Can only free heap allocated data", pos))
+                                else
+                                  table)
   | BlockStmt    (stmt, pos) -> (ignore(check_with_new_scope stmt);
                                  table)
 and check_function_decls decls =
