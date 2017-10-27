@@ -7,6 +7,7 @@ exception SemanticError of string * A.pos
 exception TypeMismatch of A.ty * A.ty * A.pos
 exception UnknownIdentifier of A.symbol * A.pos
 exception UnexpectedError of string * A.pos
+exception SomeError of string
 
 (* let var_name = function *)
 (*   | IdentExp (name, _) -> name *)
@@ -48,6 +49,11 @@ let type_mismatch expected actual pos =
 let var_name = function
   | IdentExp (name, pos) -> name
   | _ -> raise (Invalid_argument "not a var!")
+
+let checkComparable ty =
+  match ty with
+  | (BoolTy | PairTy(_,_) | ArrayTy(_)) -> false
+  | _ -> true
 
 let rec eq_type t1 t2 = match (t1, t2) with
   | (BoolTy, BoolTy) -> true
@@ -99,7 +105,13 @@ let rec exp_type table exp =
       | LitPair (f, s) -> PairTy ((exp_type table f), (exp_type table s))
       | Null      -> PairTyy
     end
-  | BinOpExp    (exp, binop, exp', pos) -> binop_type binop
+  | BinOpExp    (exp, binop, exp', pos) -> (
+    let ty = exp_type table exp in
+    let ty' = exp_type table exp' in
+     if eq_type (expect exp table binop) ty && eq_type (expect exp table binop) ty'
+    then binop_type binop
+    else
+    raise (TypeMismatch ((exp_type table exp), (exp_type table exp'), pos)))
   | UnOpExp     (unop, exp, pos) -> unop_ret_type unop
   | NullExp     (pos) -> PairTyy
   | NewPairExp  (exp, exp', pos) -> PairTy ((exp_type table exp), (exp_type table exp'))
@@ -127,6 +139,16 @@ and binop_type = function
   | (A.GeOp | A.GtOp | A.LeOp | A.LtOp |
            A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
   | _ -> A.IntTy
+and  expect exp table binop =
+   (match binop with
+   | (A.OrOp | A.AndOp ) -> A.BoolTy
+   | (A.MinusOp | A.ModOp | A.PlusOp | A.TimesOp | A.DivideOp ) -> A.IntTy
+   | A.EqOp -> exp_type table exp
+   | _ -> (
+    if not(checkComparable (exp_type table exp)) then
+    raise (SomeError("Not expect this type"))
+    else exp_type table exp;))
+
 
 and check_function_call table fname exps pos = try
     match S.lookup fname table with
@@ -153,7 +175,8 @@ and check_exp (table: 'a S.table) exp =
   | BinOpExp    (exp, binop, exp', pos) -> (
       let lty = exp_type table exp in
       let rty = exp_type table exp' in
-      if eq_type lty rty then table else raise (TypeMismatch (lty, rty, pos)))
+      if eq_type (expect exp table binop) lty &&  eq_type (expect exp table binop) rty then table
+      else raise (SemanticError("Unexpected type comparison",pos)))
   | UnOpExp     (unop, exp, pos) -> (
       check_in_this_scope exp;
       let ty = exp_type table exp in

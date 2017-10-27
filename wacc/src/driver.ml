@@ -55,7 +55,7 @@ let () =
     let lexbuf = Lexing.from_channel (open_in filename) in
     try
       let (decs, stmt) = Parser.prog Lexer.main lexbuf in
-      let () = Interpreter.eval stmt in exit(0);
+      (* let () = Interpreter.eval stmt in exit(0); *)
       (* setup_builtin_functions; *)
       (* let table' = Symbol.new_scope (add_func_declarations table decs) in *)
       (* (\* function declarations *\) *)

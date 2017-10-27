@@ -65,7 +65,7 @@ let rec compute exp table = match exp with
   | A.ModOp -> Int(arithmeticConvert (compute ex1 table) mod arithmeticConvert(compute ex2 table)))
 | A.ArrayIndexExp(symbol, explist,_) -> ( match (compute (Symbol.lookup symbol !table) table) with
   | ListOfElem(length, elems) -> (match explist with
-    | exp::[] -> (compute (List.nth elems (arithmeticConvert (compute exp table))) table )
+    | exp::[] -> compute (List.nth elems (arithmeticConvert (compute exp table))) table 
     | h::r -> DefaultTy) (*need add for multidimension*)
   | _ -> ErrorTy)
 | A.NewPairExp(ex1,ex2,_) -> PairsTy(ex1, ex2)
