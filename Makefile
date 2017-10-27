@@ -37,4 +37,5 @@ clean:
 
 .PHONY: all rules clean
 
-
+download_wacc_examples:
+	git clone git@gitlab.doc.ic.ac.uk:lab1718_autumn/wacc_examples.git test/wacc_examples
