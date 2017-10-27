@@ -4,17 +4,14 @@ open Ast
   (* 4.1.2 might useful *)
 type inst =
   | InstDp    of opcode * reg * operand2
-  | InstSdt   of opcode * reg * access option
-  | InstBr    of opcode * string
-  | InstSp    of inst_sp
-  | InstLabel of string
+  | InstSdt   of opcode * reg * offset (* op * rn * rs *)
+  | InstBr    of opcode * label
+  | InstLabel of label
   | InstNoOp
-and inst_sp =
-  | Sp_lsl of reg * reg
-  | Halt
-and operand =
-  | OperandReg of reg
-  | OperandImm of int
+  | InstTHUMB of opcode * reg list        (* for stuff such as push/pop *)
+and label = string
+and offset =
+  | OffsetImm of reg * int
 and opcode =
   (* Data processing opcodes *)
   | ADD
@@ -48,13 +45,23 @@ and opcode =
   | PUSH
   | POP
 and reg = Reg of int
+and shift =
+  | ShiftImm of int
+  (* | ShiftReg of reg             (\* TODO support this *\) *)
+and rotate = int
+and operand2 =
+  | Operand2Imm of rotate * int    (* rotate * imm *)
+  (* | Operand2Reg of shift * reg  TODO *)
 and access =
   | InMem of int
   | InReg of reg
   | InImm of int
+  | InUndet of int
+and memory_address =
+  | MemAddr
 
-let fp = Reg 13                 (* frame pointer FP *)
-let lr = Reg 14                 (* link register LR *)
+let rFP = Reg 13                 (* frame pointer FP *)
+let rLR = Reg 14                 (* link register LR *)
 
 type level = int
 
@@ -87,76 +94,87 @@ let string_of_opcode code = match code with
   | POP -> "pop"
 let string_of_reg reg = match reg with
   | Reg 13 -> "rsp"           (* Stack pointer *)
-  | Reg 14 -> "rlr"           (* Link register *)
-  | Reg 15 -> "pc"            (* Program counter *)
+  | Reg 14 -> "LR"           (* Link register *)
+  | Reg 15 -> "PC"            (* Program counter *)
   | Reg 16 -> "aspr"
   | Reg r -> (if (r < 0 || r > 16) then
                 raise (Invalid_argument "Not a valid register number")
               else "r" ^ (string_of_int r))
-let string_of_shift s = match s with
-  | _ -> "shift"
-let string_of_operand op2 = match op2 with
-  | OperandReg reg -> "Rm" ^ (string_of_reg reg)
-  | OperandImm i -> "#" ^ (string_of_int i)
+let string_of_shift (s: shift) = match s with
+  | ShiftImm i -> "#" ^ (string_of_int i)
+let string_of_operand2 (op2: operand2) = match op2 with
+  | Operand2Imm (rotate, imm) -> "#" ^ (string_of_int imm)
+
+let string_of_offset (offset: offset) = match offset with
+  | OffsetImm (rm, i) -> "[" ^ (string_of_reg rm) ^ "]"
+  | _ -> failwith "TODO string_of_offset"
+
 let string_of_instr instr = match instr with
-  | InstDp (op, reg, operand) -> (string_of_opcode op) ^ " " ^ (string_of_reg reg) ^ " " ^ (string_of_operand operand)
+  | InstDp (op, reg, op2) -> (string_of_opcode op) ^ ", " ^ (string_of_reg reg) ^ ", " ^ (string_of_operand2 op2)
   | InstLabel label -> label ^ ":"
   | InstBr (cond, label) -> (string_of_opcode cond) ^ " " ^ label
-  | _ -> "TODO"
+  | InstSdt (op, rd, offset) -> (string_of_opcode op) ^ " " ^
+                                (string_of_reg rd) ^ "," ^
+                                (string_of_offset offset) (* see 4-32 *)
+  | InstTHUMB (op, r::rs) -> (string_of_opcode op) ^ " {" ^ (string_of_reg r)  ^ "}"
+  | _ -> ""
 
-let print_instr (out: out_channel) (inst: inst): unit = (
-  Printf.fprintf out "%s\n" (string_of_instr inst)
-)
+
+let print_global (out: out_channel) =
+  Printf.fprintf out ".global main\n"
+
+let print_instr
+    (out: out_channel)
+    (inst: inst): unit = (
+  Printf.fprintf out "%s\n" (string_of_instr inst))
 
 (* Activation record (AR) *)
 type frame = {
+  mutable name: string;
   mutable counter: int;         (* used for generating locals *)
-  mutable locals: access list;
-  mutable instructions: inst list;
+  mutable locals: (string, access) Hashtbl.t;
+  mutable instructions: inst array;
   level: int;
 }
 
 let outtermost = 0
 
-let new_frame level = { counter=(-1);
-                        locals=[];
-                        level=level;
-                        instructions=[]}
+let new_frame (name:string)
+    level = { name = name;
+              counter=(-1);
+              locals= Hashtbl.create 0;
+              level=level;
+              instructions=[| |]}
 
 let allocate_local
   (frame: frame): access  = (
   frame.counter <- frame.counter + 1;
-  assert (frame.counter < 13);
   let r = InMem frame.counter in
-  ignore(frame.locals = r::frame.locals);
-  r
-)
+  Hashtbl.add frame.locals (string_of_int frame.counter) r;
+  r)
 
 let allocate_temp
   (frame: frame): access = (
   frame.counter <- frame.counter + 1;
   assert (frame.counter < 13);
   let r = InReg (Reg frame.counter) in
-  ignore(frame.locals = r::frame.locals);
+  Hashtbl.add frame.locals (string_of_int frame.counter) r;
   r)
 
 type codegen_ctx = {
   mutable ctx_counter: int;
   mutable ctx_text: (string, string) Hashtbl.t;
-  mutable ctx_data: inst list;
   mutable ctx_env: access Symbol.table;
   mutable ctx_frames: frame array;
   mutable ctx_frame: frame;
 }
 
-let new_context (): codegen_ctx =
-  {
+let new_context (): codegen_ctx = {
     ctx_counter = 0;
     ctx_text = Hashtbl.create 0;
-    ctx_data = [];
     ctx_env = Symbol.empty;
     ctx_frames = [| |];
-    ctx_frame = new_frame outtermost;
+    ctx_frame = new_frame "main" outtermost;
   }
 
 let add_text (ctx: codegen_ctx) (text: string): string = (
@@ -167,42 +185,52 @@ let add_text (ctx: codegen_ctx) (text: string): string = (
 
 let lookup_local ctx name = Symbol.lookup' name ctx.ctx_env
 
-let trans_lit (lit: Ast.literal): access = match lit with
+let codegen_frame (f: frame)
+  : inst list =
+  [ InstLabel f.name;
+    InstTHUMB (PUSH, [rLR]); ] @
+  (* codegen stack variable allocation *)
+  Array.to_list f.instructions @
+  [ InstTHUMB (POP, [rLR]);  ]
+
+let trans_lit
+    (ctx: codegen_ctx)
+    (lit: Ast.literal): access = match lit with
   | LitBool b -> (if b then InImm 1 else InImm 0 )
   | LitInt i -> (InImm i)
   | LitChar c -> InImm (Char.code c)
-  | _ -> raise (Failure "TODO")
+  | LitString s -> failwith "TODO trans string"
+  | _ -> failwith "TODO lit"
 
 
-let (++) x y = List.concat [x; y]
+let (<:) (frame: frame) (i) = (
+  ignore(frame.instructions <-
+         Array.append frame.instructions [| i |]); ())
+
+let mov
+    (dst: access)
+    (src: access): inst = match (dst, src) with
+  | (InReg r, InImm v) -> InstDp (MOV, r, Operand2Imm (0, v)) (* FIXME assume rotate = 0 *)
+  | (InMem m, InReg r) -> failwith "TODO mov"
+  | _ -> failwith "TODO mov"
+
+
+let store (dst: access) (src: access) = match (dst, src) with
+  | (InMem d, InReg s) -> InstSdt (STR, s, OffsetImm (s, 0))
+  | _ -> failwith "TODO store"
+
+let load (dst: access) (src: access) = failwith "todo load"
 
 let rec trans_exp
     (ctx: codegen_ctx)
     (exp: Ast.exp): access = match exp with
-    | BinOpExp (lhs, op, rhs, _) -> (
-        let tr = trans_exp ctx in
-        let InReg lhsp = tr lhs in (* todo handle in memory *)
-        let InReg rhsp = tr rhs in
-        let InReg dst = allocate_temp ctx.ctx_frame in
-        let o = (match op with
-            | PlusOp -> ADD
-            | MinusOp -> SUB
-            | TimesOp -> MUL
-            | _ -> raise (Failure "TODO match op")) in
-        let insts = [
-          InstSdt (STR, dst, Some (InReg lhsp)); (* TODO check this *)
-          InstDp (o, dst, OperandReg rhsp)
-        ] in
-        ctx.ctx_data <- (ctx.ctx_data @ insts);
-        InReg dst
-      )
-    | IdentExp (ident, _) -> (
-        let v = lookup_local ctx ident in
-        let InReg t = allocate_temp ctx.ctx_frame in
-        ctx.ctx_data <- (ctx.ctx_data @ [InstSdt (LDR, t, Some v)]);
-        InReg t (* FIXME *))
-    | LiteralExp (lit, _) -> trans_lit lit
-    | _ -> raise (Failure "TODO other expression")
+  | LiteralExp (lit, _) ->
+    let temp = allocate_temp ctx.ctx_frame in
+    let l = (trans_lit ctx lit) in
+    ctx.ctx_frame <: (mov temp l);
+    temp
+  | BinOpExp (lhs, op, rhs, _) -> failwith "TODO exp"
+  | _ -> failwith "TODO exp"
 
 let rec trans_stmt
     (ctx: codegen_ctx)
@@ -218,66 +246,38 @@ let rec trans_stmt
 
 and trans_print_stmt
     (ctx: codegen_ctx)
-    (stmt: Ast.stmt) = match stmt with
-  | PrintStmt ((LiteralExp (LitString s, _)), _) -> begin
-      let l = add_text ctx s in
-      let insts = [
-        InstBr (BL, l);
-      ] in
-      ctx.ctx_data <- (ctx.ctx_data @ insts)
-    end
-  | _ -> failwith "TODO trans_print others"
+    (stmt: Ast.stmt) = failwith "TODO trans_print others"
 
 and trans_var_decl
     (ctx: codegen_ctx)
     (decl: Ast.stmt) = match decl with
-  | VarDeclStmt (_, name, exp, _) -> (
-      let InReg expp = (match trans_exp ctx exp with
-          | InReg r -> InReg r
-          | InImm r -> (let InReg t = allocate_temp ctx.ctx_frame in
-                        ctx.ctx_data <- (ctx.ctx_data @ [InstSdt (STR, t, Some (InImm r))]);
-                        InReg t)
-          | _ -> failwith "should not occur") in
-      let store = (allocate_local ctx.ctx_frame) in
-      let inst = InstSdt (STR, expp, Some (InReg expp)) in
-      ctx.ctx_data <- (ctx.ctx_data @ [inst]))
-  | _ -> failwith "only variable declaration supported"
+  | VarDeclStmt (_,name,rhs,_) -> begin
+      let rvalue = trans_exp ctx rhs in
+      let l = allocate_local ctx.ctx_frame in
+      ctx.ctx_frame <: (store l rvalue)   (* FIXME *)
+    end
+  | _ -> assert false
 
 let func_prologue (ctx: codegen_ctx) = ()
 let func_epilogue (ctx: codegen_ctx) = ()
-
-let trans_func_decl () = failwith "TODO func_decl"
-    (* (ctx: codegen_ctx)
-   *   (f: Ast.dec): frame = match f with
-   * | FuncDec (t, fname, args, body, _) ->
-   *   begin
-   *     let frame = new_frame (ctx.ctx_frame.level + 1) in
-   *     let insts = [
-   *       InstLabel (Symbol.string_of_symbol fname);
-   *       InstSdt (PUSH, fp, None);
-   *       InstSdt (PUSH, lr, None);
-   *       (\* the body *\)
-   *       InstSdt (POP, fp, None);
-   *       InstSdt (POP, lr, None);
-   *     ] in
-   *     frame
-   *   end *)
 
 let trans_call (ctx: codegen_ctx) fn = match fn with
   | CallExp (fname, args, _) ->
     begin
       let args_val = List.map (trans_exp ctx) args in
       assert (List.length args_val < 3); (* more arguments *)
-      let insts = List.mapi (fun i x -> InstSdt (LDR, Reg i, None)) args_val in
-      let insts = insts @ [InstBr (BL, fname)] in (* Clean up ? *)
-      ctx.ctx_data <- ctx.ctx_data @ insts
     end
   | _ -> failwith "should not occur"
 
 let trans stmt =
+  let out = stderr in
   let ctx = new_context () in
   let () = trans_stmt ctx stmt in
-  List.iter (fun x -> print_instr stderr x) ctx.ctx_data
+  print_global out;
+  List.iter (fun x -> match x with
+      | InstLabel _ -> print_instr out x
+      | _ -> (Printf.fprintf out "\t";
+              print_instr out x) ) (codegen_frame ctx.ctx_frame)
 
 let () =
   let verbose = ref false in
