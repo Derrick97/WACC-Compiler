@@ -228,7 +228,12 @@ and check_stmt table stmt =
   | RetStmt      (exp, pos) -> (let table'' = check_in_this_scope exp in
                                 Symbol.insert "$result" (VarEntry (exp_type table'' exp)) table''
                                )
-  | ReadStmt     (exp, pos) -> check_in_this_scope exp
+  | ReadStmt     (exp, pos) -> (check_in_this_scope exp;
+                                let is_read_ty = function
+                                  | (A.IntTy | A.CharTy) as t -> t
+                                  | _ -> raise (SemanticError ("Unsupported read input type", pos)) in
+                                is_read_ty (exp_type table exp); table
+                               )
   | FreeStmt     (exp, pos) -> (check_in_this_scope exp;
                                 let rty = exp_type table exp in
                                 if (not (is_heap_type rty)) then
