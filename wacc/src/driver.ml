@@ -11,15 +11,11 @@ let semantic_error_code = 200
 
 let setup_main = false
 let print_ast = true
-
-
-
 (* helper function to get the linum and colnum of the position in a tuple *)
 let pos_lnum_cnum pos =
   let lnum = pos.pos_lnum in
   let cnum = (pos.pos_cnum - pos.pos_bol + 1) in
   (lnum, cnum)
-
 
 let handle_syntax_error lexbuf =
   let pos = lexbuf.lex_start_p in
@@ -82,12 +78,17 @@ let () =
       (* let out_filename = (Filename.chop_extension filename) ^ ".ll" in *)
       (* print_module (Filename.basename out_filename) Codegen.the_module; *)
 
+      ignore(Semantic.check_function_decls decs);
+      ignore(Prettyprint.prettyprint_stmt stmt);
+      let table = Symbol.empty in
+      let table' = Symbol.new_scope (add_func_declarations table decs) in
+      ignore(Semantic.check_stmt table' stmt); ()
     with
     | A.SyntaxError _ -> handle_syntax_error lexbuf;
     | Semantic.TypeMismatch (expected, actual, pos) ->
       begin
         let (lnum, cnum) = pos_lnum_cnum pos in
-        fprintf stderr "Near %d:%d\n" lnum cnum;
+        fprintf stderr "TypeMismatch Near %d:%d\n" lnum cnum;
         exit(semantic_error_code);
       end
     | Semantic.UnknownIdentifier (err, pos) ->

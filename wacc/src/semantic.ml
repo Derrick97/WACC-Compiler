@@ -103,74 +103,66 @@ let rec exp_type table exp =
   | UnOpExp     (unop, exp, pos) -> unop_ret_type unop
   | NullExp     (pos) -> PairTyy
   | NewPairExp  (exp, exp', pos) -> PairTy ((exp_type table exp), (exp_type table exp'))
-  | CallExp     (fname, exps, pos) ->
-    begin
+  | CallExp     (fname, exps, pos) -> (
     try
       let FuncEntry (retty, argt) = lookup_function table fname in retty (* TODO complete the pattern matching *)
     with
-    | Not_found -> raise (UnknownIdentifier (fname, pos))
-    end
-  | SndExp  (exp, pos) ->
-    begin
+    | Not_found -> raise (UnknownIdentifier (fname, pos)))
+  | SndExp  (exp, pos) -> (
       let ty = exp_type' exp in
       match ty with
       | PairTy (t, t') -> t'
-      | _ -> raise (TypeMismatch (PairTyy, ty, pos))
-    end
-  | FstExp  (exp, pos) ->
-    begin
+      | _ -> raise (TypeMismatch (PairTyy, ty, pos)))
+  | FstExp  (exp, pos) -> (
       let ty = exp_type' exp in
       match ty with
       | PairTy (t, t') -> t
-      | _ -> raise (TypeMismatch (PairTyy, ty, pos))
-    end
-  | _ -> raise (SemanticError ("ERROR checking expression on RHS", Lexing.dummy_pos))
+      | _ -> raise (TypeMismatch (PairTyy, ty, pos)))
+  | ArrayIndexExp (name, e::exps, pos)-> (
+      if ((var_type table name) == StringTy) then CharTy
+      else (let ArrayTy ty = var_type table name in
+            ty))
+  | _ -> failwith "todo exp_type"
 and binop_type = function
   | (A.GeOp | A.GtOp | A.LeOp | A.LtOp |
            A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
   | _ -> A.IntTy
-and check_function_call table fname exps pos =
-  try
+
+and check_function_call table fname exps pos = try
     match S.lookup fname table with
     | FuncEntry (retty, argtys) ->
       begin
         let exp_tys = List.map (exp_type table) exps in
-        if argtys == exp_tys then table else raise (SemanticError ("func call type mismatch", pos))
+        if argtys = exp_tys then table else (
+          raise (SemanticError ("func call type mismatch", pos)))
       end
     | _ -> raise (SemanticError ("not a valid function", pos))
   with
   | Not_found -> raise (UnknownIdentifier (fname, pos))
 (* Return type of an expression, will raise TypeMismatch if type mismatch *)
-let rec check_exp (table: 'a S.table) exp =
+and check_exp (table: 'a S.table) exp =
   let check_in_this_scope = check_exp table in
   let table' = S.new_scope table in
-  let check_with_new_scope = check_exp table' in
-  match exp with
-  | IdentExp    (name, pos) ->
-    begin
-        try
+  let check_with_new_scope = check_exp table' in match exp with
+  | IdentExp    (name, pos) -> (
+      try
         let _ = S.lookup name table in table
         with
-        | Not_found -> raise (UnknownIdentifier (name, pos))
-    end
+        | Not_found -> raise (UnknownIdentifier (name, pos)))
   | LiteralExp  (literal, pos) -> table
-  | BinOpExp    (exp, binop, exp', pos) ->
-    begin
+  | BinOpExp    (exp, binop, exp', pos) -> (
       let lty = exp_type table exp in
       let rty = exp_type table exp' in
-      if eq_type lty rty then table else raise (TypeMismatch (lty, rty, pos))
-    end
-  | UnOpExp     (unop, exp, pos) ->
-    begin
+      if eq_type lty rty then table else raise (TypeMismatch (lty, rty, pos)))
+  | UnOpExp     (unop, exp, pos) -> (
       check_in_this_scope exp;
       let ty = exp_type table exp in
       let expected_ty = (unop_arg_type unop) in
-      if eq_type ty expected_ty then table else raise (TypeMismatch (ty, expected_ty, pos))
-    end
+      if eq_type ty expected_ty then table else raise (TypeMismatch (ty, expected_ty, pos)))
   | NullExp     pos -> table
   | NewPairExp  (exp, exp', pos) -> table
   | CallExp     (symbol, exps, pos) -> check_function_call table symbol exps pos
-  | ArrayIndexExp _ -> table
+  | ArrayIndexExp (name, exps, pos) -> table
   | FstExp _ -> table
   | SndExp _ -> table
 and check_stmt table stmt =
@@ -178,43 +170,42 @@ and check_stmt table stmt =
   let table' = S.new_scope table in
   let check_with_new_scope = check_stmt table' in
   match stmt with
-  | SeqStmt (stmt, stmtlist) -> (let table' = check_stmt table stmt in
-                                 (check_stmt table' stmtlist))
-  | AssignStmt   (IdentExp (name, _), exp, pos) ->
-    begin
+  | SeqStmt (RetStmt (_, pos), stmtlist) -> raise (A.SyntaxError ("Junk after return"))
+  | SeqStmt (stmt, stmtlist) ->
+    (let table' = check_stmt table stmt in
+     (check_stmt table' stmtlist))
+  | AssignStmt (IdentExp (name, _), exp, pos) -> begin
       try
         if not (is_var table name) then raise (SemanticError ("Not a variable", pos))
         else
           let ty = var_type table name in
           let ty' = exp_type table exp in
           if eq_type ty ty' then table else raise (TypeMismatch (ty, ty', pos))
-      with Not_found -> raise (SemanticError ("variable not found", pos))
+      with Not_found -> raise (SemanticError ("Variable not found", pos))
     end
-  | AssignStmt   (lhs, rhs, pos) ->
-    begin
+  | AssignStmt   (lhs, rhs, pos) -> begin
       try
         let ty = exp_type table lhs in
         let ty' = exp_type table rhs in
         if eq_type ty ty' then table else raise (TypeMismatch (ty, ty', pos))
       with Not_found -> raise (SemanticError ("variable not found", pos))
     end
-  | IfStmt       (exp, exp', exp'', pos) ->
-    begin
+  | IfStmt       (exp, exp', exp'', pos) -> begin
       ignore(check_in_this_scope exp);
       let ty = exp_type table exp in
       if eq_type ty BoolTy then (ignore(check_with_new_scope exp');
                                  check_with_new_scope exp'')
       else raise (TypeMismatch (BoolTy, ty, pos))
     end
-  | WhileStmt    (exp, exp', pos) ->
-    begin
+  | WhileStmt    (exp, exp', pos) -> begin
       ignore(check_in_this_scope exp);
       let ty = exp_type table exp in
       if eq_type ty BoolTy then check_with_new_scope exp' else raise (TypeMismatch (BoolTy, ty, pos))
     end
-  | ExitStmt     (exp, pos) -> check_in_this_scope exp
+  | ExitStmt     (exp, pos) -> (if (exp_type table exp) != IntTy then raise (SemanticError ("Exit code not int", pos)) else table)
   | VarDeclStmt  (ty , symbol, exp, pos) ->
     begin
+      check_in_this_scope exp;
       let table' = S.insert symbol (VarEntry ty) table in
       let ty' = exp_type table' exp in
       if eq_type ty ty' then table' else raise (TypeMismatch (ty, ty', pos))
@@ -228,10 +219,32 @@ and check_stmt table stmt =
   | FreeStmt     (exp, pos) -> check_in_this_scope exp
   | BlockStmt    (exp, pos) -> (ignore(check_with_new_scope exp);
                                table)
+and check_function_decls decls =
+  begin
+  let ctx = ref Symbol.empty in
+  ignore(List.iter (fun x -> (match x with
+      | FuncDec (ty, name, args, body, pos) ->
+        (try
+            let _ = lookup_function !ctx name in
+            raise (SemanticError ("Function redefined", pos))
+         with
+          | Not_found -> ());
+        ctx := Symbol.insert name (FuncEntry (ty, List.map (fun (ft, name) -> ft) args)) !ctx
+    )) decls);
+  let check_dec decl = (match decl with
+      | FuncDec (ty, name, args, body, pos) ->
+        begin
+          let inner_ctx = ref (Symbol.new_scope !ctx) in
+          let () = List.iter (fun x -> inner_ctx := (let (t, name) = x in Symbol.insert name (VarEntry t) !inner_ctx)) args in
+          ignore(check_stmt !inner_ctx body)
+        end) in
+  List.map check_dec decls;
+  ()
+  end
 
 let check_int_overflow num =
   let max_int = Int32.to_int Int32.max_int in
   let min_int = Int32.to_int Int32.min_int in
-  if num <= max_int && num >= min_int
+  (if num <= max_int && num >= min_int
   then num
-  else raise (SyntaxError ("Int overflow: " ^ string_of_int num));;
+  else raise (SyntaxError ("Int overflow: " ^ string_of_int num)));;

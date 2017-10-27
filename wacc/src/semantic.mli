@@ -15,6 +15,7 @@ val exp_type : enventry S.table -> A.exp -> A.ty
 val eq_type : A.ty -> Ast.ty -> bool
 val type_mismatch : A.ty -> A.ty -> A.pos -> 'a
 val check_function_call : enventry S.table -> S.symbol -> A.exp list -> A.pos -> enventry S.table
+val check_function_decls : A.function_dec list -> unit
 val check_exp : enventry S.table -> A.exp -> enventry S.table
 val check_stmt : enventry S.table -> A.stmt -> enventry S.table
 val check_int_overflow : int -> int

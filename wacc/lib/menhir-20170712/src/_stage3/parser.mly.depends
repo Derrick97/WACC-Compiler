@@ -1,2 +1,0 @@
-parser.ml: Action Error Lazy Lexing List Misc Parameters ParserAux Positions Stretch Syntax
-parser.mli: Action Lazy Lexing MenhirLib Positions Stretch Syntax
