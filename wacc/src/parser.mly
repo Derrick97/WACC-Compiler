@@ -4,7 +4,7 @@ open Ast
 (* This is the function to convert string to symbol,
  * not the type `symbol` *)
 let symbol = Symbol.symbol
-           
+
 (* check if stmt is returnable. useful for checking func returns *)
 let rec stmt_returnable = function
   | ExitStmt _ | RetStmt _ -> true
@@ -59,7 +59,6 @@ let rec stmt_returnable = function
 %token LBRACKET RBRACKET
 
 %token <int> INT
-%token <bool> BOOL
 %token <char> CHAR
 %token <string> STRING
 
@@ -113,20 +112,22 @@ param_list:
 | p = param; COMMA; pl = param_list { if (pl == []) then raise (SyntaxError "Bad args") else p::pl }
 
 stat:
-| typ ID EQ rhs=assign_rhs                  { VarDeclStmt  ($1, symbol $2, rhs, $startpos) }
-| SKIP;                                     { SkipStmt     $startpos                                        }
-| READ; assign_lhs;                         { ReadStmt    ($2, $startpos)            }
-| FREE; expr;                               { FreeStmt    ($2, $startpos)                                   }
-| PRINT expr                                { PrintStmt   ($2, $startpos)                                   }
-| PRINTLN expr                              { PrintLnStmt ($2, $startpos)                                   }
-| RETURN  expr                              { RetStmt     ($2, $startpos)                                   }
-| EXIT    expr                              { ExitStmt    ($2, $startpos)                                   }
-| lhs = assign_lhs; EQ; rhs = assign_rhs;   { AssignStmt  (lhs, rhs, $startpos)                             }
-| BEGIN; s=stat; END                        { BlockStmt   (s, $startpos)                                                       }
-| WHILE; exp = expr; DO; s = stat; DONE     { WhileStmt (exp, s, $startpos)                                 }
-| IF pred=expr THEN thenp=stat ELSE elsep=stat FI  { IfStmt (pred, thenp, elsep, $startpos)                 }
-| fst=stat; SEMICOLON; rest=stat;           { SeqStmt (fst, rest) }
-| fst=stat; SEMICOLON;                      { fst }
+| typ ID EQ rhs=assign_rhs                  { VarDeclStmt  ($1, symbol $2, rhs, $startpos)  }
+| SKIP;                                     { SkipStmt     $startpos                        }
+| READ; assign_lhs;                         { ReadStmt    ($2, $startpos)                   }
+| FREE; expr;                               { FreeStmt    ($2, $startpos)                   }
+| PRINT expr                                { PrintStmt   ($2, $startpos)                   }
+| PRINTLN expr                              { PrintLnStmt ($2, $startpos)                   }
+| RETURN  expr                              { RetStmt     ($2, $startpos)                   }
+| EXIT    expr                              { ExitStmt    ($2, $startpos)                   }
+| lhs = assign_lhs; EQ; rhs = assign_rhs;   { AssignStmt  (lhs, rhs, $startpos)             }
+| BEGIN; s=stat; END                        { BlockStmt   (s, $startpos)                    }
+| WHILE; exp = expr; DO; s = stat; DONE     { WhileStmt (exp, s, $startpos)                 }
+| IF pred=expr THEN thenp=stat ELSE elsep=stat FI  { IfStmt (pred, thenp, elsep, $startpos) }
+| fst=stat; more=sequential_stmt            { SeqStmt (fst, more)                           }
+
+ sequential_stmt:
+| SEMICOLON; rest=stat; { rest }
 
 %inline ident:
 | ID { symbol $1 }
@@ -222,7 +223,8 @@ pair_type:
 int_liter:
 | s=sign; i=INT { match s with
                   | "+" -> i
-                  | "-" -> -i }
+                  | "-" -> -i
+                  | _   -> assert false }
 | i=INT         { i }
 
 expr:
