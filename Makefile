@@ -3,7 +3,7 @@
 
 ANTLR_DIR	:= antlr_config
 SOURCE_DIR	:= src
-OUTPUT_DIR	:= bin 
+OUTPUT_DIR	:= bin
 PATH := $(PWD)/menhir-20170712/build/bin:$(PATH)
 
 # Tools
