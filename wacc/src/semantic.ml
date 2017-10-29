@@ -112,7 +112,7 @@ let rec exp_type table exp =
   | BinOpExp    (exp, binop, exp', pos) -> (
     let ty = exp_type table exp in
     let ty' = exp_type table exp' in
-     if eq_type (expect exp table binop) ty && eq_type (expect exp table binop) ty'
+     if eq_type (expect exp table binop pos) ty && eq_type (expect exp table binop pos) ty'
     then binop_type binop
     else
     raise (TypeMismatch ((exp_type table exp), (exp_type table exp'), pos)))
@@ -133,7 +133,7 @@ let rec exp_type table exp =
       let ty = exp_type' exp in
       match ty with
       | PairTy (t, t') -> t
-      | _ -> raise (TypeMismatch (PairTyy, ty, pos)))
+      | _ -> raise (TypeMismatch (PairTyy, ty, pos)) )
   | ArrayIndexExp (name, e::exps, pos)-> (
       if ((var_type table name) == StringTy) then CharTy
       else (let ArrayTy ty = var_type table name in
@@ -143,14 +143,14 @@ and binop_type = function
   | (A.GeOp | A.GtOp | A.LeOp | A.LtOp |
            A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
   | _ -> A.IntTy
-and  expect exp table binop =
+and  expect exp table binop pos =
    (match binop with
    | (A.OrOp | A.AndOp ) -> A.BoolTy
    | (A.MinusOp | A.ModOp | A.PlusOp | A.TimesOp | A.DivideOp ) -> A.IntTy
    | A.EqOp -> exp_type table exp
    | _ -> (
     if not(checkComparable (exp_type table exp)) then
-    raise (SomeError("Not expect this type"))
+    raise (SemanticError(("Unexpected type" ),pos))
     else exp_type table exp;))
 
 
@@ -178,7 +178,7 @@ and check_exp (table: 'a S.table) (exp: A.exp): 'a table = (
   | BinOpExp    (exp, binop, exp', pos) -> (
       let lty = exp_type table exp in
       let rty = exp_type table exp' in
-      if eq_type (expect exp table binop) lty &&  eq_type (expect exp table binop) rty then table
+      if eq_type (expect exp table binop pos) lty &&  eq_type (expect exp table binop pos) rty then table
       else raise (SemanticError("Unexpected type comparison",pos)))
   | UnOpExp     (unop, exp, pos) -> (
       check_in_this_scope exp;
