@@ -147,7 +147,7 @@ and  expect exp table binop pos =
    (match binop with
    | (A.OrOp | A.AndOp ) -> A.BoolTy
    | (A.MinusOp | A.ModOp | A.PlusOp | A.TimesOp | A.DivideOp ) -> A.IntTy
-   | A.EqOp -> exp_type table exp
+   | (A.EqOp | A.NeOp ) -> exp_type table exp
    | _ -> (
     if not(checkComparable (exp_type table exp)) then
     raise (SemanticError(("Unexpected type" ),pos))
