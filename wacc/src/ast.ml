@@ -33,8 +33,8 @@ and exp =
   | LiteralExp  of literal * pos
   | BinOpExp    of exp * binop * exp * pos
   | UnOpExp     of unop * exp * pos
-  | NullExp     of pos
-  | NewPairExp  of exp * exp * pos
+  | NullExp     (*of pos*)
+  | NewPairExp  of exp * exp (* pos*)
   | CallExp     of symbol * (exp list) * pos            (* call a function *)
   | FstExp      of exp * pos
   | SndExp      of exp * pos
@@ -59,7 +59,7 @@ and literal =
   | LitChar of char
   | LitInt of int
   | LitArray of exp list
-  | LitPair of (exp * exp)
+  | LitPair
   | Null
 (* for a particular field in function definition *)
 and field = ty * symbol

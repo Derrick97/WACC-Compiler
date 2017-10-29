@@ -106,7 +106,7 @@ let rec exp_type table exp =
       | LitInt  _ -> IntTy
       | LitArray [] -> NullTy
       | LitArray (x::xs) -> ArrayTy (exp_type table x)
-      | LitPair (f, s) -> PairTy ((exp_type table f), (exp_type table s))
+      | LitPair -> NullTy
       | Null      -> PairTyy
     end
   | BinOpExp    (exp, binop, exp', pos) -> (
@@ -117,8 +117,8 @@ let rec exp_type table exp =
     else
     raise (TypeMismatch ((exp_type table exp), (exp_type table exp'), pos)))
   | UnOpExp     (unop, exp, pos) -> unop_ret_type unop
-  | NullExp     (pos) -> PairTyy
-  | NewPairExp  (exp, exp', pos) -> PairTy ((exp_type table exp), (exp_type table exp'))
+  | NullExp     (*pos*) -> PairTyy
+  | NewPairExp  (exp, exp')(* pos*) -> PairTy ((exp_type table exp), (exp_type table exp'))
   | CallExp     (fname, exps, pos) -> (
     try
       let FuncEntry (retty, argt) = lookup_function table fname in retty (* TODO complete the pattern matching *)
@@ -143,7 +143,7 @@ and binop_type = function
   | (A.GeOp | A.GtOp | A.LeOp | A.LtOp |
            A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
   | _ -> A.IntTy
-and  expect exp table binop pos =
+and expect exp table binop pos =
    (match binop with
    | (A.OrOp | A.AndOp ) -> A.BoolTy
    | (A.MinusOp | A.ModOp | A.PlusOp | A.TimesOp | A.DivideOp ) -> A.IntTy
@@ -185,8 +185,8 @@ and check_exp (table: 'a S.table) (exp: A.exp): 'a table = (
       let ty = exp_type table exp in
       let expected_ty = (unop_arg_type unop) in
       if eq_type ty expected_ty then table else raise (TypeMismatch (ty, expected_ty, pos)))
-  | NullExp     pos -> table
-  | NewPairExp  (exp, exp', pos) -> table
+  | NullExp     (*pos*) -> table
+  | NewPairExp  (exp, exp') (*pos*) -> table
   | CallExp     (symbol, exps, pos) -> check_function_call table symbol exps pos
   | ArrayIndexExp (name, exps, pos) -> table
   | FstExp _ -> table

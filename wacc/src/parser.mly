@@ -143,7 +143,7 @@ assign_rhs:
 | array_liter { $1 }
 | CALL ID LPAREN args=arg_list RPAREN { CallExp (symbol $2, args, $startpos)}
 | CALL ID LPAREN RPAREN { CallExp (symbol $2, [], $startpos) }
-| NEWPAIR LPAREN e1=expr COMMA e2=expr RPAREN { NewPairExp (e1, e2, $startpos)}
+| NEWPAIR LPAREN e1=expr COMMA e2=expr RPAREN { NewPairExp (e1, e2)}(*, $startpos)}*)
 | pair_elem { $1 }
 
 array_elem:
@@ -258,4 +258,3 @@ expr:
 (* eval: (merlin-mode -1) *)
 (* eval: (electric-indent-mode -1)*)
 (* End: *)
-

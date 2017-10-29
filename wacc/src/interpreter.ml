@@ -15,6 +15,9 @@ type wrapType =
 let stack: wrapType Stack.t = (Stack.create ())
 let table = ref (Symbol.empty)
 
+
+
+
 let printWrap wrapTy =
   match wrapTy with
   | Int(num) -> print_int num
@@ -48,7 +51,8 @@ let rec compute exp table = match exp with
     let length = List.length expList in
     ListOfElem(length, expList);
     )
-  | A.LitPair (ex1, ex2) -> NullType )
+  | A.LitPair -> NullType
+  | A.Null -> NullType)
 | A.BinOpExp (ex1, binop, ex2, _) -> (match binop with
   | A.PlusOp -> Int(arithmeticConvert (compute ex1 table) + arithmeticConvert(compute ex2 table))
   | A.MinusOp -> Int(arithmeticConvert (compute ex1 table) - arithmeticConvert(compute ex2 table))
@@ -64,11 +68,9 @@ let rec compute exp table = match exp with
   | A.OrOp -> Bool (booleanConvert (compute ex1 table)|| booleanConvert(compute ex2 table))
   | A.ModOp -> Int(arithmeticConvert (compute ex1 table) mod arithmeticConvert(compute ex2 table)))
 | A.ArrayIndexExp(symbol, explist,_) -> ( match (compute (Symbol.lookup symbol !table) table) with
-  | ListOfElem(length, elems) -> (match explist with
-    | exp::[] -> compute (List.nth elems (arithmeticConvert (compute exp table))) table 
-    | h::r -> DefaultTy) (*need add for multidimension*)
+  | ListOfElem(length, elems) -> indexList (ListOfElem(length, elems)) explist
   | _ -> ErrorTy)
-| A.NewPairExp(ex1,ex2,_) -> PairsTy(ex1, ex2)
+| A.NewPairExp(ex1,ex2) -> PairsTy(ex1, ex2)
 | A.FstExp(exp,_) -> (match compute exp table with
   | PairsTy(ex1,_) -> compute ex1 table
   | _ -> ErrorTy)
@@ -76,22 +78,44 @@ let rec compute exp table = match exp with
   | PairsTy(_,ex2) -> compute ex2 table
   | _ -> ErrorTy)
 
+and indexList (ListOfElem(length,elems)) indexExps =
+  match indexExps with
+  | index::[] -> compute (List.nth elems (arithmeticConvert (compute index table))) table
+  | h::r -> indexList (compute (List.nth elems (arithmeticConvert (compute h table))) table) r
 
 
-  let rec matchLHS (lhs: A.exp): string = match lhs with
-  | A.IdentExp(symbol, _) -> symbol
+
+  let rec matchLHS lhs rhs = match lhs with
+  | A.IdentExp(symbol, _) -> (
+    table := Symbol.insert symbol rhs !table;
+    symbol;)
   | A.FstExp(exp, _) -> (match exp with
-    | A.IdentExp(s,_) -> ("fst" ^ (s))
+    | A.IdentExp(symbol,_) -> (
+      let res = compute exp table in
+      match res with
+      | PairsTy(ex1,ex2) -> (table := Symbol.insert symbol (NewPairExp(rhs,ex2)) (!table);symbol;)
+      | _ -> (symbol;) (*Need to throw errors*)
+      )
     | A.ArrayIndexExp(symbol,_,_) -> ("fst[]" ^ (symbol))
-    | A.FstExp(exps,_) -> matchLHS exps
-    | A.SndExp(exps,_) -> matchLHS exps
+    | A.FstExp(exps,_) -> matchLHS exps rhs
+    | A.SndExp(exps,_) -> matchLHS exps rhs
+    | A.NullExp -> (
+      table := Symbol.insert "nil" (NullExp) (!table);
+      Symbol.symbol "nil";)
     | _ -> Symbol.symbol "what"
     )
   | A.SndExp(exp,_) -> (match exp with
-    | A.IdentExp(symbol,_) -> ("snd" ^ (symbol))
+    | A.IdentExp(symbol,_) -> (let res = compute exp table in
+    match res with
+    | PairsTy(ex1,ex2) -> (table := Symbol.insert symbol (NewPairExp(ex1,rhs)) (!table);symbol;)
+    | _ -> (symbol;) (*Need to throw errors*)
+    )
     | A.ArrayIndexExp(symbol,_,_) -> ("snd[]" ^ symbol))
-    | A.FstExp(exps,_) -> matchLHS exps
-    | A.SndExp(exps,_) -> matchLHS exps
+    | A.FstExp(exps,_) -> matchLHS exps rhs
+    | A.SndExp(exps,_) -> matchLHS exps rhs
+    | A.NullExp -> (
+      table := Symbol.insert "nil" (NullExp) (!table);
+      Symbol.symbol "nil";)
     | _ -> Symbol.symbol "what"
   | A.ArrayIndexExp(symbol,_,_) -> symbol
 
@@ -105,8 +129,7 @@ let rec compute exp table = match exp with
       Stack.push value stack;
       )
     | A.AssignStmt(lhs, rhs, _) ->(
-      table := Symbol.insert (matchLHS lhs) rhs !table;
-      let rhs = compute (Symbol.lookup (matchLHS lhs) !table) table in
+      let rhs = compute (Symbol.lookup (matchLHS lhs rhs) !table) table in
       Stack.push rhs stack;
       )
     | A.PrintStmt(exp, _) -> (
