@@ -40,7 +40,7 @@ let rec add_func_declarations table ff =
         let table'' = List.fold_left (fun table (ty, ident) -> Symbol.insert ident (Semantic.VarEntry ty) table) !table' fields in
         let table''' = Semantic.check_stmt table'' stmt in
         let Semantic.VarEntry (rt) = Symbol.lookup "$result" table''' in
-        if (rt != ty) then raise (Semantic.SemanticError ("result type mismatch", pos))
+        if (not (Semantic.eq_type rt ty)) then raise (Semantic.SemanticError ("result type mismatch", pos))
         else !table'
     end
 
