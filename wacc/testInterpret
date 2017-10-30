@@ -1,0 +1,15 @@
+#!/bin/sh
+
+
+
+
+directory=$1
+cd /homes/jr2216/wacc_41/test/wacc_examples/valid/$directory
+allFiles=$(ls)
+cd /homes/jr2216/wacc_41/wacc
+for x in $allFiles
+do 
+ echo "Testing $x"
+ ./driver.byte /homes/jr2216/wacc_41/test/wacc_examples/valid/$directory/$x
+ echo "-------------------------------------------"
+done

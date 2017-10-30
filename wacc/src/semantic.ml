@@ -227,10 +227,10 @@ and check_stmt table stmt =
                                  check_with_new_scope exp'')
       else raise (TypeMismatch (BoolTy, ty, pos))
     end
-  | WhileStmt    (exp, exp', pos) -> begin
+  | WhileStmt    (exp, exp')(*, pos)*) -> begin
       ignore(check_in_this_scope exp);
       let ty = exp_type table exp in
-      if eq_type ty BoolTy then check_with_new_scope exp' else raise (TypeMismatch (BoolTy, ty, pos))
+      if eq_type ty BoolTy then check_with_new_scope exp' else raise (SomeError("type mismatch"))(*(TypeMismatch (BoolTy, ty, pos))*)
     end
   | ExitStmt     (exp, pos) -> (if (exp_type table exp) != IntTy then raise (SemanticError ("Exit code is not int", pos)) else table)
   | VarDeclStmt  (ty , symbol, exp, pos) ->

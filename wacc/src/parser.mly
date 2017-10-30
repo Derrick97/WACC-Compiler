@@ -8,7 +8,7 @@ let symbol = Symbol.symbol
 (* check if stmt is returnable. useful for checking func returns *)
 let rec stmt_returnable = function
   | ExitStmt _ | RetStmt _ -> true
-  | WhileStmt (pred, body, _) -> (stmt_returnable body)
+  | WhileStmt (pred, body) -> (stmt_returnable body)
   | IfStmt (pred, tpart, epart, pos) -> (stmt_returnable tpart)
                                       && (stmt_returnable epart) (* conditional must return on both branch *)
   | SeqStmt (stmt, stmtlist) -> (stmt_returnable stmt) || (stmt_returnable stmtlist )
@@ -122,7 +122,7 @@ stat:
 | EXIT    expr                              { ExitStmt    ($2, $startpos)                   }
 | lhs = assign_lhs; EQ; rhs = assign_rhs;   { AssignStmt  (lhs, rhs, $startpos)             }
 | BEGIN; s=stat; END                        { BlockStmt   (s, $startpos)                    }
-| WHILE; exp = expr; DO; s = stat; DONE     { WhileStmt (exp, s, $startpos)                 }
+| WHILE; exp = expr; DO; s = stat; DONE     { WhileStmt (exp, s)}(*, $startpos)*)              
 | IF pred=expr THEN thenp=stat ELSE elsep=stat FI  { IfStmt (pred, thenp, elsep, $startpos) }
 | fst=stat; more=sequential_stmt            { SeqStmt (fst, more)                           }
 

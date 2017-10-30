@@ -5,6 +5,8 @@ exception SemanticError of string * A.pos
 exception TypeMismatch of A.ty * A.ty * A.pos
 exception UnknownIdentifier of A.symbol * A.pos
 exception UnexpectedError of string * A.pos
+exception SomeError of string
+
 
 type enventry = VarEntry of A.ty | FuncEntry of A.ty * A.ty list
 type 'a table = 'a S.table

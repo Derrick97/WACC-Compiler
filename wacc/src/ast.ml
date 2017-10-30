@@ -49,7 +49,7 @@ and stmt =
   | PrintStmt of exp * pos
   | PrintLnStmt of exp * pos
   | IfStmt of exp * stmt * stmt * pos
-  | WhileStmt of exp * stmt * pos
+  | WhileStmt of exp * stmt (* pos*)
   | BlockStmt of stmt * pos
   | RetStmt of exp * pos
   | SeqStmt of stmt * stmt
