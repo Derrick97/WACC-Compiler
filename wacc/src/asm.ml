@@ -1,123 +1,77 @@
-type inst =
-  | Inst_oper of oper
-  | Inst_mov of mov
-  | Inst_label of string
-  | Inst_jump of string
-and oper =  { oper_dst: access list;
-              oper_op: opcode;
-              oper_src: access list; }
-and mov =   { mov_src: access;
-              mov_dst: access }
-and opcode =
-  (* Data processing opcodes *)
-  | ADD
-  | SUB
-  | RSB
-  | AND
-  | EOR
-  | ORR
-  | TST
-  | TEQ
-  | CMP
-  (* Single Data Transfer opcodes *)
-  | LDR
-  | STR
-  (* Multiply opcodes *)
-  | MUL
-  | MLA
-  (* Branching opcodes *)
-  | BEQ
-  | BNE
-  | BGE
-  | BLT
-  | BGT
-  | BLE
-  | B
-  | BL
-  (* Special opcodes *)
-  | LSL
-  | ANDEQ
-  | PUSH
-  | POP
-and offset = int
-and reg = Reg of int
-and shift =
-  | ShiftImm of int
-  (* | ShiftReg of reg           (\* TODO support this *\) *)
-and rotate = int
-and operand2 =
-  | Operand2Imm of rotate * int    (* rotate * imm *)
-  (* | Operand2Reg of shift * reg  TODO *)
-and access =
-  | InMem of int
-  | InReg of reg
-  | InImm of int
-  | InLabel of string
+type operand =
+  | OperImm of int
+  | OperAddr of addr
+  | OperReg of reg
+  | OperSym of string
+and label = string
+and inst =
+  | ADD  of  operand * operand * operand
+  | SUB  of  operand * operand * operand
+  | MOV  of  operand * operand
+  | POP  of  operand list
+  | PUSH of  operand list
+  | NEG  of  operand
+  | NOT  of  operand
+  | LDR  of  operand * operand
+  | STR  of  operand * operand
+  | BL   of  label
+and data_type =
+  | BYTE
+  | WORD
+and reg  = Reg  of int
+and addr = Addr of reg * int    (* base register * offset *)
+and lit =
+  | Lit_char of char
+  | Lit_int of int
+  | Lit_addr of string
 
-let rFP = Reg 13                 (* frame pointer FP *)
-let rLR = Reg 14                 (* link register LR *)
-let rPC = Reg 15
+let reg_PC = Reg 15
+let reg_LR = Reg 14
+let reg_SP = Reg 13
 
-type level = int
-type allocater = access -> string
-
-let string_of_opcode code = match code with
-  | ADD -> "add"
-  | SUB -> "sub"
-  | RSB -> "rsb"
-  | AND -> "and"
-  | EOR -> "eor"
-  | ORR -> "orr"
-  | TST -> "tst"
-  | TEQ -> "teq"
-  | CMP -> "cmp"
-  | LDR -> "ldr"
-  | STR -> "str"
-  | MUL -> "mul"
-  | MLA -> "mla"
-  | BEQ -> "beq"
-  | BNE -> "bne"
-  | BGE -> "bge"
-  | BLT -> "blt"
-  | BGT -> "bgt"
-  | BLE -> "ble"
-  | B -> "b"
-  | BL -> "bl"
-  | LSL -> "lsl"
-  | ANDEQ -> "andeq"
-  | PUSH -> "push"
-  | POP -> "pop"
-let string_of_reg reg = match reg with
-  | Reg 13 -> "RSP"           (* Stack pointer *)
-  | Reg 14 -> "LR"            (* Link register *)
-  | Reg 15 -> "PC"            (* Program counter *)
-  | Reg 16 -> assert false
-  | Reg r -> (if (r < 0 || r > 16) then
-                raise (Invalid_argument "Not a valid register number")
-              else "r" ^ (string_of_int r))
-let string_of_shift (s: shift) = match s with
-  | ShiftImm i -> "#" ^ (string_of_int i)
-let string_of_operand2 (op2: operand2) = match op2 with
-  | Operand2Imm (rotate, imm) -> "#" ^ (string_of_int imm)
-let string_of_access (access: access) = match access with
-  | InMem i -> "[" ^ (string_of_int i) ^ "]"
-  | InReg r -> string_of_reg r
-  | InImm i -> "#" ^ (string_of_int i)
-  | InLabel l -> "=" ^ l
+let string_of_reg = function
+  | Reg 13 -> "sp"
+  | Reg 14 -> "lr"
+  | Reg 15 -> "pc"
+  | Reg i when (i >= 0 && i < 13) -> "r" ^ (string_of_int i)
   | _ -> assert false
 
-let string_of_instr
-    (inst: inst): string = match inst with
-  | Inst_oper {oper_dst=dst;
-               oper_op=op; _} when (op = PUSH || op = POP) -> (((string_of_opcode op) ^ " {" ^
-                                                              (String.concat ", " (List.map string_of_access dst))
-                                                              ^ "}" ))
-  | Inst_oper {oper_src=src::_;
-               oper_dst=dst::_;
-               oper_op=op} -> ( ((string_of_opcode op) ^ " "
-                                 ^ (string_of_access dst) ^ ", "
-                                 ^ (string_of_access src)))
-  | Inst_label label -> (label ^ ": ")
-  | Inst_mov {mov_src=src; mov_dst=dst}-> ("mov " ^ (string_of_access dst) ^ ", " ^ (string_of_access src))
-  | Inst_jump label -> ("bl " ^ label)
+(* let string_of_access *)
+(*     (access: access) = match access with *)
+(*   | InReg r -> string_of_reg r *)
+(*   | InLabel l -> "=" ^ l *)
+(*   | InMem m -> "[?m" ^ (string_of_int m) ^ "]" *)
+(*   | InImm i -> "#" ^ (string_of_int i) *)
+
+let string_of_operand
+    (operand: operand) = match operand with
+  | OperImm  i -> "#" ^ (string_of_int i)
+  | OperReg r -> string_of_reg r
   | _ -> assert false
+
+let string_of_opcode = function
+  | ADD _ -> "add"
+  | SUB _ -> "sub"
+  | MOV _ -> "mov"
+  | POP _ -> "pop"
+  | PUSH _ -> "push"
+  | LDR _ -> "ldr"
+  | STR _ -> "str"
+  | BL _ -> "bl"
+
+let string_of_inst (inst: inst) =
+  let opcode_str = string_of_opcode inst in
+  match inst with
+  | ADD (dst, op1, op2) | SUB (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_operand dst) ^ ", " ^
+                            (string_of_operand op1) ^ ", " ^
+                            (string_of_operand op2))
+  | (PUSH ops) | (POP ops) -> (opcode_str) ^
+                              " {" ^
+                              (String.concat ", " (List.map (string_of_operand) ops)) ^
+                              "}"
+  | MOV (op1, op2) | LDR (op2, op1) | STR (op2, op1) -> opcode_str ^
+                                                        " "
+                                                        ^ (string_of_operand op1) ^
+                                                        ", " ^
+                                                        (string_of_operand op2)
+  | BL s -> opcode_str ^ " " ^ s

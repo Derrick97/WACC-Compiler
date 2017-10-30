@@ -2,20 +2,22 @@ module S = Symbol
 open Ast;;
 open Asm;;
 
+type entry' = Entry of ty * operand
+
 (* Activation record (AR) *)
 type frame = {
   mutable name: string;
   mutable counter: int;         (* used for generating locals *)
-  mutable locals: (string, access) Hashtbl.t;
-  mutable temps: access array;
+  mutable locals: (string, entry') Hashtbl.t;
+  mutable temps: operand array;
   mutable instructions: inst array;
   level: int;
 }
 
 let outermost = 0
 
-let new_frame (name:string)
-    level = { name = name;
+let new_frame
+    (name:string) level = { name = name;
               counter=(-1);
               locals= Hashtbl.create 0;
               temps=[| |];
@@ -23,34 +25,36 @@ let new_frame (name:string)
               instructions=[| |]}
 
 let allocate_local
-  (frame: frame): access  = (
+    (frame: frame)
+    (t: ty)
+    (name: string): operand  = (
   frame.counter <- frame.counter + 1;
-  let r = InMem frame.counter in
-  Hashtbl.add frame.locals (string_of_int frame.counter) r;
+  let r = OperSym (string_of_int frame.counter) in
+  Hashtbl.add frame.locals name (Entry (t, r));
   r)
 
 let allocate_temp
-  (frame: frame): access = (
+    (frame: frame)
+    (t: ty): operand = (
   frame.counter <- frame.counter + 1;
   assert (frame.counter < 13);
-  let r = InReg (Reg frame.counter) in
-  Hashtbl.add frame.locals (string_of_int frame.counter) r;
+  let r = OperSym (string_of_int frame.counter) in
+  Hashtbl.add frame.locals (string_of_int frame.counter) (Entry (t, r));
   r)
+
+let find_local (frame: frame) (name: string) =
+  Hashtbl.find frame.locals name
 
 type codegen_ctx = {
   mutable ctx_counter: int;
   mutable ctx_text: (string, string) Hashtbl.t;
-  mutable ctx_env: access Symbol.table;
   mutable ctx_frames: frame array;
-  mutable ctx_frame: frame;
 }
 
 let new_context (): codegen_ctx = {
     ctx_counter = 0;
     ctx_text = Hashtbl.create 0;
-    ctx_env = Symbol.empty;
     ctx_frames = [| |];
-    ctx_frame = new_frame "main" outermost;
 }
 
 let add_text (ctx: codegen_ctx) (text: string): string = (
@@ -59,101 +63,132 @@ let add_text (ctx: codegen_ctx) (text: string): string = (
   key
 )
 
-let lookup_local ctx name = Symbol.lookup' name ctx.ctx_env
-
 let trans_lit
     (frame: frame)
-    (lit: Ast.literal): access = match lit with
-  | LitBool b -> (if b then InImm 1 else InImm 0 )
-  | LitInt i -> (InImm i)
-  | LitChar c -> InImm (Char.code c)
+    (lit: Ast.literal): operand = match lit with
+  | LitBool b -> (if b then OperImm 1 else OperImm 0 )
+  | LitInt i -> (OperImm i)
+  | LitChar c -> OperImm (Char.code c)
   | LitString s -> failwith "TODO trans string"
   | _ -> failwith "TODO lit"
 
-
 let (<:) (frame: frame) (inst) = (
-  ignore(frame.instructions <-
-         Array.append frame.instructions [| inst |]); ())
+  ignore(frame.instructions <- Array.append frame.instructions [| inst |]); ())
 
-let mov (dst: access) (src: access): inst =
-  Inst_mov {mov_src=src; mov_dst=dst}
+let mov (dst: operand) (src: operand): inst =
+  MOV (dst, src)
 
-let store (dst: access) (src: access) =
-  Inst_oper {oper_op=STR;
-             oper_src=[src];
-             oper_dst=[dst]}
+let store (dst: operand) (src: operand) =
+  STR (src, dst);;
 
-let load (dst: access) (src: access) =
-  Inst_oper {oper_op=LDR;
-             oper_src=[src];
-             oper_dst=[dst]}
+let load (dst: operand) (src: operand) =
+  LDR (src, dst);;
 
-let binop_to_asm_operand = function
-  | PlusOp -> ADD
-  | MinusOp -> SUB
+let binop_to_asm = function
+  | PlusOp -> fun x y z -> ADD (x, y, z)
+  | MinusOp -> fun x y z -> SUB (x, y, z)
+  | _ -> assert false
+
+let type_of_lit = function
+  | Ast.LitInt  _ -> IntTy
+  | Ast.LitChar _ -> CharTy
+  | Ast.LitBool _ -> BoolTy
+  | _ -> assert false
+
+let size_of_ty = function
+  | IntTy -> WORD
+  | CharTy -> BYTE
+  | BoolTy -> BYTE
   | _ -> assert false
 
 let rec trans_exp
     (frame: frame)
-    (exp: Ast.exp): access = match exp with
-  | LiteralExp (lit, _) ->
-    let temp = allocate_temp frame in
-    frame <: (mov temp (trans_lit frame lit)); temp
+    (exp: Ast.exp): operand = match exp with
+  | LiteralExp (lit, _) -> begin
+      let temp = allocate_temp frame (type_of_lit lit) in
+      frame <: (load temp (trans_lit frame lit)); temp
+    end
   | BinOpExp (lhs, op, rhs, _) -> begin
-      let access_lhs = trans_exp frame lhs and
-          access_rhs = trans_exp frame rhs in
+      let operand_lhs = trans_exp frame lhs and
+          operand_rhs = trans_exp frame rhs in
       match op with
       | (PlusOp | MinusOp) as o ->
-        frame <: (Inst_oper {oper_op=(binop_to_asm_operand o);
-                             oper_dst=[access_lhs];
-                             oper_src=[access_rhs]}); access_lhs
+        frame <: (binop_to_asm o) operand_lhs operand_rhs operand_lhs;
+                 operand_lhs
       | _ -> assert false
     end
-  | _ -> failwith "TODO exp"
+  | IdentExp (name, _) -> begin
+      let Entry (ty, operand) = find_local frame name in
+      let temp = allocate_temp frame ty in
+      frame <: mov temp operand; temp
+    end
+  | UnOpExp (op, exp, _) -> begin
+      let exp_oper = trans_exp frame exp in
+      (match op with
+        | NotOp -> frame <: NOT exp_oper; exp_oper
+        | NegOp -> frame <: SUB (exp_oper, OperImm 0, exp_oper); exp_oper
+        | ChrOp -> (trans_call frame "wacc_chr" [exp])
+        | OrdOp -> (trans_call frame "wacc_ord" [exp])
+        | LenOp -> (trans_call frame "wacc_len" [exp]))
+    end
+  | CallExp (fname, args, _) -> trans_call frame fname args
+  | ArrayIndexExp _ -> failwith "TODO arrays"
+  | NewPairExp _ | FstExp _ | SndExp _ | NullExp _ -> failwith "TODO pairs"
+
+
+and trans_call (frame: frame) (fname: string) (args: exp list): operand =
+  let args_val: operand list = List.map (trans_exp frame) args in
+  assert (List.length args_val < 3); (* more arguments *)
+  (* TODO *)
+  frame <: BL fname;
+  allocate_temp frame IntTy
 
 let global_ctx = new_context ()
+
 let rec trans_stmt
     (frame: frame)
     (stmt: Ast.stmt) : unit =
-  let trans_call fn =  match fn with
-    | CallExp (fname, args, _) -> begin
-        let args_val: access list = List.map (trans_exp frame) args in
-        let insts = List.mapi (fun i x -> mov (InReg (Reg i)) (x)) in
-        assert (List.length args_val < 3); (* more arguments *)
-      end
-    | _ -> assert false in
+
   let trans_var_decl (decl: Ast.stmt) = match decl with
-    | VarDeclStmt (_,name,rhs,_) -> begin
+    | VarDeclStmt (ty,name,rhs,_) -> begin
         let rvalue = trans_exp frame rhs in
-        let l = allocate_local frame in
+        let l = allocate_local frame ty name in
         frame <: (store l rvalue)
       end
     | _ -> assert false in
-  let trans_call_external (name:string) (args: access list) = () in
   match stmt with
   | VarDeclStmt (ty,name,exp,_) -> trans_var_decl stmt
   | SeqStmt (stmt, stmtlist) -> (
       trans_stmt frame stmt;
       trans_stmt frame stmtlist)
-  | AssignStmt (lhs, rhs, _) -> failwith "TODO assignment"
+  | AssignStmt (IdentExp (name, _), rhs, _) -> begin
+      let roperand = trans_exp frame rhs in
+      let Entry (_, loperand) = find_local frame name in
+      frame <: store roperand loperand;
+    end
+  | AssignStmt (lhs, rhs, _) -> failwith "TODO assignment besides identifier"
   | PrintLnStmt (LiteralExp (LitString s, _), _) | PrintStmt (LiteralExp (LitString s, _), _) -> begin
       let k = add_text global_ctx s in
-      frame <: load (InReg (Reg 0)) (InLabel k);
-      frame <: (Inst_jump "wacc_print_string");
+      frame <: load (OperReg (Reg 0)) (OperSym k);
+      frame <: (BL "wacc_print_string");
     end
-  | _ -> failwith "TODO trans_stmt"
+  | _ -> failwith "TODO other stmt"
 
 let print_frame (out: out_channel) (frame: frame): unit =
   let open Printf in
   fprintf out "%s\n" (frame.name ^ ":");
-  let push = (Inst_oper {oper_op=PUSH;
-                         oper_dst=[InReg rLR];
-                         oper_src=[]}) in
-  let pop = (Inst_oper {oper_op=POP;
-                        oper_dst=[InReg rPC];
-                        oper_src=[]}) in
-  let insts = [push] @ (Array.to_list frame.instructions) @ [pop] in
-  List.iter (fun x -> fprintf out "\t%s\n" (string_of_instr x)) insts
+  let stack_size = ((Array.length frame.instructions)*4) in
+  let push    = PUSH ([(OperReg reg_PC)]) in
+  let alloc   = SUB (OperReg reg_SP, OperReg reg_SP, OperImm stack_size) in
+  let dealloc = ADD (OperReg reg_SP, OperReg reg_SP, OperImm stack_size) in
+  let pop     = POP ([(OperReg reg_PC)]) in
+  let insts = [push;            (* push the link register *)
+               alloc] @         (* allocate stack locals *)
+              (Array.to_list frame.instructions) @
+              [dealloc;         (* deallocate stack locals *)
+               pop]             (* pop the link register, return *)
+  in
+  List.iter (fun x -> fprintf out "\t%s\n" (string_of_inst x)) insts
 
 let trans out stmt =
   let frame = new_frame "main" outermost in
