@@ -9,11 +9,6 @@ exception UnknownIdentifier of A.symbol * A.pos
 exception UnexpectedError of string * A.pos
 exception SomeError of string
 
-(* let var_name = function *)
-(*   | IdentExp (name, _) -> name *)
-(*   | ArrayIndexExp (name, _, _) -> name *)
-(*   | _ -> raise (Invalid_argument "not a var") *)
-
 (* UnOp ArgType ReturnType *)
 let unop_types = [
   (NotOp, BoolTy, BoolTy);
@@ -38,10 +33,11 @@ let unop_ret_type = function
   | ChrOp -> CharTy
 
 type enventry =
-  | VarEntry of A.ty               (* variable *)
-  | FuncEntry of A.ty * A.ty list  (* types of params * type of result *)
+  | VarEntry of  A.ty * unit              (* variable *)
+  | FuncEntry of A.ty * A.ty list (* types of params * type of result *)
 
-type 'a table = 'a S.table
+type env = enventry Symbol.table
+let baseenv = Symbol.empty
 
 let type_mismatch expected actual pos =
   raise (TypeMismatch (expected, actual, pos))
@@ -57,7 +53,11 @@ let checkComparable ty =
 
 let built_in_functions =
   [("chr", FuncEntry (CharTy, [IntTy]));
-   ("ord", FuncEntry (IntTy, [CharTy]));]
+   ("ord", FuncEntry (IntTy, [CharTy]));
+   ("print_int", FuncEntry (IntTy, [IntTy]));
+   ("print_bool", FuncEntry (IntTy, [BoolTy]));
+   ("print_char", FuncEntry (IntTy, [CharTy]));
+  ]
 
 let rec eq_type t1 t2 = match (t1, t2) with
   | (BoolTy, BoolTy) -> true
@@ -85,7 +85,7 @@ let rec lookup_function table name =
 
 let var_type table name =
   match Symbol.lookup name table with
-  | VarEntry ty -> ty
+  | VarEntry (ty,_) -> ty
   | _ -> raise (Invalid_argument "not a variable")
 
 let is_var table name =
@@ -95,6 +95,12 @@ let is_var table name =
 
 let is_heap_type  = function
   | A.ArrayTy _ | A.PairTy (_, _) -> true
+  | _ -> false
+
+let is_global_env (env) = match Symbol.parent env with
+  | Some t -> (match Symbol.parent t with
+    | None -> true
+    | _ -> false)
   | _ -> false
 
 let rec exp_type table exp =
@@ -147,7 +153,7 @@ and binop_type = function
   | (A.GeOp | A.GtOp | A.LeOp | A.LtOp |
            A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
   | _ -> A.IntTy
-and  expect exp table binop pos =
+and expect exp table binop pos =
    (match binop with
    | (A.OrOp | A.AndOp ) -> A.BoolTy
    | (A.MinusOp | A.ModOp | A.PlusOp | A.TimesOp | A.DivideOp ) -> A.IntTy
@@ -156,7 +162,6 @@ and  expect exp table binop pos =
     if not(checkComparable (exp_type table exp)) then
     raise (SemanticError(("Unexpected type" ),pos))
     else exp_type table exp;))
-
 
 and check_function_call table fname exps pos = try
     match S.lookup fname table with
@@ -170,7 +175,7 @@ and check_function_call table fname exps pos = try
   with
   | Not_found -> raise (UnknownIdentifier (fname, pos))
 (* Return type of an expression, will raise TypeMismatch if type mismatch *)
-and check_exp (table: 'a S.table) (exp: A.exp): 'a table = (
+and check_exp (table: env) (exp: A.exp): env = (
   let check_in_this_scope = check_exp table in
   match exp with
   | IdentExp    (name, pos) -> (
@@ -196,12 +201,19 @@ and check_exp (table: 'a S.table) (exp: A.exp): 'a table = (
   | FstExp _ -> table
   | SndExp _ -> table
 )
+
+
 and check_stmt table stmt =
   let check_in_this_scope = check_exp table in
   let table' = S.new_scope table in
   let check_with_new_scope = check_stmt table' in
   match stmt with
-  | SeqStmt (RetStmt (_, pos), stmtlist) -> raise (A.SyntaxError ("Junk after return"))
+  | SeqStmt (RetStmt (_, pos), stmtlist) -> begin
+      if (is_global_env table) then
+        raise (SemanticError ("return early in global", pos))
+      else
+        raise (A.SyntaxError ("Junk after return"))
+    end
   | SeqStmt (stmt, stmtlist) ->
     (let table' = check_stmt table stmt in
      (check_stmt table' stmtlist))
@@ -239,12 +251,12 @@ and check_stmt table stmt =
   | ExitStmt     (exp, pos) -> (if (exp_type table exp) != IntTy then raise (SemanticError ("Exit code is not int", pos)) else table)
   | VarDeclStmt  (ty , symbol, exp, pos) ->
     begin
-      let _: 'a table = check_exp table exp in
+      let _: env = check_exp table exp in
       let _ = (match S.lookup_opt' symbol table with
         | Some _ as v -> raise (SemanticError ("redeclared variable: " ^ symbol, pos))
         | None -> ()
         ) in
-      let table' = S.insert symbol (VarEntry ty) table in
+      let table' = S.insert symbol (VarEntry (ty, ())) table in
       let ty' = exp_type table' exp in
       if eq_type ty ty' then table' else raise (TypeMismatch (ty, ty', pos))
     end
@@ -253,7 +265,7 @@ and check_stmt table stmt =
   | PrintStmt    (exp, pos) -> check_in_this_scope exp
   | PrintLnStmt  (exp, pos) -> check_in_this_scope exp
   | RetStmt      (exp, pos) -> (let table'' = check_in_this_scope exp in
-                                Symbol.insert "$result" (VarEntry (exp_type table'' exp)) table''
+                                Symbol.insert "$result" (VarEntry (exp_type table'' exp, ())) table''
                                )
   | ReadStmt     (exp, pos) -> (check_in_this_scope exp;
                                 let is_read_ty = function
@@ -285,10 +297,10 @@ and check_function_decls decls =
       | FuncDec (ty, name, args, body, pos) ->
         begin
           let inner_ctx = ref (Symbol.new_scope !ctx) in
-          let () = List.iter (fun x -> inner_ctx := (let (t, name) = x in Symbol.insert name (VarEntry t) !inner_ctx)) args in
+          let () = List.iter (fun x -> inner_ctx := (let (t, name) = x in Symbol.insert name (VarEntry (t, ())) !inner_ctx)) args in
           ignore(check_stmt !inner_ctx body)
         end) in
-  List.map check_dec decls;
+  ignore(List.map check_dec decls);
   ()
   end
 
@@ -298,3 +310,23 @@ let check_int_overflow num =
   (if num <= max_int && num >= min_int
   then num
   else raise (SyntaxError ("Int overflow: " ^ string_of_int num)));;
+
+let rec add_function_declarations table ff =
+  let table' = ref table in
+  List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt, pos) = f in
+                       let tys = List.map fst fields in
+                       (match Symbol.lookup_opt ident !table' with
+                       | Some _ -> raise (SemanticError ("function redefined", pos))
+                       | _ -> ());
+                       table' := Symbol.insert ident (FuncEntry (ty, tys)) !table'
+                      )) ff;
+  match ff with
+  | [] -> table
+  | (f::fs) -> begin match f with
+      | A.FuncDec (ty, ident, fields, stmt, pos) ->
+        let table'' = List.fold_left (fun table (ty, ident) -> Symbol.insert ident (VarEntry (ty, ())) table) !table' fields in
+        let table''' = check_stmt table'' stmt in
+        let VarEntry (rt, _) = Symbol.lookup "$result" table''' in
+        if (not (eq_type rt ty)) then raise (SemanticError ("result type mismatch", pos))
+        else !table'
+    end

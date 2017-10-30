@@ -24,26 +24,6 @@ let handle_syntax_error lexbuf =
     fprintf stderr "Near %d:%d\n" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1);
     exit(syntax_error_code)
 
-let rec add_func_declarations table ff =
-  let table' = ref table in
-  List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt, pos) = f in
-                       let tys = List.map fst fields in
-                       (match Symbol.lookup_opt ident !table' with
-                       | Some _ -> raise (Semantic.SemanticError ("function redefined", pos))
-                       | _ -> ());
-                       table' := Symbol.insert ident (Semantic.FuncEntry (ty, tys)) !table'
-                      )) ff;
-  match ff with
-  | [] -> table
-  | (f::fs) -> begin match f with
-      | A.FuncDec (ty, ident, fields, stmt, pos) ->
-        let table'' = List.fold_left (fun table (ty, ident) -> Symbol.insert ident (Semantic.VarEntry ty) table) !table' fields in
-        let table''' = Semantic.check_stmt table'' stmt in
-        let Semantic.VarEntry (rt) = Symbol.lookup "$result" table''' in
-        if (not (Semantic.eq_type rt ty)) then raise (Semantic.SemanticError ("result type mismatch", pos))
-        else !table'
-    end
-
 let handle_semantic_error lexbuf =
   begin
     let pos = lexbuf.lex_start_p in
@@ -86,8 +66,8 @@ let () =
       (* let out_filename = (Filename.chop_extension filename) ^ ".ll" in *)
       (* print_module (Filename.basename out_filename) Codegen.the_module; *)
       (* ignore(print_string (Prettyprint.prettyprint_stmt stmt)); *)
-      let table = Symbol.empty in
-      let table' = Symbol.new_scope (add_func_declarations table decs) in
+      let table = Semantic.baseenv in
+      let table' = Symbol.new_scope (Semantic.add_function_declarations table decs) in
       ignore(Semantic.check_stmt table' stmt); ()
     with
     | A.SyntaxError _ -> handle_syntax_error lexbuf;

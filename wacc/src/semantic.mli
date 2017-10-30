@@ -6,19 +6,13 @@ exception TypeMismatch of A.ty * A.ty * A.pos
 exception UnknownIdentifier of A.symbol * A.pos
 exception UnexpectedError of string * A.pos
 
-type enventry = VarEntry of A.ty | FuncEntry of A.ty * A.ty list
-type 'a table = 'a S.table
-val var_name : A.exp -> A.symbol
-val var_type : enventry S.table -> S.symbol -> A.ty
-val binop_type : A.binop -> A.ty
-val exp_type : enventry S.table -> A.exp -> A.ty
-val eq_type : A.ty -> Ast.ty -> bool
-val type_mismatch : A.ty -> A.ty -> A.pos -> 'a
-val check_function_call : enventry S.table -> S.symbol -> A.exp list -> A.pos -> enventry S.table
+type enventry
+type env = enventry Symbol.table
+
+val baseenv: env
+val check_function_call : env -> S.symbol -> A.exp list -> A.pos -> env
 val check_function_decls : A.function_dec list -> unit
-val check_exp : enventry S.table -> A.exp -> enventry S.table
-val check_stmt : enventry S.table -> A.stmt -> enventry S.table
+val check_exp : env -> A.exp -> env
+val check_stmt : env -> A.stmt -> env
 val check_int_overflow : int -> int
-val unop_types : (A.unop * A.ty * A.ty) list
-val unop_arg_type : A.unop -> A.ty
-val unop_ret_type : A.unop -> A.ty
+val add_function_declarations: env -> A.function_dec list -> env
