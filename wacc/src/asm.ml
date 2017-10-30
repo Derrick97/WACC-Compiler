@@ -7,14 +7,15 @@ and label = string
 and inst =
   | ADD  of  operand * operand * operand
   | SUB  of  operand * operand * operand
+  | AND  of  operand * operand * operand
+  | ORR  of  operand * operand * operand
   | MOV  of  operand * operand
   | POP  of  operand list
   | PUSH of  operand list
-  | NEG  of  operand
-  | NOT  of  operand
   | LDR  of  operand * operand
   | STR  of  operand * operand
   | BL   of  label
+
 and data_type =
   | BYTE
   | WORD
@@ -47,7 +48,13 @@ let string_of_operand
     (operand: operand) = match operand with
   | OperImm  i -> "#" ^ (string_of_int i)
   | OperReg r -> string_of_reg r
-  | _ -> assert false
+  | OperSym s -> "=" ^ s
+  | OperAddr (Addr (base, offset)) -> begin
+      if offset = 0 then
+        "[" ^ (string_of_reg base) ^ "]"
+      else
+        "[" ^ (string_of_reg base) ^ ", #" ^ (string_of_int offset) ^ "]"
+    end
 
 let string_of_opcode = function
   | ADD _ -> "add"
@@ -58,18 +65,21 @@ let string_of_opcode = function
   | LDR _ -> "ldr"
   | STR _ -> "str"
   | BL _ -> "bl"
+  | AND _ -> "and"
+  | ORR _ -> "orr"
 
 let string_of_inst (inst: inst) =
   let opcode_str = string_of_opcode inst in
   match inst with
-  | ADD (dst, op1, op2) | SUB (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_operand dst) ^ ", " ^
+  | ADD (dst, op1, op2) | SUB (dst, op1, op2) |
+    AND (dst, op1, op2) | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_operand dst) ^ ", " ^
                             (string_of_operand op1) ^ ", " ^
                             (string_of_operand op2))
   | (PUSH ops) | (POP ops) -> (opcode_str) ^
                               " {" ^
                               (String.concat ", " (List.map (string_of_operand) ops)) ^
                               "}"
-  | MOV (op1, op2) | LDR (op2, op1) | STR (op2, op1) -> opcode_str ^
+  | MOV (op1, op2) | LDR (op2, op1) | STR (op1, op2) -> opcode_str ^
                                                         " "
                                                         ^ (string_of_operand op1) ^
                                                         ", " ^

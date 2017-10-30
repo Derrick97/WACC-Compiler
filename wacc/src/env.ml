@@ -8,8 +8,9 @@ type entry' = Entry of ty * operand
 type frame = {
   mutable name: string;
   mutable counter: int;         (* used for generating locals *)
+  mutable offset: int;
   mutable locals: (string, entry') Hashtbl.t;
-  mutable temps: operand array;
+  mutable temps: entry' array;
   mutable instructions: inst array;
   level: int;
 }
@@ -18,28 +19,34 @@ let outermost = 0
 
 let new_frame
     (name:string) level = { name = name;
-              counter=(-1);
-              locals= Hashtbl.create 0;
-              temps=[| |];
-              level=level;
-              instructions=[| |]}
+                            counter=(4);
+                            offset=0;
+                            locals= Hashtbl.create 0;
+                            temps=[| |];
+                            level=level;
+                            instructions=[| |]}
 
 let allocate_local
     (frame: frame)
     (t: ty)
     (name: string): operand  = (
-  frame.counter <- frame.counter + 1;
-  let r = OperSym (string_of_int frame.counter) in
+  let r = OperAddr (Addr (reg_SP, frame.offset)) in
+  let size = match t with
+    | IntTy -> 4
+    | CharTy -> 1
+    | BoolTy -> 1
+    | _ -> assert false in
+  frame.offset <- frame.offset + size;
   Hashtbl.add frame.locals name (Entry (t, r));
   r)
 
 let allocate_temp
     (frame: frame)
     (t: ty): operand = (
-  frame.counter <- frame.counter + 1;
   assert (frame.counter < 13);
-  let r = OperSym (string_of_int frame.counter) in
-  Hashtbl.add frame.locals (string_of_int frame.counter) (Entry (t, r));
+  let r = OperReg (Reg frame.counter) in
+  frame.counter <- frame.counter + 1;
+  ignore(Array.append frame.temps [| (Entry (t, r)) |]);
   r)
 
 let find_local (frame: frame) (name: string) =
@@ -57,6 +64,8 @@ let new_context (): codegen_ctx = {
     ctx_frames = [| |];
 }
 
+let global_ctx = new_context ()
+
 let add_text (ctx: codegen_ctx) (text: string): string = (
   let key = "msg_" ^ (string_of_int ctx.ctx_counter) in
   Hashtbl.add ctx.ctx_text key text;
@@ -72,7 +81,7 @@ let trans_lit
   | LitString s -> failwith "TODO trans string"
   | _ -> failwith "TODO lit"
 
-let (<:) (frame: frame) (inst) = (
+let (<:) (frame: frame) (inst): unit = (
   ignore(frame.instructions <- Array.append frame.instructions [| inst |]); ())
 
 let mov (dst: operand) (src: operand): inst =
@@ -87,6 +96,8 @@ let load (dst: operand) (src: operand) =
 let binop_to_asm = function
   | PlusOp -> fun x y z -> ADD (x, y, z)
   | MinusOp -> fun x y z -> SUB (x, y, z)
+  | AndOp -> fun x y z -> AND (x, y, z)
+  | OrOp -> fun x y z -> ORR (x, y, z)
   | _ -> assert false
 
 let type_of_lit = function
@@ -96,9 +107,9 @@ let type_of_lit = function
   | _ -> assert false
 
 let size_of_ty = function
-  | IntTy -> WORD
-  | CharTy -> BYTE
-  | BoolTy -> BYTE
+  | IntTy -> 4
+  | CharTy -> 1
+  | BoolTy -> 1
   | _ -> assert false
 
 let rec trans_exp
@@ -106,13 +117,14 @@ let rec trans_exp
     (exp: Ast.exp): operand = match exp with
   | LiteralExp (lit, _) -> begin
       let temp = allocate_temp frame (type_of_lit lit) in
-      frame <: (load temp (trans_lit frame lit)); temp
+      let OperImm i = trans_lit frame lit in
+      frame <: (load temp (OperSym (string_of_int i))); temp
     end
   | BinOpExp (lhs, op, rhs, _) -> begin
       let operand_lhs = trans_exp frame lhs and
           operand_rhs = trans_exp frame rhs in
       match op with
-      | (PlusOp | MinusOp) as o ->
+      | (PlusOp | MinusOp | AndOp | OrOp) as o ->
         frame <: (binop_to_asm o) operand_lhs operand_rhs operand_lhs;
                  operand_lhs
       | _ -> assert false
@@ -120,12 +132,12 @@ let rec trans_exp
   | IdentExp (name, _) -> begin
       let Entry (ty, operand) = find_local frame name in
       let temp = allocate_temp frame ty in
-      frame <: mov temp operand; temp
+      frame <: load temp operand; temp
     end
   | UnOpExp (op, exp, _) -> begin
       let exp_oper = trans_exp frame exp in
       (match op with
-        | NotOp -> frame <: NOT exp_oper; exp_oper
+        | NotOp -> assert false
         | NegOp -> frame <: SUB (exp_oper, OperImm 0, exp_oper); exp_oper
         | ChrOp -> (trans_call frame "wacc_chr" [exp])
         | OrdOp -> (trans_call frame "wacc_ord" [exp])
@@ -143,12 +155,9 @@ and trans_call (frame: frame) (fname: string) (args: exp list): operand =
   frame <: BL fname;
   allocate_temp frame IntTy
 
-let global_ctx = new_context ()
-
 let rec trans_stmt
     (frame: frame)
     (stmt: Ast.stmt) : unit =
-
   let trans_var_decl (decl: Ast.stmt) = match decl with
     | VarDeclStmt (ty,name,rhs,_) -> begin
         let rvalue = trans_exp frame rhs in
@@ -172,12 +181,18 @@ let rec trans_stmt
       frame <: load (OperReg (Reg 0)) (OperSym k);
       frame <: (BL "wacc_print_string");
     end
+  | ExitStmt (exp, _) -> begin
+      let exp_op = trans_exp frame exp in
+      frame <: MOV (OperReg (Reg 0), exp_op);
+      frame <: BL "exit";
+      frame <: LDR (OperSym (string_of_int 0), OperReg (Reg 0))
+    end
   | _ -> failwith "TODO other stmt"
 
 let print_frame (out: out_channel) (frame: frame): unit =
   let open Printf in
   fprintf out "%s\n" (frame.name ^ ":");
-  let stack_size = ((Array.length frame.instructions)*4) in
+  let stack_size = ((Hashtbl.length frame.locals)*4) in
   let push    = PUSH ([(OperReg reg_PC)]) in
   let alloc   = SUB (OperReg reg_SP, OperReg reg_SP, OperImm stack_size) in
   let dealloc = ADD (OperReg reg_SP, OperReg reg_SP, OperImm stack_size) in

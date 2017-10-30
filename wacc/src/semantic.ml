@@ -55,6 +55,10 @@ let checkComparable ty =
   | (BoolTy | PairTy(_,_) | ArrayTy(_)) -> false
   | _ -> true
 
+let built_in_functions =
+  [("chr", FuncEntry (CharTy, [IntTy]));
+   ("ord", FuncEntry (IntTy, [CharTy]));]
+
 let rec eq_type t1 t2 = match (t1, t2) with
   | (BoolTy, BoolTy) -> true
   | (IntTy, IntTy) -> true
