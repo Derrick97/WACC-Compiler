@@ -3,12 +3,11 @@ module Sem = Semantic;;
 module A = Ast;;
 open Ast;;
 open Arm;;
+open Env;;
 
 type frag = unit
 type frame = Arm.frame
 type access = Arm.access
-
-type enventry = VarEntry of Ast.ty * access
 
 type codegen_ctx = {
   mutable ctx_counter: int;
@@ -69,7 +68,7 @@ let size_of_ty = function
   | _ -> assert false
 
 let rec trans_exp
-    (env: enventry Symbol.table)
+    (env: env)
     (frame: frame)
     (exp: Ast.exp): access = match exp with
   | LiteralExp (lit, _) -> begin
@@ -111,7 +110,7 @@ and function_epilogue (frame: frame)
   : unit = ()
 
 and trans_call
-    (env: enventry Symbol.table)
+    (env: env)
     (frame: frame) (fname: string) (args: exp list): access =
   let args_val = List.map (trans_exp env frame) args in
   function_prologue frame args_val;
@@ -122,7 +121,7 @@ and trans_call
   o
 
 let rec trans_stmt
-    (env: enventry Symbol.table)
+    (env: env)
     (frame: frame)
     (stmt: Ast.stmt) : unit = match stmt with
   | VarDeclStmt (ty, name, rhs, _) -> begin

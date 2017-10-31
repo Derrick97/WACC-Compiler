@@ -1,13 +1,11 @@
 module A = Ast
 module S = Symbol
+open Env;;
 
 exception SemanticError of string * A.pos
 exception TypeMismatch of A.ty * A.ty * A.pos
 exception UnknownIdentifier of A.symbol * A.pos
 exception UnexpectedError of string * A.pos
-
-type enventry
-type env = enventry Symbol.table
 
 val baseenv: env
 val check_function_call : env -> S.symbol -> A.exp list -> A.pos -> A.ty

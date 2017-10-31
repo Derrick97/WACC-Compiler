@@ -3,7 +3,8 @@ module A = Ast;;
 type access
 type frame
 type frag
-type enventry
+
+open Env;;
 
 val new_frame:  string -> frame
 val trans_stmt: enventry Symbol.table -> frame -> A.stmt -> frag

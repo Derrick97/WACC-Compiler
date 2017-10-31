@@ -1,7 +1,8 @@
 module A = Ast
 module S = Symbol
 
-open Ast
+open Ast;;
+open Env;;
 
 exception SemanticError of string * A.pos
 exception TypeMismatch of A.ty * A.ty * A.pos
@@ -31,10 +32,6 @@ let unop_ret_type = function
   | LenOp -> IntTy
   | OrdOp -> IntTy
   | ChrOp -> CharTy
-
-type enventry =
-  | VarEntry of  A.ty * unit              (* variable *)
-  | FuncEntry of A.ty * A.ty list (* types of params * type of result *)
 
 type env = enventry Symbol.table
 let baseenv = Symbol.empty
