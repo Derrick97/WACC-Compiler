@@ -141,9 +141,12 @@ let rec trans_stmt
   | AssignStmt (lhs, rhs, _) -> failwith "TODO assignment besides identifier"
   | PrintStmt (newline, exp, _) -> begin
       let InReg e = trans_exp env frame exp in
+      let r = List.nth caller_saved_regs 0 in
+      frame <: (MOV (r, OperReg e));
       if newline then
         ignore(frame <: (BL "wacc_println"));
     end
+  | ExitStmt (exp, _) -> failwith "TODO"
   | _ -> failwith "TODO"
   (*     let k = add_text global_ctx s in *)
   (*     frame <: load (OperReg (Reg 0)) (OperSym k); *)

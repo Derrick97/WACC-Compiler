@@ -14,6 +14,13 @@ let rec stmt_returnable = function
   | SeqStmt (stmt, stmtlist) -> (stmt_returnable stmt) || (stmt_returnable stmtlist )
   | _ -> false
 
+let check_int_overflow num =
+  let max_int = Int32.to_int Int32.max_int in
+  let min_int = Int32.to_int Int32.min_int in
+  (if num <= max_int && num >= min_int
+  then num
+  else raise (SyntaxError ("Int overflow: " ^ string_of_int num)));;
+
 %}
 
 %token BANG
@@ -230,7 +237,7 @@ int_liter:
 expr:
 | ID                          { IdentExp (symbol $1, $startpos)                       }
 | array_elem                  { $1                                                    }
-| i=int_liter                 { Semantic.check_int_overflow i;
+| i=int_liter                 { check_int_overflow i;
                                 LiteralExp (LitInt i, $startpos)                      }
 | bool_liter                  { LiteralExp (LitBool $1, $startpos)                    }
 | pair_liter                  { LiteralExp ($1, $startpos)                            }
