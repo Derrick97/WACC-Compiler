@@ -262,8 +262,7 @@ and check_stmt table stmt =
     end
   | SkipStmt      pos -> table
   (* TODO someof these need to be type check *)
-  | PrintStmt    (exp, pos) -> check_in_this_scope exp
-  | PrintLnStmt  (exp, pos) -> check_in_this_scope exp
+  | PrintStmt    (_, exp, pos) -> check_in_this_scope exp
   | RetStmt      (exp, pos) -> (let table'' = check_in_this_scope exp in
                                 Symbol.insert "$result" (VarEntry (exp_type table'' exp, ())) table''
                                )

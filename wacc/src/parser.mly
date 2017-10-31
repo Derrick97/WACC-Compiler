@@ -116,8 +116,8 @@ stat:
 | SKIP;                                     { SkipStmt     $startpos                        }
 | READ; assign_lhs;                         { ReadStmt    ($2, $startpos)                   }
 | FREE; expr;                               { FreeStmt    ($2, $startpos)                   }
-| PRINT expr                                { PrintStmt   ($2, $startpos)                   }
-| PRINTLN expr                              { PrintLnStmt ($2, $startpos)                   }
+| PRINT expr                                { PrintStmt   (false, $2, $startpos)                   }
+| PRINTLN expr                              { PrintStmt (true, $2, $startpos)                   }
 | RETURN  expr                              { RetStmt     ($2, $startpos)                   }
 | EXIT    expr                              { ExitStmt    ($2, $startpos)                   }
 | lhs = assign_lhs; EQ; rhs = assign_rhs;   { AssignStmt  (lhs, rhs, $startpos)             }

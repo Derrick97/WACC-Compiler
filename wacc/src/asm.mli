@@ -16,6 +16,7 @@ and inst =
 val reg_PC: reg
 val reg_LR: reg
 val reg_SP: reg
+val reg_RV: reg
 
 val string_of_reg: reg -> string
 val string_of_access: access -> string
@@ -28,6 +29,10 @@ val allocate_local: frame -> access
 val allocate_temp: frame -> access
 
 val (<:): frame -> inst -> unit
+
+val caller_saved_regs: reg list
+val callee_saved_regs: reg list
+val args_regs: reg list
 
 val access_of_lit: Ast.literal -> access
 val access_of_reg: reg -> access

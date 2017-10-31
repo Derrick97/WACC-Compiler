@@ -34,6 +34,13 @@ let reg_PC = Reg 13
 let reg_LR = Reg 14
 let reg_SP = Reg 15
 
+let reg_RV = Reg 0
+
+let caller_saved_regs = [Reg 0; Reg 1; Reg 2; Reg 3];;
+let callee_saved_regs = [
+  (* TODO 4 -  12 *)
+];;
+
 let string_of_access
     (operand: access) = match operand with
   | AccessImm  i -> "#" ^ (string_of_int i)
@@ -127,6 +134,8 @@ let load (dst: access) (src: access) =
 
 let access_of_lit _ = failwith "TODO"
 let access_of_reg _ = failwith "TODO"
+
+let args_regs = [Reg 0; Reg 1; Reg 2; Reg 3];;
 
 let print_frame (frame: frame) (out: out_channel): unit =
   let open Printf in

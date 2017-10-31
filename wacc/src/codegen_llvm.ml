@@ -376,8 +376,7 @@ module Llvm_backend = struct
         table, start_val
       end
     | SkipStmt _ -> table, const_string context "skip" (* dummy for type coherence *)
-    | PrintStmt (exp, _) -> table, codegen_print table exp
-    | PrintLnStmt (exp, _) -> table, codegen_println table exp
+    | PrintStmt (_, exp, _) -> table, codegen_print table exp
     | WhileStmt (pred, body, _) ->
       begin
         let start_bb = insertion_block builder in

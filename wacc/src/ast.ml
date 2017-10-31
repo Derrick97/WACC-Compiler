@@ -46,8 +46,7 @@ and stmt =
   | ReadStmt of exp * pos
   | FreeStmt of exp * pos
   | ExitStmt of exp * pos
-  | PrintStmt of exp * pos
-  | PrintLnStmt of exp * pos
+  | PrintStmt of bool * exp * pos
   | IfStmt of exp * stmt * stmt * pos
   | WhileStmt of exp * stmt * pos
   | BlockStmt of stmt * pos

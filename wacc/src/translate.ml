@@ -8,6 +8,8 @@ type frag = unit
 type frame = Asm.frame
 type access = Asm.access
 
+type enventry = VarEntry of Ast.ty * access
+
 type codegen_ctx = {
   mutable ctx_counter: int;
   mutable ctx_text: (string, string) Hashtbl.t;
@@ -61,7 +63,7 @@ let size_of_ty = function
   | _ -> assert false
 
 let rec trans_exp
-    (env: Sem.env)
+    (env: enventry Symbol.table)
     (frame: frame)
     (exp: Ast.exp): access = match exp with
   | LiteralExp (lit, _) -> begin
@@ -95,32 +97,52 @@ let rec trans_exp
   | ArrayIndexExp _ -> failwith "TODO arrays"
   | NewPairExp _ | FstExp _ | SndExp _ | NullExp _ -> failwith "TODO pairs"
 
-and trans_call (env: Sem.env) (frame: frame) (fname: string) (args: exp list): access =
+and zip (a: 'a list) (b: 'b list)
+  : (('a * 'b) list) = match (a, b) with
+  | ([],_) -> []
+  | (_,[]) -> []
+  | (x::xs, y::ys) -> ((x,y)::(zip xs ys))
+
+and function_prologue (frame: frame) (args: access list): unit = begin
+  assert (List.length args < 3);
+  List.iter (fun (x, y) -> ignore(frame <: (mov x (access_of_reg y))))
+    (zip args Asm.args_regs)
+  end
+
+and function_epilogue (frame: frame)
+  : unit = ()
+
+and trans_call
+    (env: enventry Symbol.table)
+    (frame: frame) (fname: string) (args: exp list): access =
   let args_val = List.map (trans_exp env frame) args in
-  assert (List.length args_val < 3); (* more arguments *)
-  (* TODO *)
+  function_prologue frame args_val;
   frame <: BL fname;
-  allocate_temp frame
+  function_epilogue frame;
+  let output = allocate_temp frame in
+  frame <: (mov output (access_of_reg reg_RV));
+  output
 
 let rec trans_stmt
-    (env: Sem.env)
+    (env: enventry Symbol.table)
     (frame: frame)
-    (stmt: Ast.stmt) : unit =
-  let trans_var_decl (decl: Ast.stmt) = match decl with
-    | VarDeclStmt (ty,name,rhs,_) -> begin
-        let rvalue = trans_exp env frame rhs in
-        let l = allocate_local frame in
-        frame <: (store l rvalue)
-      end
-    | _ -> assert false in
-  match stmt with
-  | VarDeclStmt (ty,name,exp,_) -> trans_var_decl stmt
+    (stmt: Ast.stmt) : unit = match stmt with
+  | VarDeclStmt (ty, name, rhs, _) -> begin
+      let rvalue = trans_exp env frame rhs in
+      let l = allocate_local frame in
+      frame <: (store l rvalue)
+    end
   | SeqStmt (stmt, stmtlist) -> (
       trans_stmt env frame stmt;
       trans_stmt env frame stmtlist)
+  | AssignStmt (IdentExp (name, _), rhs, _) -> begin
+      let rhs = trans_exp env frame rhs in
+      let VarEntry (_, acc) = Symbol.lookup name env in
+      frame <: (store acc rhs)
+    end
   | AssignStmt (lhs, rhs, _) -> failwith "TODO assignment besides identifier"
+  | PrintStmt (newline, exp, _) -> failwith "TODO"
   | _ -> failwith "TODO"
-  (* | PrintLnStmt (LiteralExp (LitString s, _), _) | PrintStmt (LiteralExp (LitString s, _), _) -> begin *)
   (*     let k = add_text global_ctx s in *)
   (*     frame <: load (OperReg (Reg 0)) (OperSym k); *)
   (*     frame <: (BL "wacc_print_string"); *)
@@ -135,7 +157,7 @@ let rec trans_stmt
 
 let trans out stmt =
   let frame = new_frame "main" in
-  let env = Sem.baseenv in
+  let env = Symbol.empty in
   let open Printf in
   let () = trans_stmt env frame stmt in
   fprintf out ".data\n";

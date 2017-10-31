@@ -54,8 +54,10 @@ and prettyprint_stmt = function
   | WhileStmt    (pred, body, pos) -> "while" ^ prettyprint_exp pred ^ "{" ^ prettyprint_stmt body ^ "}"
   | ExitStmt     (exp, pos) ->  "exit " ^ prettyprint_exp exp
   | VarDeclStmt  (ty, name, exp, pos) -> prettyprint_type ty ^ " " ^ name ^ " = " ^ prettyprint_exp exp
-  | PrintStmt    (exp, pos) ->  "print " ^ prettyprint_exp exp
-  | PrintLnStmt  (exp, pos) ->  "println "^ prettyprint_exp exp
+  | PrintStmt    (newline, exp, pos) ->  (if newline
+    then
+      "println "^ prettyprint_exp exp
+    else "print " ^ prettyprint_exp exp)
   | RetStmt      (exp, pos) ->  "return" ^ prettyprint_exp exp
   | SeqStmt      (stmt, stmtlist) -> prettyprint_stmt stmt ^ ";\n" ^ (prettyprint_stmt stmtlist)
   | ReadStmt     (exp, pos) -> "read " ^ prettyprint_exp exp

@@ -109,16 +109,11 @@ let rec compute exp table = match exp with
       let rhs = compute (Symbol.lookup (matchLHS lhs) !table) table in
       Stack.push rhs stack;
       )
-    | A.PrintStmt(exp, _) -> (
+    | A.PrintStmt(_, exp, _) -> (
+        (* FIXME we changed datatype *)
         Stack.push (compute exp table) stack;
         let result = Stack.pop stack in
         printWrap result;
-        )
-    | A.PrintLnStmt(exp, _) ->(
-        Stack.push (compute exp table) stack;
-        let result = Stack.pop stack in
-        printWrap result;
-        print_newline ();
         )
     | A.BlockStmt(statment, _) ->
         eval statment)
