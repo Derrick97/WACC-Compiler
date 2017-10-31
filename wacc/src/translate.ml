@@ -2,11 +2,11 @@ module S = Symbol;;
 module Sem = Semantic;;
 module A = Ast;;
 open Ast;;
-open Asm;;
+open Arm;;
 
 type frag = unit
-type frame = Asm.frame
-type access = Asm.access
+type frame = Arm.frame
+type access = Arm.access
 
 type enventry = VarEntry of Ast.ty * access
 
@@ -24,7 +24,13 @@ let new_context (): codegen_ctx = {
 
 let global_ctx = new_context ()
 
-let new_frame = Asm.new_frame
+let new_frame = Arm.new_frame
+
+let rec zip (a: 'a list) (b: 'b list)
+  : (('a * 'b) list) = match (a, b) with
+  | ([],_) -> []
+  | (_,[]) -> []
+  | (x::xs, y::ys) -> ((x,y)::(zip xs ys))
 
 let add_text (ctx: codegen_ctx) (text: string): string = (
   let key = "msg_" ^ (string_of_int ctx.ctx_counter) in
@@ -74,11 +80,9 @@ let rec trans_exp
   | BinOpExp (lhs, op, rhs, _) -> begin
       let operand_lhs = trans_exp env frame lhs and
           operand_rhs = trans_exp env frame rhs in
-      match op with
-      | (PlusOp | MinusOp | AndOp | OrOp) as o ->
-        frame <: (binop_to_asm o) operand_lhs operand_rhs operand_lhs;
-                 operand_lhs
-      | _ -> assert false
+      let inst = match op with
+        | _ -> assert false in
+      operand_lhs
     end
   | IdentExp (name, _) -> begin
       let temp = allocate_temp frame in
@@ -88,7 +92,7 @@ let rec trans_exp
       let exp_oper = trans_exp env frame exp in
       (match op with
         | NotOp -> assert false
-        | NegOp -> frame <: SUB (exp_oper, access_of_int 0, exp_oper); exp_oper
+        | NegOp -> failwith "FIXME" (* frame <: SUB (exp_oper, access_of_int 0, exp_oper); exp_oper *)
         | ChrOp -> (trans_call env frame "wacc_chr" [exp])
         | OrdOp -> (trans_call env frame "wacc_ord" [exp])
         | LenOp -> (trans_call env frame "wacc_len" [exp]))
@@ -97,16 +101,10 @@ let rec trans_exp
   | ArrayIndexExp _ -> failwith "TODO arrays"
   | NewPairExp _ | FstExp _ | SndExp _ | NullExp _ -> failwith "TODO pairs"
 
-and zip (a: 'a list) (b: 'b list)
-  : (('a * 'b) list) = match (a, b) with
-  | ([],_) -> []
-  | (_,[]) -> []
-  | (x::xs, y::ys) -> ((x,y)::(zip xs ys))
-
 and function_prologue (frame: frame) (args: access list): unit = begin
-  assert (List.length args < 3);
-  List.iter (fun (x, y) -> ignore(frame <: (mov x (access_of_reg y))))
-    (zip args Asm.args_regs)
+  (* assert (List.length args < 3); *)
+  (* List.iter (fun (x, y) -> ignore(frame <: (mov x (y)))) *)
+  (*   (zip args Arm.caller_saved_regs) *)
   end
 
 and function_epilogue (frame: frame)
@@ -119,9 +117,9 @@ and trans_call
   function_prologue frame args_val;
   frame <: BL fname;
   function_epilogue frame;
-  let output = allocate_temp frame in
-  frame <: (mov output (access_of_reg reg_RV));
-  output
+  let (InReg output) as o = allocate_temp frame in
+  (frame <: (MOV (output, (OperReg reg_RV))));
+  o
 
 let rec trans_stmt
     (env: enventry Symbol.table)
@@ -141,7 +139,11 @@ let rec trans_stmt
       frame <: (store acc rhs)
     end
   | AssignStmt (lhs, rhs, _) -> failwith "TODO assignment besides identifier"
-  | PrintStmt (newline, exp, _) -> failwith "TODO"
+  | PrintStmt (newline, exp, _) -> begin
+      let InReg e = trans_exp env frame exp in
+      if newline then
+        ignore(frame <: (BL "wacc_println"));
+    end
   | _ -> failwith "TODO"
   (*     let k = add_text global_ctx s in *)
   (*     frame <: load (OperReg (Reg 0)) (OperSym k); *)
