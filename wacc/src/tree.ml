@@ -4,8 +4,9 @@
 type binop = PLUS | MINUS | MUL | DIV | AND | OR
            | LSHIFT | RSHIFT | ARSHIFT | XOR
 and relop = EQ | NE | LT | GT | LE | GE | ULT | UGT | UGE
+and size = int
 and exp =
-  | Const of int * Ast.ty
+  | Const of int
   | Name of Temp.label
   | Temp of Temp.temp
   | Binop of binop * exp * exp

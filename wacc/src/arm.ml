@@ -1,9 +1,6 @@
 type label = string
 type operand =
   | OperReg of reg
-and access =
-  | InMem of addr
-  | InReg of reg
 and inst =
   | ADD  of  reg * reg * operand
   | SUB  of  reg * reg * operand

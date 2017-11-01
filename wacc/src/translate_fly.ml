@@ -3,28 +3,20 @@ module A = Ast;;
 module T = Tree;;
 
 type frag = unit
+type size = int
+
 and  access =
   | InFrame of int * size
-and exp = Tree.exp
-and size =
-  | BYTE
-  | WORD
+  | InReg of int * size
+
+and exp =
+  | Imm of int * size
+  | InAccess of access
+  | Label of string
 
 type frame = {
   mutable frame_counter: int;
   mutable frame_locals: access array;
-}
-
-type codegen_ctx = {
-  mutable ctx_counter: int;
-  mutable ctx_text: (string, string) Hashtbl.t;
-  mutable ctx_frames: frame array;
-}
-
-let new_context (): codegen_ctx = {
-    ctx_counter = 0;
-    ctx_text = Hashtbl.create 0;
-    ctx_frames = [| |];
 }
 
 let new_frame frame = {
@@ -35,23 +27,11 @@ let new_frame frame = {
 let trans_unop   (op: A.unop) (exp: exp) = match op with
   | A.NotOp -> failwith "TODO"
   | _ -> failwith "TODO trans_unop"
-let trans_binop  (op: A.binop) (lhs: exp) (rhs: exp) = match op with
-  | A.PlusOp   -> Tree.Binop(Tree.PLUS, lhs, rhs)
-  | A.MinusOp  -> Tree.Binop(Tree.MINUS, lhs, rhs)
-  | A.TimesOp  -> Tree.Binop(Tree.MUL, lhs, rhs)
-  | A.DivideOp -> Tree.Binop(Tree.DIV, lhs, rhs)
-  | A.GeOp     ->
-  | A.GtOp     ->
-  | A.EqOp     ->
-  | A.NeOp     ->
-  | A.LtOp     ->
-  | A.LeOp     ->
-  | A.AndOp -> Tree.Binop(Tree.AND, lhs, rhs)
-  | A.OrOp -> Tree.Binop(Tree.OR, lhs, rhs)
-  | A.ModOp ->
+
+let trans_binop  (op: A.binop) (lhs: exp) (rhs: exp) = match (lhs, rhs) with
+  | _ -> assert false
 
 let trans_lit    (l: A.literal) = match l with
-  | A.LitInt i -> Tree.Const (i)
   | _ -> assert false
 
 let temp_counter = ref 0
@@ -68,13 +48,13 @@ let trans_ifelse (cond: exp) (t: exp) (f: exp) = begin
   let true_l = new_namedlabel "if_then" in
   let false_l = new_namedlabel "if_else" in
   let end_l = new_namedlabel "if_end" in
-  t
+  failwith "TODO"
 end
 
 let regFP: Temp.temp = 0
 
 let trans_var    (var: access): exp = match var with
-  | InFrame (i, _) -> Tree.Mem (Tree.Binop (Tree.PLUS , Tree.Temp regFP, Tree.Const i))
+  | _ -> assert false
 
 let trans_array  (var: access) (indices: exp list) = failwith "TODO"
 let trans_assign (lv: exp) (rv: exp) = begin

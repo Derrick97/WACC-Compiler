@@ -4,9 +4,7 @@ type access
 type frame
 type frag
 type exp
-type size =
-  | BYTE
-  | WORD
+type size = int
 
 val new_frame:  string -> frame
 
