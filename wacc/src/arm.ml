@@ -15,7 +15,6 @@ and inst =
   | LDR  of  reg * addr
   | STR  of  reg * addr
   | BL   of  label
-
 and reg  = int
 and addr =
   | AddrLabel of string
@@ -101,62 +100,3 @@ type frame = {
   mutable instructions: inst array;
   level: int;
 }
-
-let new_frame (name:string) =
-  { name = name;
-    counter=(4);
-    offset=0;
-    locals= [| |];
-    temps=[| |];
-    level=0;
-    instructions=[| |]}
-
-(* let allocate_local *)
-(*     (frame: frame): access  = ( *)
-(*   let r = AccessAddr (Addr (reg_SP, frame.offset)) in *)
-(*   let size = 4 in *)
-(*   frame.offset <- frame.offset + size; *)
-(*   ignore(Array.append frame.locals [| r |]); *)
-(*   r);; *)
-
-(* let allocate_temp *)
-(*     (frame: frame): access = *)
-(*   begin *)
-(*   assert (frame.counter < 13); *)
-(*   let r = AccessReg (Reg frame.counter) in *)
-(*   frame.counter <- frame.counter + 1; *)
-(*   ignore(Array.append frame.temps [| r |]); r *)
-(*   end *)
-
-(* let (<:) (frame: frame) (inst): unit = ( *)
-(*   ignore(frame.instructions <- Array.append frame.instructions [| inst |]); ()) *)
-
-(* let mov (dst: access) (src: access): inst = *)
-(*   MOV (dst, src) *)
-
-(* let store (dst: access) (src: access) = *)
-(*   STR (src, dst);; *)
-
-(* let load (dst: access) (src: access) = *)
-(*   LDR (src, dst);; *)
-
-(* let access_of_lit _ = failwith "TODO" *)
-(* let access_of_reg _ = failwith "TODO" *)
-
-(* let print_frame (frame: frame) (out: out_channel): unit = *)
-(*   let open Printf in *)
-(*   fprintf out "%s\n" (frame.name ^ ":"); *)
-(*   let stack_size = ((Array.length frame.locals)*4) in *)
-(*   let push    = PUSH ([(AccessReg reg_PC)]) in *)
-(*   let alloc   = SUB (AccessReg reg_SP, AccessReg reg_SP, AccessImm stack_size) in *)
-(*   let dealloc = ADD (AccessReg reg_SP, AccessReg reg_SP, AccessImm stack_size) in *)
-(*   let pop     = POP ([(AccessReg reg_PC)]) in *)
-(*   let insts = [push;            (\* push the link register *\) *)
-(*                alloc] @         (\* allocate stack locals *\) *)
-(*               (Array.to_list frame.instructions) @ *)
-(*               [dealloc;         (\* deallocate stack locals *\) *)
-(*                pop]             (\* pop the link register, return *\) *)
-(*   in *)
-(*   List.iter (fun x -> fprintf out "\t%s\n" (string_of_inst x)) insts *)
-
-(* let access_of_int i = AccessImm i *)

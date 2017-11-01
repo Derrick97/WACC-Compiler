@@ -1,8 +1,8 @@
 module A = Ast;;
-type access = unit
+type access
 
 type enventry =
-  | VarEntry of  A.ty * access      (* variable *)
+  | VarEntry of  A.ty * Translate.access option      (* variable *)
   | FuncEntry of A.ty * A.ty list (* types of params * type of result *)
 
 type env = enventry Symbol.table
