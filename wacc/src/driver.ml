@@ -43,32 +43,12 @@ let () =
     let lexbuf = Lexing.from_channel (open_in filename) in
     try
       let (decs, stmt) = Parser.prog Lexer.main lexbuf in
-      (* let () = Interpreter.eval stmt in exit(0); *)
-      (* setup_builtin_functions; *)
-      (* let table' = Symbol.new_scope (add_func_declarations table decs) in *)
-      (* (\* function declarations *\) *)
-      (* ignore(List.map codegen_decl decs); *)
-      (* built-in functions *)
-      (* the Semantic checking phase *)
-      (* ignore(Semantic.check_stmt table' stmt); *)
-      (* the main function as entry point*)
-      (* let ft = function_type i1_type (Array.make 1 i1_type) in *)
-      (* let main_func = declare_function "main" ft the_module in *)
-      (* let bb = append_block context "entry" main_func in *)
-      (* (position_at_end bb builder); *)
-      (* symbol table to keep track of llvm mem location *)
-      (* let codegen_table = Symbol.empty in *)
-      (* let end_ = build_ret (const_int i1_type 1) builder in *)
-      (* position_before end_ builder; *)
-      (* the Codegen *)
-      (* let _ = codegen_stmt codegen_table stmt in *)
-      (* (\* Llvm_analysis.assert_valid_module the_module; *\) *)
-      (* let out_filename = (Filename.chop_extension filename) ^ ".ll" in *)
-      (* print_module (Filename.basename out_filename) Codegen.the_module; *)
-      (* ignore(print_string (Prettyprint.prettyprint_stmt stmt)); *)
       let table = Semantic.baseenv in
       let table' = Symbol.new_scope (Semantic.add_function_declarations table decs) in
-      ignore(Semantic.check_stmt table' stmt); ()
+      ignore(Semantic.check_stmt table' stmt);
+      let frame =  (Translate.new_frame "main") in
+      let stmts, _ = Semantic.translate table' frame stmt in
+      Translate.print_insts frame stmts;
     with
     | A.SyntaxError _ -> handle_syntax_error lexbuf;
     | Semantic.TypeMismatch (expected, actual, pos) ->
