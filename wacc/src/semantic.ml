@@ -222,8 +222,8 @@ and translate (env: env)
     end
   | VarDeclStmt  (ty, name, exp, _) -> begin
       let size = match ty with
-        | CharTy | BoolTy -> T.BYTE
-        | IntTy -> T.WORD
+        | CharTy | BoolTy -> 1
+        | IntTy -> 4
         | _ -> assert false in
       let local_var = T.allocate_local frame size in
       let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in

@@ -1,18 +1,24 @@
 type label = string
 type operand =
   | OperReg of reg
+  | OperImm of int
 and inst =
   | ADD  of  reg * reg * operand
   | SUB  of  reg * reg * operand
   | AND  of  reg * reg * operand
   | ORR  of  reg * reg * operand
+  | MUL  of  reg * reg * reg
   | MOV  of  reg * operand
+  | CMP  of  reg * operand
   | POP  of  reg list
   | PUSH of  reg list
   | LDR  of  reg * addr
   | STR  of  reg * addr
   | BL   of  label
-and reg  = int
+  | B of label
+and inst' = inst * cond option
+and cond = GT | GE | LT | LE | EQ | NE
+and reg  = Temp.temp
 and addr =
   | AddrLabel of string
   | AddrIndirect of reg * int
@@ -26,6 +32,8 @@ let reg_SP = 13
 let reg_LR = 14
 let reg_PC = 15
 let reg_RV = 0
+
+let new_temp () = 0
 
 let string_of_reg = function
   | 13 -> "sp"
@@ -73,27 +81,3 @@ let string_of_inst (inst: inst) =
                                                         ", " ^
                                                         (string_of_addr op2)
   | BL s -> opcode_str ^ " " ^ s
-
-
-let print_frame _ = failwith "TODO"
-let access_of_reg _ = failwith "TODO"
-let access_of_addr _ = failwith "TODO"
-let mov _ = failwith "TODO"
-let load _ = failwith "TODO"
-let store _ = failwith "TODO"
-let allocate_local _ = failwith "TODO"
-let allocate_temp _ = failwith "TODO"
-let (<:) frame inst = failwith "TODO"
-
-
-
-(* Activation record (AR) *)
-type frame = {
-  mutable name: string;
-  mutable counter: int;         (* used for generating locals *)
-  mutable offset: int;
-  mutable locals: access array;
-  mutable temps: access array;
-  mutable instructions: inst array;
-  level: int;
-}

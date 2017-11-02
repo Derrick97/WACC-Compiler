@@ -6,9 +6,7 @@ type frag = unit
 and  access =
   | InFrame of int * size
 and exp = Tree.exp
-and size =
-  | BYTE
-  | WORD
+and size = int
 
 type frame = {
   mutable frame_counter: int;
@@ -35,23 +33,12 @@ let new_frame frame = {
 let trans_unop   (op: A.unop) (exp: exp) = match op with
   | A.NotOp -> failwith "TODO"
   | _ -> failwith "TODO trans_unop"
+
+
 let trans_binop  (op: A.binop) (lhs: exp) (rhs: exp) = match op with
-  | A.PlusOp   -> Tree.Binop(Tree.PLUS, lhs, rhs)
-  | A.MinusOp  -> Tree.Binop(Tree.MINUS, lhs, rhs)
-  | A.TimesOp  -> Tree.Binop(Tree.MUL, lhs, rhs)
-  | A.DivideOp -> Tree.Binop(Tree.DIV, lhs, rhs)
-  | A.GeOp     ->
-  | A.GtOp     ->
-  | A.EqOp     ->
-  | A.NeOp     ->
-  | A.LtOp     ->
-  | A.LeOp     ->
-  | A.AndOp -> Tree.Binop(Tree.AND, lhs, rhs)
-  | A.OrOp -> Tree.Binop(Tree.OR, lhs, rhs)
-  | A.ModOp ->
+  | _ -> assert false
 
 let trans_lit    (l: A.literal) = match l with
-  | A.LitInt i -> Tree.Const (i)
   | _ -> assert false
 
 let temp_counter = ref 0
@@ -74,7 +61,7 @@ end
 let regFP: Temp.temp = 0
 
 let trans_var    (var: access): exp = match var with
-  | InFrame (i, _) -> Tree.Mem (Tree.Binop (Tree.PLUS , Tree.Temp regFP, Tree.Const i))
+  | InFrame (i, _) -> assert false
 
 let trans_array  (var: access) (indices: exp list) = failwith "TODO"
 let trans_assign (lv: exp) (rv: exp) = begin
@@ -101,7 +88,7 @@ let allocate_local (frame: frame) (size: size) =
   frame.frame_counter <- i + 1;
   InFrame (i, size)
 
-let trans_noop: exp = Tree.Const (0, Ast.IntTy)
+let trans_noop: exp = Tree.Const (0, 0)
 
 let access_of_exp (exp: exp): access = failwith "TODO"
 

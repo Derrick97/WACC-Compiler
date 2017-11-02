@@ -6,11 +6,11 @@ type binop = PLUS | MINUS | MUL | DIV | AND | OR
 and relop = EQ | NE | LT | GT | LE | GE | ULT | UGT | UGE
 and size = int
 and exp =
-  | Const of int
+  | Const of int * size
   | Name of Temp.label
-  | Temp of Temp.temp
+  | Temp of Temp.temp * size
   | Binop of binop * exp * exp
-  | Mem of exp
+  | Mem of exp * size
   | Eseq of stmt * exp
   | Call of string * exp list
 and stmt =
