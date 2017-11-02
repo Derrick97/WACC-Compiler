@@ -71,56 +71,50 @@ let trans_unop  (op: A.unop) (exp: exp): exp = match op with
 let trans_binop  (op: A.binop) (lhs: exp) (rhs: exp):exp =
   let lhs' = ex_temp lhs in
   let rhs' = ex_temp rhs in
+  let instList =
   match op with
-  | A.PlusOp -> emit(Arm.ADD(lhs', lhs', (Arm.OperReg rhs')), None); lhs
-  | A.MinusOp -> emit(Arm.SUB(lhs', lhs', (Arm.OperReg rhs')), None); lhs
-  | A.TimesOp -> emit(Arm.MUL(lhs', lhs', rhs'), None); lhs
+  | A.PlusOp -> ([Arm.ADD(lhs', lhs', (Arm.OperReg rhs'))],InAccess(InReg(lhs',1)))
+  | A.MinusOp -> ([Arm.SUB(lhs', lhs', (Arm.OperReg rhs'))],InAccess(InReg(lhs',1)))
+  | A.TimesOp -> ([Arm.MUL(lhs', lhs', rhs')],InAccess(InReg(lhs',1)))
   | A.DivideOp -> failwith "Notimplemented"
-  | A.AndOp -> emit(Arm.AND (lhs', lhs', (Arm.OperReg rhs')), None); lhs
-  | A.OrOp  -> emit(Arm.ORR (lhs', lhs', (Arm.OperReg rhs')), None); lhs
+  | A.AndOp -> ([Arm.AND (lhs', lhs', (Arm.OperReg rhs'))],InAccess(InReg(lhs',1)))
+  | A.OrOp  -> ([Arm.ORR (lhs', lhs', (Arm.OperReg rhs'))],InAccess(InReg(lhs',1)))
   | A.ModOp -> trans_call "wacc_mod" [lhs; rhs]
-  | A.GeOp -> begin
+  | A.GeOp ->
       let t = new_temp () in
-      emit(Arm.CMP (lhs', operand_of_exp rhs), None);
-      emit(Arm.MOV(t, Arm.OperImm 1), Some Arm.GE);
-      emit(Arm.MOV(t, Arm.OperImm 0), Some Arm.LT);
-      InAccess(InReg (t, 1))
-    end
-  | A.GtOp -> begin
+      ([Arm.CMP (lhs', operand_of_exp rhs);
+        Arm.MOV(t, Arm.OperImm 1);Arm.GE;
+        Arm.MOV(t, Arm.OperImm 0);Arm.LT],InAccess(InReg(t,1)))
+
+  | A.GtOp ->
       let t = new_temp () in
-      emit(Arm.CMP (lhs', operand_of_exp rhs), None);
-      emit(Arm.MOV(t, Arm.OperImm 1), Some Arm.GT);
-      emit(Arm.MOV(t, Arm.OperImm 0), Some Arm.LE);
-      InAccess(InReg (t, 1))
-    end
-  | A.LeOp -> begin
+      ([Arm.CMP (lhs', operand_of_exp rhs);
+        Arm.MOV(t, Arm.OperImm 1); Arm.GT;
+        Arm.MOV(t, Arm.OperImm 0); Arm.LE],InAccess(InReg(t,1)))
+
+  | A.LeOp ->
       let t = new_temp () in
-      emit(Arm.CMP (lhs', operand_of_exp rhs), None);
-      emit(Arm.MOV(t, Arm.OperImm 1), Some Arm.LE);
-      emit(Arm.MOV(t, Arm.OperImm 0), Some Arm.GT);
-      InAccess(InReg (t, 1))
-    end
+      ([Arm.CMP (lhs', operand_of_exp rhs);
+        Arm.MOV(t, Arm.OperImm 1); Arm.LE;
+        Arm.MOV(t, Arm.OperImm 0); Arm.GT],InAccess(InReg(t,1)))
+
   | A.LtOp -> begin
       let t = new_temp () in
-      emit(Arm.CMP (lhs', operand_of_exp rhs), None);
-      emit(Arm.MOV(t, Arm.OperImm 1), Some Arm.LT);
-      emit(Arm.MOV(t, Arm.OperImm 0), Some Arm.GE);
-      InAccess(InReg (t, 1))
-    end
+      ([Arm.CMP (lhs', operand_of_exp rhs);
+        Arm.MOV(t, Arm.OperImm 1); Arm.LT;
+        Arm.MOV(t, Arm.OperImm 0); Arm.GE],InAccess(InReg(t,1)))
+
   | A.EqOp -> begin
       let t = new_temp () in
-      emit(Arm.CMP (lhs', operand_of_exp rhs), None);
-      emit(Arm.MOV(t, Arm.OperImm 1), Some Arm.EQ);
-      emit(Arm.MOV(t, Arm.OperImm 0), Some Arm.NE);
-      InAccess(InReg (t, 1))
-    end
+      ([Arm.CMP (lhs', operand_of_exp rhs);
+        Arm.MOV(t, Arm.OperImm 1); Arm.EQ;
+        Arm.MOV(t, Arm.OperImm 0); Arm.NE],InAccess(InReg(t,1)))
+
   | A.NeOp -> begin
       let t = new_temp () in
-      emit(Arm.CMP (lhs', operand_of_exp rhs), None);
-      emit(Arm.MOV(t, Arm.OperImm 1), Some Arm.NE);
-      emit(Arm.MOV(t, Arm.OperImm 0), Some Arm.EQ);
-      InAccess(InReg (t, 1))
-    end
+      ([Arm.CMP (lhs', operand_of_exp rhs);
+        Arm.MOV(t, Arm.OperImm 1); Arm.NE;
+        Arm.MOV(t, Arm.OperImm 0); Arm.EQ],InAccess(InReg(t,1)))
 
 let trans_lit    (l: A.literal) = match l with
   | _ -> assert false
@@ -130,10 +124,10 @@ let trans_ifelse (cond: exp) (t: exp) (f: exp) = begin
   let false_l = new_namedlabel "if_else" in
   let end_l = new_namedlabel "if_end" in
   let cond_t = ex_temp cond in
-  emit(Arm.CMP(cond_t, Arm.OperImm 1), None);
-  emit(Arm.B(true_l),                  Some Arm.EQ);
-  emit(Arm.B(false_l),                 Some Arm.NE);
-  emit(Arm.B(end_l),                   None)
+  [Arm.CMP(cond_t, Arm.OperImm 1);
+   Arm.B(true_l); Arm.EQ ;
+   Arm.B(false_l); Arm.NE;
+   Arm.B(end_l)]
 end
 
 let trans_var    (var: access): exp = match var with
@@ -146,8 +140,8 @@ let trans_var    (var: access): exp = match var with
 let trans_assign (lv: exp) (rv: exp) = begin
   let InAccess(InFrame (offset, sz)) = lv in
   let InAccess(InReg(t, sz)) = rv in
-  emit(Arm.STR(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None);
-  InAccess(InReg(t, sz))
+  ([Arm.STR(t, Arm.AddrIndirect (Arm.reg_SP, offset))],
+  InAccess(InReg(t, sz)))
 end
 
 let trans_array  (var: access) (indices: exp list)
@@ -157,9 +151,9 @@ let trans_while  (cond: exp) (body: exp) = begin
   let while_cond_l = new_namedlabel "while_cond" in
   let while_end_l =  new_namedlabel "while_done" in
   let cond_t = ex_temp cond in
-  emit(Arm.CMP(cond_t, Arm.OperImm 1), None);
-  emit(Arm.B(while_cond_l),  Some Arm.EQ);
-  emit(Arm.B(while_end_l), None)
+  [Arm.CMP(cond_t, Arm.OperImm 1);
+   Arm.B(while_cond_l); Arm.EQ;
+   Arm.B(while_end_l)]
 end
 
 let trans_seq    (first: exp) (follow: exp) = begin
