@@ -65,7 +65,7 @@ rule main = parse
               idx := !idx + 1;
               i:=!i + 1;)
       done;
-      STRING (Bytes.to_string store_string)
+      STRING (String.sub (Bytes.to_string store_string) 0 ((String.length str) - 2)) (* HACK *)
     }
   | "=="          { EEQ }
   | "!="          { NE }

@@ -25,7 +25,7 @@ type frame = {
 let new_label (): string = "l"
 let new_namedlabel name = name
 
-let strings = ref []
+let strings: (string * string) list ref = ref []
 
 let ex_temp (exp) = match exp with
   | InAccess (InReg (t, size)) -> t
@@ -199,7 +199,8 @@ let function_epilogue (frame: frame) = failwith "TODO epilogue"
 let print_insts (frame: frame) (insts: stmt list) =
   Printf.fprintf stdout ".data\n";
   List.iter (fun (l, s) ->
-      Printf.fprintf stdout "%s:\n\t.ascii \"%s\"\n" l s;
+     (* print_int (String.length s); *)
+     print_string (Printf.sprintf "%s:\n\t.ascii \"%s\"\n" l s);
     ) !strings;
   Printf.fprintf stdout ".text\n";
   Printf.fprintf stdout ".global main\n";
