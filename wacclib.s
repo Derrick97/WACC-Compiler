@@ -1,3 +1,21 @@
+	.cpu arm1176jzf-s
+	.fpu softvfp
+	.eabi_attribute 20, 1
+	.eabi_attribute 21, 1
+	.eabi_attribute 23, 3
+	.eabi_attribute 24, 1
+	.eabi_attribute 25, 1
+	.eabi_attribute 26, 2
+	.eabi_attribute 30, 6
+	.eabi_attribute 34, 1
+	.eabi_attribute 18, 4
+	.file	"wacclib.c"
+	.text
+	.align	2
+	.global	wacc_chr
+	.syntax unified
+	.arm
+	.type	wacc_chr, %function
 wacc_chr:
 	@ args = 0, pretend = 0, frame = 8
 	@ frame_needed = 1, uses_anonymous_args = 0
@@ -311,5 +329,22 @@ wacc_print_array:
 .L39:
 	.word	.LC5
 	.size	wacc_print_array, .-wacc_print_array
+	.align	2
+	.global	wacc_exit
+	.syntax unified
+	.arm
+	.type	wacc_exit, %function
+wacc_exit:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #8
+	mov	r3, r0
+	strb	r3, [fp, #-5]
+	ldrb	r3, [fp, #-5]	@ zero_extendqisi2
+	mov	r0, r3
+	bl	exit
+	.size	wacc_exit, .-wacc_exit
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",%progbits

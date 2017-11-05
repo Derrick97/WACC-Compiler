@@ -2,6 +2,7 @@
 #define WACCLIB_H
 
 #include "stdio.h"
+#include "stdlib.h"
 
 char wacc_chr(int num) {
   return (char) num;
@@ -61,6 +62,10 @@ int print_pair(char num) {
 int wacc_print_array(char ptr) {
   printf("0x%x",  ptr);
   return 0;
+}
+
+int wacc_exit(char code) {
+  exit(code);
 }
 
 #endif

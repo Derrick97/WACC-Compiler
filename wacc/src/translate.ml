@@ -52,7 +52,9 @@ let trans_call (fname: string)
   List.iter (fun inst ->
       let t = F.new_temp() in
       match inst with
-      | Imm (i, size) -> assert false
+      | Imm (i, size) -> begin
+          emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperImm i), None);
+        end
       | InAccess (InReg (t, sz)) -> begin
           emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperReg t), None);
         end

@@ -5,7 +5,7 @@ import subprocess
 
 def compile(f):
     subprocess.run(['./compile', f])
-    subprocess.run(['./tools/arm-gcc', f.replace('.wacc', '.s')])
+    subprocess.run(['./tools/arm-gcc', os.path.basename(f).replace('.wacc', '.s')])
     out = subprocess.run(['./tools/arm-run', 'a.out'], stdout=subprocess.PIPE)
     output = '' if not out.stdout else out.stdout.decode('utf-8')
     return (output, out.returncode)
