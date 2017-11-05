@@ -19,6 +19,7 @@ and exp =
 
 type frame = {
   mutable frame_counter: int;
+  mutable frame_offset: int;
   mutable frame_locals: access array;
 }
 
@@ -37,8 +38,9 @@ let operand_of_exp (exp: exp): Arm.operand = match exp with
   | _ -> assert false  (* FIXME *)
 
 let new_frame frame = {
-    frame_counter = 0;
-    frame_locals = [| |];
+  frame_counter = 0;
+  frame_offset = 0;
+  frame_locals = [| |];
 }
 
 let trans_call (fname: string)
@@ -46,12 +48,14 @@ let trans_call (fname: string)
   let fname_label = new_namedlabel fname in
   let ilist = ref [] in
   let emit x = ilist := !ilist @ [x] in
-  assert (List.length args = 1);
+  assert (List.length args <= 1); (* FIXME we only handle one argument for now *)
   List.iter (fun inst ->
       let t = F.new_temp() in
       match inst with
       | Imm (i, size) -> assert false
-      | InAccess (InReg (t, sz)) -> assert false
+      | InAccess (InReg (t, sz)) -> begin
+          emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperReg t), None);
+        end
       | InAccess (InLabel label) -> begin
           emit(Arm.LDR (t, Arm.AddrLabel label), None);
           emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperReg t), None);
@@ -165,9 +169,17 @@ let trans_var    (var: access): (stmt list * exp) = match var with
 
 let trans_assign (lv: access) (rv: exp): (stmt list * exp) = begin
   let InFrame (offset, sz) = lv in
-  let InAccess(InReg(t, sz)) = rv in
+  match rv with
+  | InAccess(InReg(t, sz)) ->
   ([Arm.STR(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None],
-  InAccess(InReg(t, sz)))
+   InAccess(InReg(t, sz)))
+  | Imm (i, sz) -> begin
+      let t = F.new_temp() in
+      ([Arm.MOV(t, OperImm(i)), None;
+        Arm.STR(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None;
+       ],
+      InAccess(InReg(t, sz)))
+    end
 end
 
 let trans_array  (var: access) (indices: exp list)
@@ -183,9 +195,9 @@ let trans_while  (cond: exp) (body: stmt list) = begin
 end
 
 let allocate_local (frame: frame) (size: size) =
-  let i = frame.frame_counter in
-  let a = InFrame (i, size) in
-  frame.frame_counter <- i + 1;
+  let offset = frame.frame_offset in
+  let a = InFrame (offset, size) in
+  frame.frame_offset <- offset + size;
   frame.frame_locals <- Array.append frame.frame_locals [|a|];
   a
 

@@ -262,12 +262,13 @@ and translate (env: env)
         | CharTy -> "char"
         | ArrayTy _ -> "array"
         | PairTy _ | PairTyy -> "pair"
+        | IntTy -> "int"
         | _ -> assert false in
-      let ci, cv = (if newline then
-        T.trans_call ("wacc_println_" ^ ty_str) [expv]
-      else
-        T.trans_call ("wacc_print_" ^ ty_str) [expv]) in
-      expi @ ci, env
+      let ci, cv = T.trans_call ("wacc_print_" ^ ty_str) [expv] in
+      let ci' = (if (newline) then
+          fst (T.trans_call("wacc_println") [])
+        else []) in
+      expi @ ci @ ci', env
     end
   | RetStmt      (exp, _) -> assert false
   | ReadStmt     (exp, _) -> begin
