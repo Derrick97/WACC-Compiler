@@ -35,7 +35,11 @@ rules:
 
 clean:
 	$(RM) rules $(OUTPUT_DIR) && cd wacc && make clean && find test/wacc_examples -name "*.s" -delete
-.PHONY: all rules clean
+
+wacclib.s:
+	./tools/arm-gcc -S wacc/src/wacclib.c -o wacclib.s
+
+.PHONY: all rules clean wacclib.s
 
 download_wacc_examples:
 	git clone git@gitlab.doc.ic.ac.uk:lab1718_autumn/wacc_examples.git test/wacc_examples

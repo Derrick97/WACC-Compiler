@@ -80,10 +80,15 @@ let rec function_type table name =
       | None -> raise Not_found
     end
 
+let check_type expected actual pos =
+  if not (eq_type expected actual) then
+    raise (TypeMismatch(expected, actual, pos))
+  else ()
+
 let var_type table name =
   match Symbol.lookup name table with
   | VarEntry (ty, _) -> ty
-  | _ -> invalid_arg "not a variable"
+  | _ -> invalid_arg ("Not a variable: " ^ name)
 
 let is_var table name =
   match Symbol.lookup name table with
@@ -96,23 +101,24 @@ let is_heap_type  = function
 
 let is_global_env (env) = match Symbol.parent env with
   | Some t -> (match Symbol.parent t with
-    | None -> true
-    | _ -> false)
+      | None -> true
+      | _ -> false)
   | _ -> false
 
 let rec binop_type = function
   | (A.GeOp | A.GtOp | A.LeOp | A.LtOp |
-           A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
+     A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
   | _ -> A.IntTy
+
 and expect exp table binop pos =
-   (match binop with
+  (match binop with
    | (A.OrOp | A.AndOp ) -> A.BoolTy
    | (A.MinusOp | A.ModOp | A.PlusOp | A.TimesOp | A.DivideOp ) -> A.IntTy
    | (A.EqOp | A.NeOp ) -> check_exp table exp
    | _ -> (
-    if not(is_comparable (check_exp table exp)) then
-    raise (SemanticError(("Unexpected type" ), pos))
-    else check_exp table exp;))
+       if not(is_comparable (check_exp table exp)) then
+         raise (SemanticError(("Unexpected type" ), pos))
+       else check_exp table exp;))
 and check_function_call table fname exps pos = try
     match S.lookup fname table with
     | FuncEntry (retty, argtys) -> begin
@@ -129,7 +135,7 @@ and check_exp (table: env) (exp: A.exp): ty = begin
   | IdentExp    (name, pos) -> (
       try var_type table name
       with
-        | Not_found -> raise (UnknownIdentifier (name, pos)))
+      | Not_found -> raise (UnknownIdentifier (name, pos)))
   | LiteralExp  (literal, pos) -> begin match literal with
       | LitBool _ -> BoolTy
       | LitChar _ -> CharTy
@@ -149,7 +155,8 @@ and check_exp (table: env) (exp: A.exp): ty = begin
   | UnOpExp     (unop, exp, pos) -> (
       let ty = check_exp table exp in
       let expected_ty = (unop_arg_type unop) in
-      if eq_type ty expected_ty then unop_ret_type unop else raise (TypeMismatch (ty, expected_ty, pos)))
+      check_type expected_ty ty pos;
+      unop_ret_type unop)
   | NullExp     pos -> PairTyy
   | NewPairExp  (exp, exp', pos) -> begin
       let fst_ty = check_exp table exp in
@@ -157,28 +164,29 @@ and check_exp (table: env) (exp: A.exp): ty = begin
       PairTy (fst_ty, snd_ty)
     end
   | CallExp     (fname, exps, pos) -> begin
-    try
-    let (retty, argtys) = function_type table fname in
-    let exp_tys = List.map (check_exp table) exps in
-    if argtys = exp_tys then retty else (
-        raise (SemanticError ("Function call type mismatch", pos)))
-    with
-    | Not_found -> raise (UnknownIdentifier (fname, pos))
+      try
+        let (retty, argtys) = function_type table fname in
+        let exp_tys = List.map (check_exp table) exps in
+        if argtys = exp_tys then retty else (
+          raise (SemanticError ("Function call type mismatch", pos)))
+      with
+      | Not_found -> raise (UnknownIdentifier (fname, pos))
     end
-  | ArrayIndexExp (name, exps, pos) -> let ty = match var_type table name with
+  | ArrayIndexExp (name, exps, pos) -> (match var_type table name with
       | ArrayTy ty -> ty
       | StringTy -> CharTy
-      | ty -> raise  (SemanticError ("Only indexing on array is supported", pos))
-    in ty
-  | FstExp (exp, pos) -> begin let ty = check_exp table exp in
-    match ty with
-    | PairTy (t, t') -> t
-    | _ -> raise (TypeMismatch (PairTyy, ty, pos))
+      | _ -> raise  (SemanticError ("Only indexing on array is supported", pos)))
+  | FstExp (exp, pos) -> begin
+      let ty = check_exp table exp in
+      match ty with
+      | PairTy (t, t') -> t
+      | _ -> type_mismatch PairTyy ty pos
     end
-  | SndExp (exp, pos) -> begin let ty = check_exp table exp in
-    match ty with
-    | PairTy (t, t') -> t'
-    | _ -> raise (TypeMismatch (PairTyy, ty, pos))
+  | SndExp (exp, pos) -> begin
+      let ty = check_exp table exp in
+      match ty with
+      | PairTy (t, t') -> t'
+      | _ -> type_mismatch PairTyy ty pos
     end
 end
 
@@ -190,7 +198,7 @@ and translate_exp (env: env) (exp: A.exp): (T.stmt list * T.exp) = begin
       T.trans_var a
     end
   | LiteralExp  (literal, pos) ->
-     [], T.trans_lit literal
+    [], T.trans_lit literal
   | BinOpExp    (exp, binop, exp', pos) -> begin
       let lhsi, lhsv = (tr exp) in
       let rhsi, rhsv = (tr exp') in
@@ -266,8 +274,8 @@ and translate (env: env)
         | _ -> assert false in
       let ci, cv = T.trans_call ("wacc_print_" ^ ty_str) [expv] in
       let ci' = (if (newline) then
-          fst (T.trans_call("wacc_println") [])
-        else []) in
+                   fst (T.trans_call("wacc_println") [])
+                 else []) in
       expi @ ci @ ci', env
     end
   | RetStmt      (exp, _) -> assert false
@@ -313,69 +321,74 @@ and check_stmt env stmt =
       try
         let ty = check_exp env lhs in
         let ty' = check_exp env rhs in
-        if eq_type ty ty' then env else raise (TypeMismatch (ty, ty', pos))
+        check_type ty ty' pos; env
       with Not_found -> raise (SemanticError ("Variable not found", pos))
     end
   | IfStmt       (exp, exp', exp'', pos) -> begin
       ignore(check_in_this_scope exp);
       let ty = check_exp env exp in
-      if eq_type ty BoolTy then (check_with_new_scope exp'')
-      else raise (TypeMismatch (BoolTy, ty, pos))
+      check_type BoolTy ty pos;
+      check_with_new_scope exp''
     end
   | WhileStmt    (exp, exp', pos) -> begin
       let ty = check_exp env exp in
-      if eq_type ty BoolTy then check_with_new_scope exp' else raise (TypeMismatch (BoolTy, ty, pos))
+      check_type BoolTy ty pos;
+      ignore(check_with_new_scope exp');
+      env
     end
-  | ExitStmt     (exp, pos) -> (if (check_exp env exp) != IntTy then raise (SemanticError ("Exit code is not int", pos)) else env)
-  | VarDeclStmt  (ty, symbol, exp, pos) ->
-    begin
-      let _ = check_exp env exp in
+  | ExitStmt     (exp, pos) -> (if (check_exp env exp) != IntTy
+                                then raise (SemanticError ("Exit code is not int", pos))
+                                else env)
+  | VarDeclStmt  (ty, symbol, exp, pos) -> begin
+      let ty' = check_exp env exp in
       let _ = (match S.lookup_opt' symbol env with
-        | Some _ -> raise (SemanticError ("redeclared variable: " ^ symbol, pos))
-        | None -> ()) in
+          | Some _ -> raise (SemanticError ("redeclared variable: " ^ symbol, pos))
+          | None -> ()) in
       let env' = S.insert symbol (VarEntry (ty, None)) env in
-      let ty' = check_exp env' exp in
-      if eq_type ty ty' then env' else raise (TypeMismatch (ty, ty', pos))
+      check_type ty ty' pos; env'
     end
   | SkipStmt      pos -> env
-  (* TODO someof these need to be type check *)
   | PrintStmt    (_, exp, pos) -> ignore(check_in_this_scope exp); env
-  | RetStmt      (exp, pos) -> (let ty = check_in_this_scope exp in
-                                Symbol.insert "$result" (VarEntry (ty, None)) env
-                               )
-  | ReadStmt     (exp, pos) -> (let ty = check_exp env exp in
-                                let check_read_ty = function
-                                  | (A.IntTy | A.CharTy) -> ()
-                                  | _ -> raise (SemanticError ("Unsupported read input type", pos)) in
-                                check_read_ty (ty); env
-                               )
-  | FreeStmt     (exp, pos) -> (let rty = check_exp env exp in
-                                if (not (is_heap_type rty)) then
-                                  raise (SemanticError ("Can only free heap allocated data", pos))
-                                else env)
-  | BlockStmt    (stmt, pos) -> (ignore(check_with_new_scope stmt);
-                                 env)
-and check_function_decls decls =
-  begin
-  let ctx = ref Symbol.empty in
-  ignore(List.iter (fun x -> (match x with
-      | FuncDec (ty, name, args, body, pos) ->
-        (try
-            let _ = function_type !ctx name in
-            raise (SemanticError ("Function redefined", pos))
-         with
-          | Not_found -> ());
-        ctx := Symbol.insert name (FuncEntry (ty, List.map (fun (ft, name) -> ft) args)) !ctx
-    )) decls);
-  let check_dec decl = (match decl with
-      | FuncDec (ty, name, args, body, pos) ->
-        begin
-          let inner_ctx = ref (Symbol.new_scope !ctx) in
-          let () = List.iter (fun x -> inner_ctx := (let (t, name) = x in Symbol.insert name (VarEntry (t, None)) !inner_ctx)) args in
-          ignore(check_stmt !inner_ctx body)
-        end) in
-  ignore(List.map check_dec decls);
-  ()
+  | RetStmt      (exp, pos) -> begin
+      let ty = check_in_this_scope exp in
+      Symbol.insert "$result" (VarEntry (ty, None)) env
+    end
+  | ReadStmt     (exp, pos) -> begin
+      let ty = check_exp env exp in
+       let check_read_ty = function
+         | (A.IntTy | A.CharTy) -> ()
+         | _ -> raise (SemanticError ("Unsupported read input type", pos)) in
+       check_read_ty ty; env
+    end
+  | FreeStmt     (exp, pos) -> begin
+      let rty = check_exp env exp in
+      if (not (is_heap_type rty)) then
+        raise (SemanticError ("Can only free heap allocated data", pos))
+      else env
+    end
+  | BlockStmt    (stmt, pos) -> begin
+      ignore(check_with_new_scope stmt);
+      env
+    end
+and check_function_decls decls = begin
+    let ctx = ref Symbol.empty in
+    ignore(List.iter (fun x -> (match x with
+        | FuncDec (ty, name, args, body, pos) ->
+          (try
+             let _ = function_type !ctx name in
+             raise (SemanticError ("Function redefined", pos))
+           with
+           | Not_found -> ());
+          ctx := Symbol.insert name (FuncEntry (ty, List.map (fun (ft, name) -> ft) args)) !ctx
+      )) decls);
+    let check_dec decl = (match decl with
+        | FuncDec (ty, name, args, body, pos) ->
+          begin
+            let inner_ctx = ref (Symbol.new_scope !ctx) in
+            let () = List.iter (fun x -> inner_ctx := (let (t, name) = x in Symbol.insert name (VarEntry (t, None)) !inner_ctx)) args in
+            ignore(check_stmt !inner_ctx body)
+          end) in
+    ignore(List.map check_dec decls);
   end
 
 let rec add_function_declarations env ff =
@@ -383,8 +396,8 @@ let rec add_function_declarations env ff =
   List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt, pos) = f in
                        let tys = List.map fst fields in
                        (match Symbol.lookup_opt ident !env' with
-                       | Some _ -> raise (SemanticError ("Function " ^ ident ^  " has been redefined", pos))
-                       | _ -> ());
+                        | Some _ -> raise (SemanticError ("Function " ^ ident ^  " has been redefined", pos))
+                        | _ -> ());
                        env' := Symbol.insert ident (FuncEntry (ty, tys)) !env'
                       )) ff;
   match ff with
