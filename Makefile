@@ -34,7 +34,7 @@ rules:
 	$(RM) rules
 
 clean:
-	$(RM) rules $(OUTPUT_DIR) && cd wacc && make clean
+	$(RM) rules $(OUTPUT_DIR) && cd wacc && make clean && find test/wacc_examples -name "*.s" -delete
 .PHONY: all rules clean
 
 download_wacc_examples:

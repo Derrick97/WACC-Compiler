@@ -1,11 +1,12 @@
+#!/usr/bin/env python3
 import os
 import sys
 import subprocess
 
 def compile(f):
-    subprocess.run(['./wacc/env.byte', f])
+    subprocess.run(['./compile', f])
     subprocess.run(['./tools/arm-gcc', f.replace('.wacc', '.s')])
-    out = subprocess.run(['./tools/arm-run', 'a.out'])
+    out = subprocess.run(['./tools/arm-run', 'a.out'], stdout=subprocess.PIPE)
     output = '' if not out.stdout else out.stdout.decode('utf-8')
     return (output, out.returncode)
 
@@ -31,7 +32,11 @@ def test_run(filename):
         if "#empty#" in expected_output:
             assert len(output) == 0
         else:
-            assert expected_output == output
+            if expected_output != output:
+                print("expected")
+                print(expected_output)
+                print('but got')
+                print(output)
 
     if "Exit:" in expected:
         expected_ret = int(''.join(expected['Exit:']).strip())

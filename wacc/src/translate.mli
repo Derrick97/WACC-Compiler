@@ -23,4 +23,4 @@ val access_of_exp: exp -> access
 
 val trans_noop: stmt list
 val allocate_local: frame -> size -> access
-val print_insts: frame -> stmt list -> unit
+val print_insts: out_channel -> frame -> stmt list -> unit

@@ -208,21 +208,19 @@ let access_of_exp (exp: exp): access = failwith "TODO access of exp"
 let function_prologue (frame: frame) (args: access list): unit = failwith "TODO prologue"
 let function_epilogue (frame: frame) = failwith "TODO epilogue"
 
-let print_insts (frame: frame) (insts: stmt list) =
-  Printf.fprintf stdout ".data\n";
+let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
+  let open Printf in
+  fprintf out ".data\n";
   List.iter (fun (l, s) ->
-     (* print_int (String.length s); *)
-     print_string (Printf.sprintf "%s:\n\t.ascii \"%s\"\n" l s);
-    ) !strings;
-  Printf.fprintf stdout ".text\n";
-  Printf.fprintf stdout ".global main\n";
-  Printf.fprintf stdout "main:\n";
-  Printf.fprintf stdout "push {lr}\n";
+     fprintf out "%s" (sprintf "%s:\n\t.ascii \"%s\"\n" l s)) !strings;
+  fprintf out ".text\n";
+  fprintf out ".global main\n";
+  fprintf out "main:\n";
+  fprintf out "push {lr}\n";
   let local_size: int = (Array.fold_left (+) 0 (Array.map (fun x -> match x with
       | InFrame (t, sz) -> sz
       | _ -> assert false) frame.frame_locals)) in
-  print_string ("sub sp, sp, #" ^ (string_of_int local_size) ^ "\n");
-  List.iter (fun x ->
-      print_endline( Arm.string_of_inst' x)) insts;
-  print_string ("add sp, sp, #" ^ (string_of_int local_size) ^ "\n") ;
-  Printf.fprintf stdout "pop {pc}\n"
+  fprintf out "%s" ("sub sp, sp, #" ^ (string_of_int local_size) ^ "\n");
+  List.iter (fun x -> fprintf out "%s\n" (Arm.string_of_inst' x)) insts;
+  fprintf out "%s" ("add sp, sp, #" ^ (string_of_int local_size) ^ "\n") ;
+  fprintf out "%s" "pop {pc}\n"

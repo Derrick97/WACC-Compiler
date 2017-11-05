@@ -48,7 +48,11 @@ let () =
       ignore(Semantic.check_stmt table' stmt);
       let frame =  (Translate.new_frame "main") in
       let stmts, _ = Semantic.translate table' frame stmt in
-      Translate.print_insts frame stmts;
+      let out_filename = (Filename.chop_extension filename) ^ ".s" in
+      let out = open_out out_filename in
+      Translate.print_insts out frame stmts;
+      close_out out;
+      ignore(Sys.command ("cat wacclib.s >> " ^ out_filename));
     with
     | A.SyntaxError _ -> handle_syntax_error lexbuf;
     | Semantic.TypeMismatch (expected, actual, pos) ->
