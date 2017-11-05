@@ -1,6 +1,6 @@
-module S = Symbol;;
-module A = Ast;;
-module F = Arm;;
+module S = Symbol
+module A = Ast
+module F = Arm
 
 type frag = string list
 type size = int
@@ -223,4 +223,5 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   fprintf out "%s" ("sub sp, sp, #" ^ (string_of_int local_size) ^ "\n");
   List.iter (fun x -> fprintf out "%s\n" (Arm.string_of_inst' x)) insts;
   fprintf out "%s" ("add sp, sp, #" ^ (string_of_int local_size) ^ "\n") ;
+  fprintf out "ldr r0, =0\n";
   fprintf out "%s" "pop {pc}\n"
