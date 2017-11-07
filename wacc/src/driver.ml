@@ -30,6 +30,9 @@ let () =
     try
       let (decs, stmt) = parse lexbuf in
       Semantic.check_prog (decs, stmt);
+      let table = Semantic.baseenv in
+      let table' = Symbol.new_scope (Semantic.add_function_declarations table decs) in
+      TranslateSyntax.translate_prog (decs, stmt) table'
       (* TODO backend code generation *)
       (* let stmts, _ = Semantic.translate table' frame stmt in
        * let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in

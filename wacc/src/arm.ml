@@ -63,22 +63,22 @@ and string_of_operand (op:operand) = match op with
   | OperReg r -> string_of_reg (r)
 
 and string_of_opcode = function
-  | ADD _ -> "add"
-  | SUB _ -> "sub"
-  | MOV _ -> "mov"
-  | POP _ -> "pop"
-  | PUSH _ -> "push"
-  | LDR _ -> "ldr"
-  | LDRB _ -> "ldrb"
-  | STRB _ -> "strb"
-  | STR _ -> "str"
-  | BL _ -> "bl"
-  | AND _ -> "and"
-  | ORR _ -> "orr"
-  | MUL _ -> "mul"
-  | CMP _ -> "cmp"
+  | ADD _ -> "\tadd"
+  | SUB _ -> "\tsub"
+  | MOV _ -> "\tmov"
+  | POP _ -> "\tpop"
+  | PUSH _ -> "\tpush"
+  | LDR _ -> "\tldr"
+  | LDRB _ -> "\tldrb"
+  | STRB _ -> "\tstrb"
+  | STR _ -> "\tstr"
+  | BL _ -> "\tbl"
+  | AND _ -> "\tand"
+  | ORR _ -> "\torr"
+  | MUL _ -> "\tmul"
+  | CMP _ -> "\tcmp"
   | LABEL _ -> ""               (* Not used *)
-  | B _ -> "b"
+  | B _ -> "\tb"
 
 let string_of_inst (inst: inst) =
   let opcode_str = string_of_opcode inst in
@@ -93,16 +93,16 @@ let string_of_inst (inst: inst) =
                               " {" ^
                               (String.concat ", " (List.map (string_of_reg) ops)) ^
                               "}"
-  | MOV (op1, op2) -> "mov " ^ (string_of_reg op1) ^ " " ^ (string_of_operand op2)
-  | LDR (op1, op2) | STR (op1, op2) -> opcode_str ^ " "
+  | MOV (op1, op2) -> "\tmov " ^ (string_of_reg op1) ^ " " ^ (string_of_operand op2)
+  | LDR (op1, op2) | STR (op1, op2) | STRB (op1, op2) | LDRB (op1, op2) -> opcode_str ^ " "
                                                         ^ (string_of_reg op1) ^
                                                         ", " ^
                                                         (string_of_addr op2)
   | BL s -> opcode_str ^ " " ^ s
-  | MUL  (r0,r1,r2) -> "mul " ^ (String.concat ", " (List.map (string_of_reg) [r0;r1;r2]))
-  | CMP  (reg, op) -> "cmp " ^ (string_of_reg reg) ^ " " ^ (string_of_operand op)
+  | MUL  (r0,r1,r2) -> "\tmul " ^ (String.concat ", " (List.map (string_of_reg) [r0;r1;r2]))
+  | CMP  (reg, op) -> "\tcmp " ^ (string_of_reg reg) ^ " " ^ (string_of_operand op)
   | LABEL label -> label ^ ":"
-  | B label -> "b " ^ label
+  | B label -> "\tb " ^ label
 
 let string_of_cond = function
   | GT -> "gt"

@@ -18,13 +18,6 @@ let pos_lnum_cnum pos =
   (lnum, cnum)
 
 (* UnOp ArgType ReturnType *)
-let unop_types = [
-  (NotOp, BoolTy, BoolTy);
-  (NegOp, IntTy, IntTy);
-  (LenOp, ArrayTy NullTy, IntTy);
-  (OrdOp, CharTy, IntTy);
-  (ChrOp, IntTy, CharTy)
-]
 
 let unop_arg_type = function
   | NotOp -> BoolTy
@@ -86,15 +79,15 @@ let rec function_type table name =
       | None -> raise Not_found
     end
 
-let check_type expected actual pos =
-  if not (eq_type expected actual) then
-    raise (TypeMismatch(expected, actual, pos))
-  else ()
-
 let var_type table name =
   match Symbol.lookup name table with
   | VarEntry (ty, _) -> ty
   | _ -> invalid_arg ("Not a variable: " ^ name)
+
+let check_type expected actual pos =
+  if not (eq_type expected actual) then
+    raise (TypeMismatch(expected, actual, pos))
+  else ()
 
 let is_var table name =
   match Symbol.lookup name table with
@@ -107,8 +100,7 @@ let is_heap_type  = function
 
 let is_global_env (env) = match Symbol.parent env with
   | Some t -> (match Symbol.parent t with
-      | None -> true
-      | _ -> false)
+      | None -> true | _ -> false)
   | _ -> false
 
 let rec binop_type = function
@@ -116,7 +108,7 @@ let rec binop_type = function
      A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
   | _ -> A.IntTy
 
-and check_function_call table fname exps pos = try
+let rec check_function_call table fname exps pos = try
     match S.lookup fname table with
     | FuncEntry (retty, argtys) -> begin
         let exp_tys = List.map (check_exp table) exps in
@@ -197,116 +189,116 @@ and check_exp (table: env) (exp: A.exp): ty = begin
     end
 end
 
-and translate_exp (env: env) (exp: A.exp): (T.stmt list * T.exp) = begin
-  let tr = translate_exp env in
-  match exp with
-  | IdentExp    (name, pos) -> begin
-      let VarEntry (t, Some a) = Symbol.lookup name env in
-      T.trans_var a
-    end
-  | LiteralExp  (literal, pos) -> begin
-    let v = T.trans_lit literal in
-    match v with
-    | Translate.Imm (i, sz) -> begin
-        let t = Arm.new_temp () in
-        [(Arm.MOV (t, Arm.OperImm i), None)], T.InAccess(T.InReg (t, sz))
-      end
-    | _ -> [], v
-    end
-  | BinOpExp    (exp, binop, exp', pos) -> begin
-      let lhsi, lhsv = (tr exp) in
-      let rhsi, rhsv = (tr exp') in
-      let ri, rv = T.trans_binop binop lhsv rhsv in
-      lhsi @ rhsi @ ri, rv
-    end
-  | UnOpExp     (unop, exp, pos) ->
-    let ri, rv = (translate_exp env exp) in
-    let ri', rv' = T.trans_unop unop rv in
-    ri @ ri', rv'
-  | _ -> assert false
-end
-
-and translate (env: env)
-    (frame: T.frame)
-    (stmt: stmt): (T.stmt list * env) =
-  let tr x = (translate_exp env x) in
-  match stmt with
-  | SeqStmt (stmt, stmtlist) -> begin
-      let exp, env' = translate env frame stmt in
-      let exp', env'' = (translate env' frame stmtlist) in
-      (exp @ exp', env'')
-    end
-  | AssignStmt   (IdentExp (name, _), rhs, _) -> begin
-      let VarEntry (ty, Some lhsa) = Symbol.lookup name env in
-      let rhsi, rhsv = tr rhs in
-      let assi, assv = (T.trans_assign lhsa rhsv) in
-      (rhsi @ assi, env)
-    end
-  | AssignStmt   (_, rhs, _) -> assert false
-  | IfStmt       (cond, then_exp, else_exp, _) -> begin
-      let env' = Symbol.new_scope env in
-      let condi, cond_v = tr cond in
-      let theni, _ = translate env' frame then_exp in
-      let elsei, _ = translate env' frame else_exp in
-      let endi = T.trans_ifelse cond_v (theni) (elsei) in
-      condi @ endi, env
-    end
-  | WhileStmt    (cond, body_stmt, _) -> begin
-      let env' = Symbol.new_scope env in
-      let condi, condv = tr cond in
-      let bodyi, _ = translate env' frame body_stmt in
-      let ii = T.trans_while condv bodyi in
-      condi @ ii, env
-    end
-  | ExitStmt     (exp, _) -> begin
-      let expi, expv = tr exp in
-      let ci, cv = T.trans_call "wacc_exit" [expv] in
-      expi @ ci , env
-    end
-  | VarDeclStmt  (ty, name, exp, _) -> begin
-      let size = match ty with
-        | CharTy | BoolTy -> 1
-        | IntTy -> 4
-        | _ -> assert false in
-      let local_var = T.allocate_local frame size in
-      let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
-      let expi, expv = tr exp in
-      let assigni, assignv = T.trans_assign (local_var) expv in
-      expi @ assigni, env'
-    end
-  | SkipStmt      _ -> T.trans_noop, env
-  | PrintStmt    (newline, exp, _) -> begin
-      let expi, expv = tr exp in
-      let expt = check_exp env exp in
-      let ty_str = match expt with
-        | StringTy -> "string"
-        | BoolTy -> "bool"
-        | CharTy -> "char"
-        | ArrayTy _ -> "array"
-        | PairTy _ | PairTyy -> "pair"
-        | IntTy -> "int"
-        | _ -> assert false in
-      let ci, cv = T.trans_call ("wacc_print_" ^ ty_str) [expv] in
-      let ci' = (if (newline) then
-                   fst (T.trans_call("wacc_println") [])
-                 else []) in
-      expi @ ci @ ci', env
-    end
-  | RetStmt      (exp, _) -> assert false
-  | ReadStmt     (exp, _) -> begin
-      let expi, expv = tr exp in
-      let ci, cv = T.trans_call "wacc_read" [expv] in
-      expi @ ci, env
-    end
-  | FreeStmt     (exp, _) -> begin
-      let expi, expv = tr exp in
-      let ci, cv = T.trans_call "wacc_free" [expv] in
-      expi @ ci, env
-    end
-  | BlockStmt    (stmt, _) -> begin
-      let env' = Symbol.new_scope env in
-      translate env' frame stmt
-    end
+(* and translate_exp (env: env) (exp: A.exp): (T.stmt list * T.exp) = begin
+ *   let tr = translate_exp env in
+ *   match exp with
+ *   | IdentExp    (name, pos) -> begin
+ *       let VarEntry (t, Some a) = Symbol.lookup name env in
+ *       T.trans_var a
+ *     end
+ *   | LiteralExp  (literal, pos) -> begin
+ *     let v = T.trans_lit literal in
+ *     match v with
+ *     | Translate.Imm (i, sz) -> begin
+ *         let t = Arm.new_temp () in
+ *         [(Arm.MOV (t, Arm.OperImm i), None)], T.InAccess(T.InReg (t, sz))
+ *       end
+ *     | _ -> [], v
+ *     end
+ *   | BinOpExp    (exp, binop, exp', pos) -> begin
+ *       let lhsi, lhsv = (tr exp) in
+ *       let rhsi, rhsv = (tr exp') in
+ *       let ri, rv = T.trans_binop binop lhsv rhsv in
+ *       lhsi @ rhsi @ ri, rv
+ *     end
+ *   | UnOpExp     (unop, exp, pos) ->
+ *     let ri, rv = (translate_exp env exp) in
+ *     let ri', rv' = T.trans_unop unop rv in
+ *     ri @ ri', rv'
+ *   | _ -> assert false
+ * end
+ *
+ * and translate (env: env)
+ *     (frame: T.frame)
+ *     (stmt: stmt): (T.stmt list * env) =
+ *   let tr x = (translate_exp env x) in
+ *   match stmt with
+ *   | SeqStmt (stmt, stmtlist) -> begin
+ *       let exp, env' = translate env frame stmt in
+ *       let exp', env'' = (translate env' frame stmtlist) in
+ *       (exp @ exp', env'')
+ *     end
+ *   | AssignStmt   (IdentExp (name, _), rhs, _) -> begin
+ *       let VarEntry (ty, Some lhsa) = Symbol.lookup name env in
+ *       let rhsi, rhsv = tr rhs in
+ *       let assi, assv = (T.trans_assign lhsa rhsv) in
+ *       (rhsi @ assi, env)
+ *     end
+ *   | AssignStmt   (_, rhs, _) -> assert false
+ *   | IfStmt       (cond, then_exp, else_exp, _) -> begin
+ *       let env' = Symbol.new_scope env in
+ *       let condi, cond_v = tr cond in
+ *       let theni, _ = translate env' frame then_exp in
+ *       let elsei, _ = translate env' frame else_exp in
+ *       let endi = T.trans_ifelse cond_v (theni) (elsei) in
+ *       condi @ endi, env
+ *     end
+ *   | WhileStmt    (cond, body_stmt, _) -> begin
+ *       let env' = Symbol.new_scope env in
+ *       let condi, condv = tr cond in
+ *       let bodyi, _ = translate env' frame body_stmt in
+ *       let ii = T.trans_while condv bodyi in
+ *       condi @ ii, env
+ *     end
+ *   | ExitStmt     (exp, _) -> begin
+ *       let expi, expv = tr exp in
+ *       let ci, cv = T.trans_call "wacc_exit" [expv] in
+ *       expi @ ci , env
+ *     end
+ *   | VarDeclStmt  (ty, name, exp, _) -> begin
+ *       let size = match ty with
+ *         | CharTy | BoolTy -> 1
+ *         | IntTy -> 4
+ *         | _ -> assert false in
+ *       let local_var = T.allocate_local frame size in
+ *       let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
+ *       let expi, expv = tr exp in
+ *       let assigni, assignv = T.trans_assign (local_var) expv in
+ *       expi @ assigni, env'
+ *     end
+ *   | SkipStmt      _ -> T.trans_noop, env
+ *   | PrintStmt    (newline, exp, _) -> begin
+ *       let expi, expv = tr exp in
+ *       let expt = check_exp env exp in
+ *       let ty_str = match expt with
+ *         | StringTy -> "string"
+ *         | BoolTy -> "bool"
+ *         | CharTy -> "char"
+ *         | ArrayTy _ -> "array"
+ *         | PairTy _ | PairTyy -> "pair"
+ *         | IntTy -> "int"
+ *         | _ -> assert false in
+ *       let ci, cv = T.trans_call ("wacc_print_" ^ ty_str) [expv] in
+ *       let ci' = (if (newline) then
+ *                    fst (T.trans_call("wacc_println") [])
+ *                  else []) in
+ *       expi @ ci @ ci', env
+ *     end
+ *   | RetStmt      (exp, _) -> assert false
+ *   | ReadStmt     (exp, _) -> begin
+ *       let expi, expv = tr exp in
+ *       let ci, cv = T.trans_call "wacc_read" [expv] in
+ *       expi @ ci, env
+ *     end
+ *   | FreeStmt     (exp, _) -> begin
+ *       let expi, expv = tr exp in
+ *       let ci, cv = T.trans_call "wacc_free" [expv] in
+ *       expi @ ci, env
+ *     end
+ *   | BlockStmt    (stmt, _) -> begin
+ *       let env' = Symbol.new_scope env in
+ *       translate env' frame stmt
+ *     end *)
 
 and check_stmt env stmt =
   let check_in_this_scope = check_exp env in
@@ -457,4 +449,5 @@ let translate_prog (decs, stmt) =
   let frame = Translate.new_frame "main" in
   let table = baseenv in
   let table' = Symbol.new_scope (add_function_declarations table decs) in
-  ignore(translate table' frame stmt)
+  (* ignore(translate table' frame stmt) *)
+  ()
