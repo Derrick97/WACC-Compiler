@@ -93,7 +93,7 @@ let trans_binop  (op: A.binop) (lhs: exp) (rhs: exp): (stmt list * exp) =
   let lhsi, lhs' = may_load lhs in
   let oper = operand_of_exp rhs in
   let insts, v = (match op with
-  | A.PlusOp -> ([ADD(lhs', lhs', oper), None], InAccess(InReg(lhs',1)))
+  | A.PlusOp -> ([ADD(lhs', lhs', oper), None ], InAccess(InReg(lhs',1)))
   | A.MinusOp -> ([SUB(lhs', lhs', oper), None],InAccess(InReg(lhs',1)))
   | A.TimesOp -> begin
       let rhsi, rhs' = may_load rhs in
@@ -148,7 +148,11 @@ let trans_lit    (l: A.literal): exp = match l with
       strings := (label, s)::!strings;
       InAccess (InLabel label)
     end
-  | A.LitBool b -> if b then Imm (1, 1) else Imm (0, 1)
+  | A.LitBool b -> if b then (
+      (* print_string "foo"; *)
+      Imm (1, 1))
+    else
+      Imm (0, 1)
   | _ -> assert false
 
 let trans_ifelse (cond: exp) (t: stmt list) (f: stmt list) = begin

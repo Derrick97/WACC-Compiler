@@ -20,7 +20,6 @@ let check_int_overflow num =
   (if num <= max_int && num >= min_int
   then num
   else raise (SyntaxError ("Int overflow: " ^ string_of_int num)));;
-
 %}
 
 %token BANG

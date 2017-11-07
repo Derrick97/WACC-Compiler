@@ -1,14 +1,21 @@
 module A = Ast;;
 module S = Symbol;;
 module T = Translate;;
-
 open Ast;;
 open Env;;
+open Printf;;
 
 exception SemanticError of string * A.pos
 exception TypeMismatch of A.ty * A.ty * A.pos
 exception UnknownIdentifier of A.symbol * A.pos
 exception UnexpectedError of string * A.pos
+let semantic_error_code = 200
+
+let pos_lnum_cnum pos =
+  let open Lexing in
+  let lnum = pos.pos_lnum in
+  let cnum = (pos.pos_cnum - pos.pos_bol + 1) in
+  (lnum, cnum)
 
 (* UnOp ArgType ReturnType *)
 let unop_types = [
@@ -197,8 +204,15 @@ and translate_exp (env: env) (exp: A.exp): (T.stmt list * T.exp) = begin
       let VarEntry (t, Some a) = Symbol.lookup name env in
       T.trans_var a
     end
-  | LiteralExp  (literal, pos) ->
-    [], T.trans_lit literal
+  | LiteralExp  (literal, pos) -> begin
+    let v = T.trans_lit literal in
+    match v with
+    | Translate.Imm (i, sz) -> begin
+        let t = Arm.new_temp () in
+        [(Arm.MOV (t, Arm.OperImm i), None)], T.InAccess(T.InReg (t, sz))
+      end
+    | _ -> [], v
+    end
   | BinOpExp    (exp, binop, exp', pos) -> begin
       let lhsi, lhsv = (tr exp) in
       let rhsi, rhsv = (tr exp') in
@@ -383,8 +397,7 @@ and check_function_decls decls = begin
           ctx := Symbol.insert name (FuncEntry (ty, List.map (fun (ft, name) -> ft) args)) !ctx
       )) decls);
     let check_dec decl = (match decl with
-        | FuncDec (ty, name, args, body, pos) ->
-          begin
+        | FuncDec (ty, name, args, body, pos) -> begin
             let inner_ctx = ref (Symbol.new_scope !ctx) in
             let () = List.iter (fun x -> inner_ctx := (let (t, name) = x in Symbol.insert name (VarEntry (t, None)) !inner_ctx)) args in
             ignore(check_stmt !inner_ctx body)
@@ -393,9 +406,32 @@ and check_function_decls decls = begin
   end
 
 let rec check_prog (decs, stmt) =
-  let table = baseenv in
-  let table' = Symbol.new_scope (add_function_declarations table decs) in
-  ignore(check_stmt table' stmt);
+  try
+    let table = baseenv in
+    let table' = Symbol.new_scope (add_function_declarations table decs) in
+    ignore(check_stmt table' stmt);
+  with
+  | TypeMismatch (expected, actual, pos) -> begin
+      let (lnum, cnum) = pos_lnum_cnum pos in
+      let open Prettyprint in
+      fprintf stderr "Near %d:%d\n" lnum cnum;
+      fprintf stderr "TypeMismatch; expected %s, but got %s\n"
+        (prettyprint_type expected)
+        (prettyprint_type actual);
+      exit(semantic_error_code);
+    end
+  | UnknownIdentifier (ident, pos) -> begin
+      let (lnum, cnum) = pos_lnum_cnum pos in
+      fprintf stderr "Near %d:%d\n" lnum cnum;
+      fprintf stderr "Unknown Identifier %s\n" ident;
+      exit(semantic_error_code);
+    end
+  | SemanticError (msg, pos) -> begin
+      let (lnum, cnum) = pos_lnum_cnum pos in
+      fprintf stderr "Near %d:%d\n" lnum cnum;
+      fprintf stderr "%s\n" msg;
+      exit(semantic_error_code);
+    end
 
 and add_function_declarations env ff =
   let env' = ref env in
@@ -416,3 +452,9 @@ and add_function_declarations env ff =
         if (not (eq_type rt ty)) then raise (SemanticError ("Result type mismatch", pos))
         else !env'
     end
+
+let translate_prog (decs, stmt) =
+  let frame = Translate.new_frame "main" in
+  let table = baseenv in
+  let table' = Symbol.new_scope (add_function_declarations table decs) in
+  ignore(translate table' frame stmt)
