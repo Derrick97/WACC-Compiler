@@ -109,15 +109,6 @@ let rec binop_type = function
      A.NeOp | A.EqOp | A.AndOp | A.OrOp ) -> A.BoolTy
   | _ -> A.IntTy
 
-and expect exp table binop pos =
-  (match binop with
-   | (A.OrOp | A.AndOp ) -> A.BoolTy
-   | (A.MinusOp | A.ModOp | A.PlusOp | A.TimesOp | A.DivideOp ) -> A.IntTy
-   | (A.EqOp | A.NeOp ) -> check_exp table exp
-   | _ -> (
-       if not(is_comparable (check_exp table exp)) then
-         raise (SemanticError(("Unexpected type" ), pos))
-       else check_exp table exp;))
 and check_function_call table fname exps pos = try
     match S.lookup fname table with
     | FuncEntry (retty, argtys) -> begin
@@ -148,9 +139,19 @@ and check_exp (table: env) (exp: A.exp): ty = begin
   | BinOpExp    (exp, binop, exp', pos) -> (
       let lty = check_exp table exp in
       let rty = check_exp table exp' in
-      if eq_type (expect exp table binop pos) lty && eq_type (expect exp table binop pos) rty
-      then binop_type binop
-      else raise (SemanticError("Unexpected type comparison", pos)))
+      let () = (match binop with
+       | (A.OrOp | A.AndOp ) ->
+         (if (not (eq_type A.BoolTy lty) || not (eq_type A.BoolTy rty))
+         then raise (SemanticError(("|| and && can only be applied on boolean types." ), pos)))
+       | (A.MinusOp | A.ModOp | A.PlusOp | A.TimesOp | A.DivideOp ) ->
+         (if (not (eq_type A.IntTy lty) || not (eq_type A.IntTy rty))
+         then raise (SemanticError(("Numerical operations can only be applied on Integers." ), pos)))
+       | (A.EqOp | A.NeOp ) -> ()
+       | _ -> (
+           if not(is_comparable (check_exp table exp)) then
+             raise (SemanticError(("Inequality operations cannot be applied on strings, pairs and arrays." ), pos))
+           )) in
+      binop_type binop;)
   | UnOpExp     (unop, exp, pos) -> (
       let ty = check_exp table exp in
       let expected_ty = (unop_arg_type unop) in
@@ -335,9 +336,10 @@ and check_stmt env stmt =
       ignore(check_with_new_scope exp');
       env
     end
-  | ExitStmt     (exp, pos) -> (if (check_exp env exp) != IntTy
-                                then raise (SemanticError ("Exit code is not int", pos))
-                                else env)
+  | ExitStmt     (exp, pos) -> (
+   check_type IntTy (check_exp env exp) pos;
+   env;
+   )
   | VarDeclStmt  (ty, symbol, exp, pos) -> begin
       let ty' = check_exp env exp in
       let _ = (match S.lookup_opt' symbol env with
