@@ -1,7 +1,6 @@
 module A = Ast;;
 module E = Env;;
 module S = Semantic;;
-module T = Translate;;
 module F = Arm;;
 open Env;;
 
@@ -113,7 +112,7 @@ let rec translate_exp
        | A.LiteralExp  (literal, pos) -> begin match literal with
            | A.LitInt i -> [MOV(dst, Arm.OperImm i), None]
            | A.LitString s -> begin
-               let label = "L" ^ new_namedlabel(s) in
+               let label = new_label() in
                strings := (label, s)::!strings;
                [LDR(dst, AddrLabel label), None]
              end
@@ -211,7 +210,7 @@ and translate (env: E.env)
       let condi = tr cond in
       let theni, _ = translate env' frame regs then_exp in
       let elsei, _ = translate env' frame regs else_exp in
-      let endi = trans_ifelse dst (theni) (elsei) in
+      let endi = trans_ifelse dst theni elsei in
       condi @ endi, env
     end
   | WhileStmt    (cond, body_stmt, _) -> begin
@@ -288,9 +287,7 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   fprintf out "\tldr r0, =0\n";
   fprintf out "%s" "\tpop {pc}\n"
 
-let translate_prog (decs, stmt) env =
+let translate_prog (decs, stmt) env out =
   let frame = new_frame "main" in
-  (* ignore(translate table' frame stmt) *)
   let insts, _ = translate env frame Arm.callee_saved_regs stmt in
-  print_insts stdout frame insts;
-  ()
+  ignore(print_insts out frame insts)
