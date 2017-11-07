@@ -43,10 +43,10 @@ let () =
     let lexbuf = Lexing.from_channel (open_in filename) in
     try
       let (decs, stmt) = Parser.prog Lexer.main lexbuf in
+      Semantic.check_prog (decs, stmt);
+      let frame =  (Translate.new_frame "main") in
       let table = Semantic.baseenv in
       let table' = Symbol.new_scope (Semantic.add_function_declarations table decs) in
-      ignore(Semantic.check_stmt table' stmt);
-      let frame =  (Translate.new_frame "main") in
       let stmts, _ = Semantic.translate table' frame stmt in
       let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
       let out = open_out out_filename in
