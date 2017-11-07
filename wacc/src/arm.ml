@@ -13,7 +13,9 @@ and inst =
   | POP  of  reg list
   | PUSH of  reg list
   | LDR  of  reg * addr
+  | LDRB of  reg * addr
   | STR  of  reg * addr
+  | STRB of  reg * addr
   | BL   of  label
   | LABEL of label
   | B of label
@@ -67,6 +69,8 @@ and string_of_opcode = function
   | POP _ -> "pop"
   | PUSH _ -> "push"
   | LDR _ -> "ldr"
+  | LDRB _ -> "ldrb"
+  | STRB _ -> "strb"
   | STR _ -> "str"
   | BL _ -> "bl"
   | AND _ -> "and"
@@ -79,8 +83,10 @@ and string_of_opcode = function
 let string_of_inst (inst: inst) =
   let opcode_str = string_of_opcode inst in
   match inst with
-  | ADD (dst, op1, op2) | SUB (dst, op1, op2) |
-    AND (dst, op1, op2) | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_reg dst) ^ ", " ^
+  | ADD (dst, op1, op2)
+    | SUB (dst, op1, op2)
+    | AND (dst, op1, op2)
+    | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_reg dst) ^ ", " ^
                             (string_of_reg op1) ^ ", " ^
                             (string_of_operand op2))
   | (PUSH ops) | (POP ops) -> (opcode_str) ^
@@ -125,10 +131,10 @@ let string_of_inst' (inst: inst') =
                               (String.concat ", " (List.map (string_of_reg) ops)) ^
                               "}"
   | MOV (op1, op2) -> opcode_str ^ " " ^ (string_of_reg op1) ^ ", " ^ (string_of_operand op2)
-  | LDR (op1, op2) | STR (op1, op2) -> opcode_str ^ " "
-                                       ^ (string_of_reg op1) ^
-                                       ", " ^
-                                       (string_of_addr op2)
+  | LDR (op1, op2) | STR (op1, op2) | STRB (op1, op2)
+  | LDRB (op1, op2) -> opcode_str ^ " "
+                       ^ (string_of_reg op1) ^
+                       ", " ^ (string_of_addr op2)
   | BL s -> opcode_str ^ " " ^ s
   | MUL  (r0,r1,r2) ->  opcode_str ^ " " ^ (String.concat ", " (List.map (string_of_reg) [r0;r1;r2]))
   | CMP  (reg, op) ->  opcode_str ^ " " ^ (string_of_reg reg) ^ ", " ^ (string_of_operand op)

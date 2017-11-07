@@ -148,6 +148,7 @@ let trans_lit    (l: A.literal): exp = match l with
       strings := (label, s)::!strings;
       InAccess (InLabel label)
     end
+  | A.LitBool b -> if b then Imm (1, 1) else Imm (0, 1)
   | _ -> assert false
 
 let trans_ifelse (cond: exp) (t: stmt list) (f: stmt list) = begin
@@ -156,32 +157,42 @@ let trans_ifelse (cond: exp) (t: stmt list) (f: stmt list) = begin
   let end_l = new_namedlabel "if_end" in
   let cond_t = ex_temp cond in
   [Arm.CMP(cond_t, Arm.OperImm 1), None;
-   Arm.LABEL(true_l),  Some Arm.EQ;] @ t                    @
-                                       [Arm.B(end_l), None] @
-  [Arm.LABEL(false_l), Some Arm.NE;] @ f @
+   Arm.B(false_l), Some Arm.NE;
+   Arm.LABEL(true_l),  None] @ t @
+                               [Arm.B(end_l), None] @
+  [Arm.LABEL(false_l), None] @ f @
   [Arm.LABEL(end_l), None]
 end
 
 let trans_var    (var: access): (stmt list * exp) = match var with
   | InFrame (offset, sz) ->
-    let t = F.new_temp () in
-    [Arm.LDR(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None],
-    InAccess(InReg(t, sz))
+     let t = F.new_temp () in
+     (match sz with
+     | 4 -> [Arm.LDR(t, Arm.AddrIndirect  (Arm.reg_SP, offset)), None],
+            InAccess(InReg(t, sz))
+     | 1 -> [Arm.LDRB(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None], InAccess(InReg(t, sz))
+     | _ -> assert false)
   | _ -> assert false
 
 let trans_assign (lv: access) (rv: exp): (stmt list * exp) = begin
   let InFrame (offset, sz) = lv in
   match rv with
-  | InAccess(InReg(t, sz)) ->
-  ([Arm.STR(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None],
-   InAccess(InReg(t, sz)))
-  | Imm (i, sz) -> begin
+  | InAccess(InReg(t, sz)) -> (match sz with
+                              | 4 -> ([Arm.STR(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None], InAccess(InReg(t, sz)))
+                              | 1 -> ([Arm.STRB(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None], InAccess(InReg(t, sz)))
+                              | _ -> assert false)
+  | Imm (i, s) -> begin
       let t = F.new_temp() in
-      ([Arm.MOV(t, OperImm(i)), None;
-        Arm.STR(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None;
-       ],
-      InAccess(InReg(t, sz)))
+      begin
+        match s with
+        | 4 -> ([Arm.MOV(t, Arm.OperImm(i)), None;
+                 Arm.STR(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None], InAccess(InReg(t, s)))
+        | 1 -> ([Arm.MOV(t, Arm.OperImm(i)), None;
+                 Arm.STRB(t, Arm.AddrIndirect (Arm.reg_SP, offset)), None], InAccess(InReg(t, s)))
+        | _ -> assert false
+      end
     end
+  | _ -> assert false
 end
 
 let trans_array  (var: access) (indices: exp list)
@@ -214,7 +225,7 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   let open Printf in
   fprintf out ".data\n";
   List.iter (fun (l, s) ->
-     fprintf out "%s" (sprintf "%s:\n\t.ascii \"%s\"\n" l s)) !strings;
+     fprintf out "%s" (sprintf "%s:\n\t.ascii \"%s\0\"\n" l s)) !strings;
   fprintf out ".text\n";
   fprintf out ".global main\n";
   fprintf out "main:\n";
