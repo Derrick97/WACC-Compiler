@@ -9,7 +9,6 @@ exception SemanticError of string * A.pos
 exception TypeMismatch of A.ty * A.ty * A.pos
 exception UnknownIdentifier of A.symbol * A.pos
 exception UnexpectedError of string * A.pos
-exception SomeError of string
 
 (* UnOp ArgType ReturnType *)
 let unop_types = [
