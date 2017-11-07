@@ -390,7 +390,12 @@ and check_function_decls decls = begin
     ignore(List.map check_dec decls);
   end
 
-let rec add_function_declarations env ff =
+let rec check_prog (decs, stmt) =
+  let table = baseenv in
+  let table' = Symbol.new_scope (add_function_declarations table decs) in
+  ignore(check_stmt table' stmt);
+
+and add_function_declarations env ff =
   let env' = ref env in
   List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt, pos) = f in
                        let tys = List.map fst fields in

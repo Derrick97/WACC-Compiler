@@ -14,3 +14,4 @@ val check_exp : env -> A.exp -> A.ty
 val check_stmt : env -> A.stmt -> env
 val translate: env -> Translate.frame -> A.stmt -> Translate.stmt list * env
 val add_function_declarations: env -> A.function_dec list -> env
+val check_prog : A.t -> unit
