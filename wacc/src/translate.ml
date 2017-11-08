@@ -14,6 +14,7 @@ and access =
 
 and exp =
   | Imm of int * size
+  | CharImm of char * size
   | InAccess of access
   | Label of string
 
@@ -35,6 +36,7 @@ let ex_temp (exp) = match exp with
 let operand_of_exp (exp: exp): Arm.operand = match exp with
   | InAccess (InReg (t, sz)) -> Arm.OperReg t
   | Imm (i, sz) -> Arm.OperImm (i)
+  | CharImm (c, sz) -> Arm.OperChar c
   | _ -> assert false  (* FIXME *)
 
 let new_frame frame = {
@@ -93,11 +95,11 @@ let trans_binop  (op: A.binop) (lhs: exp) (rhs: exp): (stmt list * exp) =
   let lhsi, lhs' = may_load lhs in
   let oper = operand_of_exp rhs in
   let insts, v = (match op with
-  | A.PlusOp -> ([ADD(lhs', lhs', oper), None ], InAccess(InReg(lhs',1)))
-  | A.MinusOp -> ([SUB(lhs', lhs', oper), None],InAccess(InReg(lhs',1)))
+  | A.PlusOp -> ([F.newInst (ADD(lhs', lhs', oper))], InAccess(InReg(lhs',1)))
+  | A.MinusOp -> ([F.newInst (SUB(lhs', lhs', oper))],InAccess(InReg(lhs',1)))
   | A.TimesOp -> begin
       let rhsi, rhs' = may_load rhs in
-      (rhsi @ [MUL(lhs', lhs', rhs'), None],InAccess(InReg(lhs',1)))
+      (rhsi @ [F.newInst (MUL(lhs', lhs', rhs'))],InAccess(InReg(lhs',1)))
     end
   | A.DivideOp -> failwith "TODO div"
   | A.AndOp -> ([AND (lhs', lhs', oper), None], InAccess(InReg(lhs',1)))

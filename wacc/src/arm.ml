@@ -1,7 +1,9 @@
+open Char
 type label = string
 type operand =
   | OperReg of reg
   | OperImm of int
+  | OperChar of char
 and inst =
   | ADD  of  reg * reg * operand
   | SUB  of  reg * reg * operand
@@ -16,6 +18,7 @@ and inst =
   | LDRB of  reg * addr
   | STR  of  reg * addr
   | STRB of  reg * addr
+  | EOR  of  reg * reg * operand
   | BL   of  label
   | LABEL of label
   | B of label
@@ -61,12 +64,14 @@ let string_of_addr = function
 and string_of_operand (op:operand) = match op with
   | OperImm i -> "#" ^ (string_of_int i)
   | OperReg r -> string_of_reg (r)
+  | OperChar c -> "#'" ^ Char.escaped c ^ "'"
 
 and string_of_opcode = function
   | ADD _ -> "\tadd"
   | SUB _ -> "\tsub"
   | MOV _ -> "\tmov"
   | POP _ -> "\tpop"
+  | EOR _ -> "\teor"
   | PUSH _ -> "\tpush"
   | LDR _ -> "\tldr"
   | LDRB _ -> "\tldrb"
@@ -84,6 +89,7 @@ let string_of_inst (inst: inst) =
   let opcode_str = string_of_opcode inst in
   match inst with
   | ADD (dst, op1, op2)
+  | EOR (dst, op1, op2)
     | SUB (dst, op1, op2)
     | AND (dst, op1, op2)
     | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_reg dst) ^ ", " ^
@@ -121,6 +127,7 @@ let string_of_inst' (inst: inst') =
     | Some c -> opcode_str ^ (string_of_cond c) in
   match inst with
   | ADD (dst, op1, op2)
+  | EOR (dst, op1, op2)
   | SUB (dst, op1, op2)
   | AND (dst, op1, op2)
   | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_reg dst) ^ ", " ^
@@ -140,3 +147,8 @@ let string_of_inst' (inst: inst') =
   | CMP  (reg, op) ->  opcode_str ^ " " ^ (string_of_reg reg) ^ ", " ^ (string_of_operand op)
   | LABEL label -> label ^ ":"
   | B label -> opcode_str ^ " " ^ label
+
+let newInst ?cond inst =
+  match cond with
+  | None -> (inst,None)
+  | Some c -> (inst, c)

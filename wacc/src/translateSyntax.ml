@@ -52,20 +52,20 @@ let trans_call
   let argreg = List.nth F.caller_saved_regs 0 in
   assert (List.length args <= 1); (* FIXME we only handle one argument for now *)
   List.iter (fun t ->
-      emit(Arm.MOV (argreg, Arm.OperReg t), None)) args;
-  !ilist @ [(Arm.BL(fname_label), None)]
+      emit(F.newInst (Arm.MOV (argreg, Arm.OperReg t)))) args;
+  !ilist @ [F.newInst (Arm.BL(fname_label))]
 end
 
 let trans_ifelse (cond: temp) (t: stmt list) (f: stmt list) = begin
   let true_l = new_namedlabel "if_then" in
   let false_l = new_namedlabel "if_else" in
   let end_l = new_namedlabel "if_end" in
-  [Arm.CMP(cond, Arm.OperImm 1), None;
-   Arm.B(false_l), Some Arm.NE;
-   Arm.LABEL(true_l),  None] @ t @
-  [Arm.B(end_l), None] @
-  [Arm.LABEL(false_l), None] @ f @
-  [Arm.LABEL(end_l), None]
+  [F.newInst (Arm.CMP(cond, Arm.OperImm 1));
+   F.newInst ~cond: (Some Arm.NE) (Arm.B(false_l));
+   F.newInst (Arm.LABEL(true_l))] @ t @
+  [F.newInst (Arm.B(end_l))] @
+  [F.newInst (Arm.LABEL(false_l))] @ f @
+  [F.newInst (Arm.LABEL(end_l))]
 end
 
 let trans_var (var: access) (t: temp): (stmt list) =
@@ -110,16 +110,17 @@ let rec translate_exp
            trans_var acc dst
          end
        | A.LiteralExp  (literal, pos) -> begin match literal with
-           | A.LitInt i -> [MOV(dst, Arm.OperImm i), None]
+           | A.LitInt i -> [newInst (MOV(dst, Arm.OperImm i))]
            | A.LitString s -> begin
                let label = new_label() in
                strings := (label, s)::!strings;
-               [LDR(dst, AddrLabel label), None]
+               [newInst (LDR(dst, AddrLabel label))]
              end
            | A.LitBool b -> if b then
-               [MOV(dst, Arm.OperImm 1), None]
+               [newInst (MOV(dst, Arm.OperImm 1))]
              else
-               [MOV(dst, Arm.OperImm 0), None]
+               [newInst (MOV(dst, Arm.OperImm 0))]
+           | A.LitChar c -> [newInst (MOV(dst, Arm.OperChar c))]
            | _ -> assert false
          end
        | A.BinOpExp    (exp, binop, exp', pos) -> begin
@@ -130,53 +131,54 @@ let rec translate_exp
            let oper = OperReg next in
            lhs @ rhs @
            (match binop with
-            | A.PlusOp ->  [ADD(dst, dst, oper), None]
-            | A.MinusOp -> [SUB(dst, dst, oper), None]
+            | A.PlusOp ->  [newInst (ADD(dst, dst, oper))]
+            | A.MinusOp -> [newInst (SUB(dst, dst, oper))]
             | A.TimesOp -> begin
                 [MUL(dst, dst, next), None]
               end
             | A.DivideOp -> invalid_arg "Divide TODO"
-            | A.AndOp -> [AND (dst, dst, oper), None]
-            | A.OrOp  -> [ORR (dst, dst, oper), None]
-            | A.ModOp -> (trans_call "wacc_mod" [dst])
+            | A.AndOp -> [newInst (AND(dst, dst, oper))]
+            | A.OrOp  -> [newInst (ORR(dst, dst, oper))]
+            | A.ModOp -> (let (fstRest:: others) = rest in trans_call "wacc_mod" [dst;fstRest])
             | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
-                [CMP(dst, oper), None;
-                 MOV(dst, OperImm 1), Some GE;
-                 MOV(dst, OperImm 0), Some LT]
+                [newInst (CMP(dst, oper));
+                 newInst ~cond: (Some GE) (MOV(dst, OperImm 1));
+                 newInst ~cond: (Some LT) (MOV(dst, OperImm 0))]
               end
             | A.GtOp -> begin
-                [CMP(dst, oper),      None;
-                 MOV(dst, OperImm 1), Some GT;
-                 MOV(dst, OperImm 0), Some LE ]
+            [newInst (CMP(dst, oper));
+             newInst ~cond: (Some GT) (MOV(dst, OperImm 1));
+             newInst ~cond: (Some LE) (MOV(dst, OperImm 0))]
               end
             | A.LeOp -> begin
-                [CMP (dst, oper), None;
-                 MOV(dst, OperImm 1), Some LE;
-                 MOV(dst, OperImm 0), Some GT]
+            [newInst (CMP(dst, oper));
+             newInst ~cond: (Some LE) (MOV(dst, OperImm 1));
+             newInst ~cond: (Some GT) (MOV(dst, OperImm 0))]
               end
             | A.LtOp -> begin
-                [CMP(dst, oper), None;
-                 (MOV(dst, OperImm 1), Some LT);
-                 (MOV(dst, OperImm 0), Some GE)]
+            [newInst (CMP(dst, oper));
+             newInst ~cond: (Some LT) (MOV(dst, OperImm 1));
+             newInst ~cond: (Some GE) (MOV(dst, OperImm 0))]
               end
             | A.EqOp -> begin
-                [CMP (dst, oper), None;
-                 MOV(dst, OperImm 1), Some EQ;
-                 MOV(dst, OperImm 0), Some NE]
+            [newInst (CMP(dst, oper));
+             newInst ~cond: (Some EQ) (MOV(dst, OperImm 1));
+             newInst ~cond: (Some NE) (MOV(dst, OperImm 0))]
               end
             | A.NeOp -> begin
-                [(CMP (dst, oper), None);
-                 (MOV(dst, OperImm 1), Some NE);
-                 (MOV(dst, OperImm 0), Some EQ)]
+            [newInst (CMP(dst, oper));
+             newInst ~cond: (Some NE) (MOV(dst, OperImm 1));
+             newInst ~cond: (Some EQ) (MOV(dst, OperImm 0))]
               end)
          end
        | A.UnOpExp     (unop, exp, pos) -> begin
            let ri = (translate_exp env exp regs) in
+           let (fstRest::others) = rest in
            ri @ (match unop with
-               | A.NotOp -> trans_call "wacc_len" [dst]
+               | A.NotOp -> [newInst (EOR(dst, dst, OperImm 1))]
                | A.NegOp -> begin
-                   [Arm.MOV(dst, Arm.OperImm 0), None;
-                    Arm.SUB(dst, dst, (Arm.OperReg dst)), None]
+                   [newInst (MOV(fstRest, Arm.OperImm 0));
+                    newInst (SUB(dst, fstRest, (Arm.OperReg dst)))]
                  end
                | A.LenOp -> trans_call "wacc_len" [dst]
                | A.OrdOp -> trans_call "wacc_ord" [dst]

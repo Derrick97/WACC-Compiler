@@ -3,6 +3,8 @@
 
 #include "stdio.h"
 #include "stdlib.h"
+#include "string.h"
+
 
 char wacc_chr(int num) {
   return (char) num;
@@ -48,6 +50,8 @@ int wacc_print_string(char* s) {
   return 0;
 }
 
+
+
 int wacc_print_int(int num) {
   printf("%d", num);
   return 0;
@@ -58,6 +62,9 @@ int print_pair(char num) {
   return 0;
 }
 
+int wacc_len(char* s){
+  return strlen(s);
+}
 
 int wacc_print_array(char ptr) {
   printf("0x%x",  ptr);
