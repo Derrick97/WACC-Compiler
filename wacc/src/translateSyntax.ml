@@ -219,11 +219,9 @@ and translate (env: E.env)
       condi @
       [Arm.CMP(dst, Arm.OperImm 0), None;
        Arm.B(while_end_l), Some Arm.EQ;
-       Arm.LABEL(while_body_l), None
-      ] @
-      bodyi @ [Arm.B(while_cond_l), None] @
-      [Arm.LABEL(while_end_l), None;
-      ], env
+       Arm.LABEL(while_body_l), None] @ bodyi @
+      [Arm.B(while_cond_l), None;
+       Arm.LABEL(while_end_l), None], env
     end
   | ExitStmt     (exp, _) -> begin
       let expi = tr exp in
@@ -279,7 +277,7 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   let open Printf in
   fprintf out ".data\n";
   List.iter (fun (l, s) ->
-      fprintf out "%s" (sprintf "%s:\n\t.ascii \"%s\0\"\n" l s)) !strings;
+      fprintf out "%s" (sprintf "%s:\n\t.ascii \"%s\0\"\n" l (String.escaped s))) !strings;
   fprintf out ".text\n";
   fprintf out ".global main\n";
   fprintf out "main:\n";
