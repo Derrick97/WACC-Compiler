@@ -46,12 +46,13 @@ let allocate_local (frame: frame) (size: size) =
 let size_of_type = function
   | A.CharTy | A.BoolTy -> 1
   | A.IntTy -> 4
+  | A.StringTy -> 4
+(*  | A.ArrayTy*)
   | _ -> assert false
 
 let trans_call
     (fname: string)
     (args: temp list): (stmt list) = begin
-  (* FIXME transfer the result back to some register *)
   let fname_label = new_namedlabel fname in
   let ilist = ref [] in
   let emit x = ilist := !ilist @ [x] in
@@ -133,13 +134,13 @@ let rec translate_exp
            (match binop with
             | A.PlusOp ->  [add dst dst oper]
             | A.MinusOp -> [sub dst dst oper]
-            | A.TimesOp -> [mul dst dst next]
+            | A.TimesOp -> begin
+                [mul dst dst next]
+              end
             | A.DivideOp -> invalid_arg "Divide TODO"
             | A.AndOp -> [annd dst dst oper]
             | A.OrOp  -> [orr dst dst oper]
-            | A.ModOp -> begin
-                let (fst_rest:: others) = rest in trans_call "wacc_mod" [dst;fst_rest]
-              end
+            | A.ModOp -> (let (fst_rest:: others) = rest in trans_call "wacc_mod" [dst;fst_rest])
             | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
                 [cmp dst oper;
                  mov ~cond:GE dst (OperImm 1);
@@ -180,7 +181,7 @@ let rec translate_exp
                    [mov fst_rest (OperImm 0);
                     sub dst fst_rest (OperReg dst)]
                  end
-               | A.LenOp -> trans_call "wacc_len" [dst] @ [mov dst (OperReg reg_RV)]
+               | A.LenOp -> trans_call "wacc_len" [dst]
                | A.OrdOp -> trans_call "wacc_ord" [dst]
                | A.ChrOp -> trans_call "wacc_chr" [dst])
          end
@@ -197,8 +198,7 @@ let rec translate_exp
               add addr addr (OperReg index);
               load dst (AddrIndirect (addr, 0)) ]
          end
-       | A.ArrayIndexExp (_, _, _)
-         -> failwith "Only single dimensional array access is supported"
+       | A.ArrayIndexExp (_, _, _) -> failwith "Only single dimensional array access is supported"
        | _ -> assert false
      end
    | [] -> invalid_arg "Registers have run out")
@@ -207,29 +207,8 @@ and translate (env: E.env)
     (frame: frame)
     (regs: temp list) (stmt: A.stmt): (Arm.inst' list * E.env) =
   let open Ast in
-  let open Arm in
   let tr x = (translate_exp env x regs) in
   let dst::rest = regs in
-  let addr_of_exp (e: A.exp) = match e with
-    | ArrayIndexExp (name, [exp], _) -> begin
-        let open Arm in
-        let E.VarEntry (t, Some acc) = Symbol.lookup name env in
-        let size = 4 in
-        let index::addr::o::rest = rest in
-        let insts = translate_exp env exp (index::rest)
-           @ trans_var acc addr
-           @ [mov o (OperImm size);
-              mul index index o;
-              add index index (OperImm 4);
-              add addr addr (OperReg index);] in
-        AddrIndirect (addr, 0), insts
-      end
-    | ArrayIndexExp _ -> assert false
-    | IdentExp (name, _) -> begin
-        let VarEntry (ty, Some InFrame (offset, sz)) = (Symbol.lookup name env) in
-        AddrIndirect (Arm.reg_SP, offset), []
-      end
-    | _ -> invalid_arg "Not an lvalue" in
   match stmt with
   | SeqStmt (stmt, stmtlist) -> begin
       let exp,  env' = translate env frame regs stmt in
@@ -242,11 +221,7 @@ and translate (env: E.env)
       let ass = (trans_assign acc dst) in
       (rhs @ ass, env)
     end
-  | AssignStmt   (lhs, rhs, _) -> begin
-      let rinsts = tr rhs in
-      let addr, linsts = addr_of_exp lhs in
-      rinsts @ linsts @ [F.str dst addr], env (* TODO need to handle storeb *)
-    end
+  | AssignStmt   (_, rhs, _) -> assert false
   | IfStmt       (cond, then_exp, else_exp, _) -> begin
       let env' = Symbol.new_scope env in
       let condi = tr cond in
@@ -289,9 +264,7 @@ and translate (env: E.env)
                   [MOV (dst, OperReg(reg_RV)), None ] @
                   (trans_assign local_var dst) (* holds address to the heap allocated array *)
       @ List.concat (List.mapi (fun i e -> (translate_exp env e rest)
-                                           @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in
-      let insts = insts @ [mov next (OperImm array_length);
-                           str next (AddrIndirect (addr_reg, 0))] in
+          @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in
       insts, env'
     end
   | VarDeclStmt  (ty, name, exp, _) -> begin
@@ -342,7 +315,8 @@ and translate (env: E.env)
     end
   | BlockStmt    (stmt, _) -> begin
       let env' = Symbol.new_scope env in
-      translate env' frame regs stmt
+      let (exps, env'') = translate env' frame regs stmt in
+      (exps,env);
     end
 
 let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
