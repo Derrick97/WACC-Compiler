@@ -64,7 +64,12 @@ let string_of_addr = function
 and string_of_operand (op:operand) = match op with
   | OperImm i -> "#" ^ (string_of_int i)
   | OperReg r -> string_of_reg (r)
-  | OperChar c -> "#'" ^ Char.escaped c ^ "'"
+  | OperChar c -> begin
+      let c = match c with
+        | '\000' -> "\0"
+        | _ -> String.make 1 c in
+      "#'" ^ c ^ "'"
+    end
 
 and string_of_opcode = function
   | ADD _ -> "\tadd"
