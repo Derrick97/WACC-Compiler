@@ -43,6 +43,11 @@ let allocate_local (frame: frame) (size: size) =
   frame.frame_locals <- Array.append frame.frame_locals [|a|];
   a
 
+let size_of_type = function
+  | A.CharTy | A.BoolTy -> 1
+  | A.IntTy -> 4
+  | _ -> assert false
+
 let trans_call
     (fname: string)
     (args: temp list): (stmt list) = begin
@@ -177,7 +182,20 @@ let rec translate_exp
                | A.OrdOp -> trans_call "wacc_ord" [dst]
                | A.ChrOp -> trans_call "wacc_chr" [dst])
          end
-       | A.ArrayIndexExp (name, exps, _) -> assert false
+       | A.ArrayIndexExp (name, [exp], _) -> begin
+           let open Arm in
+           let E.VarEntry (t, Some acc) = Symbol.lookup name env in
+           let size = size_of_type t in
+           let index::addr::o::rest = rest in
+           tr exp (index::rest)
+           @ trans_var acc addr
+           @ [MOV (o, OperImm(size)), None;
+              MUL (index, index, o), None;
+              ADD (index, index, OperImm(4)), None;
+              ADD (addr, addr, OperReg(index)), None;
+              LDR (dst, AddrIndirect(addr, 0)), None]
+         end
+       | A.ArrayIndexExp (_, _, _) -> failwith "Only single dimensional array access is supported"
        | _ -> assert false
      end
    | [] -> invalid_arg "Registers have run out")
@@ -188,10 +206,6 @@ and translate (env: E.env)
   let open Ast in
   let tr x = (translate_exp env x regs) in
   let dst::rest = regs in
-  let size_of_type = function
-    | CharTy | BoolTy -> 1
-    | IntTy -> 4
-    | _ -> assert false in
   match stmt with
   | SeqStmt (stmt, stmtlist) -> begin
       let exp,  env' = translate env frame regs stmt in
@@ -239,13 +253,16 @@ and translate (env: E.env)
       let next::_ = rest in
       let addr_reg = dst in
       let element_size :int = size_of_type ty in
+      let local_var = allocate_local frame 4 in
+      let env' = Symbol.insert name (VarEntry (ArrayTy ty, Some local_var)) env in
       let size_offset = 4 in
-      let insts = [MOV (dst, OperImm(element_size * array_length + 1)), None] @
-                   trans_call "malloc" [next] @
-                  [MOV (dst, OperReg(reg_RV)), None] (* holds address to the heap allocated array *)
+      let insts = [MOV (dst, OperImm(element_size * array_length + 4)), None] @
+                   trans_call "malloc" [dst] @
+                  [MOV (dst, OperReg(reg_RV)), None ] @
+                  (trans_assign local_var dst) (* holds address to the heap allocated array *)
       @ List.concat (List.mapi (fun i e -> (translate_exp env e rest)
           @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in
-      insts, env
+      insts, env'
     end
   | VarDeclStmt  (ty, name, exp, _) -> begin
       let size = size_of_type ty in
