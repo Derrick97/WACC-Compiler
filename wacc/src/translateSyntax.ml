@@ -46,6 +46,7 @@ let allocate_local (frame: frame) (size: size) =
 let size_of_type = function
   | A.CharTy | A.BoolTy -> 1
   | A.IntTy -> 4
+  | A.StringTy -> 4             (* FIXME *)
   | _ -> assert false
 
 let trans_call
@@ -342,7 +343,8 @@ and translate (env: E.env)
     end
   | BlockStmt    (stmt, _) -> begin
       let env' = Symbol.new_scope env in
-      translate env' frame regs stmt
+      let insts, _ = translate env' frame regs stmt in
+      (insts, env)
     end
 
 let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
