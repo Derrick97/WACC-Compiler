@@ -86,14 +86,6 @@ let trans_assign
   | _ -> assert false
 end
 
-let trans_while  (cond: temp) (body: stmt list) = begin
-  let while_cond_l = new_namedlabel "while_cond" in
-  let while_end_l =  new_namedlabel "while_done" in
-  [Arm.CMP(cond, Arm.OperImm 1), None;
-   Arm.B(while_cond_l), Some Arm.EQ;
-   Arm.B(while_end_l), None]
-end
-
 let trans_noop: stmt list = []
 
 let rec translate_exp
@@ -113,6 +105,7 @@ let rec translate_exp
            | A.LitInt i -> [newInst (MOV(dst, Arm.OperImm i))]
            | A.LitString s -> begin
                let label = new_label() in
+
                strings := (label, s)::!strings;
                [newInst (LDR(dst, AddrLabel label))]
              end
@@ -219,8 +212,18 @@ and translate (env: E.env)
       let env' = Symbol.new_scope env in
       let condi = tr cond in
       let bodyi, _ = translate env' frame regs body_stmt in
-      let ii = trans_while dst bodyi in
-      condi @ ii, env
+      let while_cond_l = new_namedlabel "while_cond" in
+      let while_body_l = new_namedlabel "while_body" in
+      let while_end_l =  new_namedlabel "while_done" in
+      [Arm.LABEL(while_cond_l), None] @
+      condi @
+      [Arm.CMP(dst, Arm.OperImm 0), None;
+       Arm.B(while_end_l), Some Arm.EQ;
+       Arm.LABEL(while_body_l), None
+      ] @
+      bodyi @ [Arm.B(while_cond_l), None] @
+      [Arm.LABEL(while_end_l), None;
+      ], env
     end
   | ExitStmt     (exp, _) -> begin
       let expi = tr exp in
