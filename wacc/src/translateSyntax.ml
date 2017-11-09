@@ -258,11 +258,20 @@ and translate (env: E.env)
       expi @ ci @ ci', env
     end
   | RetStmt      (exp, _) -> assert false
-  | ReadStmt     (exp, _) -> begin
+  | ReadStmt     (Ast.IdentExp (name, _) as exp, _) -> begin
       let expi = tr exp in
-      let ci = trans_call "wacc_read" [dst] in
+      let expt = Semantic.check_exp env exp in
+      let VarEntry (ty, Some Env.InFrame (offset, _)) = Symbol.lookup name env in
+      let ty_str = match expt with
+        | IntTy -> "int"
+        | CharTy -> "char"
+        | _ -> invalid_arg "not valid read type"
+      in
+      let ci = trans_call ("wacc_read_" ^ ty_str) [] in
+      let ci = ci @ [Arm.STR (Arm.reg_RV, Arm.AddrIndirect(Arm.reg_SP, offset)), None] in
       expi @ ci, env
     end
+  | ReadStmt _ -> assert false
   | FreeStmt     (exp, _) -> begin
       let expi = tr exp in
       let ci = trans_call "wacc_free" [dst] in
