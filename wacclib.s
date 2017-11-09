@@ -303,6 +303,27 @@ print_pair:
 	.word	.LC5
 	.size	print_pair, .-print_pair
 	.align	2
+	.global	wacc_len
+	.syntax unified
+	.arm
+	.type	wacc_len, %function
+wacc_len:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	@ link register save eliminated.
+	str	fp, [sp, #-4]!
+	add	fp, sp, #0
+	sub	sp, sp, #12
+	str	r0, [fp, #-8]
+	ldr	r3, [fp, #-8]
+	ldr	r3, [r3]
+	mov	r0, r3
+	sub	sp, fp, #0
+	@ sp needed
+	ldr	fp, [sp], #4
+	bx	lr
+	.size	wacc_len, .-wacc_len
+	.align	2
 	.global	wacc_print_array
 	.syntax unified
 	.arm
@@ -317,16 +338,16 @@ wacc_print_array:
 	strb	r3, [fp, #-5]
 	ldrb	r3, [fp, #-5]	@ zero_extendqisi2
 	mov	r1, r3
-	ldr	r0, .L39
+	ldr	r0, .L41
 	bl	printf
 	mov	r3, #0
 	mov	r0, r3
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L40:
+.L42:
 	.align	2
-.L39:
+.L41:
 	.word	.LC5
 	.size	wacc_print_array, .-wacc_print_array
 	.align	2
