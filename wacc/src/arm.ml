@@ -155,5 +155,5 @@ let string_of_inst' (inst: inst') =
 
 let newInst ?cond inst =
   match cond with
-  | None -> (inst,None)
+  | None ->   (inst,None)
   | Some c -> (inst, c)

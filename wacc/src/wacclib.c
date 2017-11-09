@@ -50,8 +50,6 @@ int wacc_print_string(char* s) {
   return 0;
 }
 
-
-
 int wacc_print_int(int num) {
   printf("%d", num);
   return 0;
@@ -62,8 +60,10 @@ int print_pair(char num) {
   return 0;
 }
 
-int wacc_len(char* s){
-  return strlen(s);
+int wacc_len(void* arr_ptr){
+  // For arrays in WACC, we use the first int to store the length. subsequent storage is used
+  // for the content of the array;
+  return ((int*)arr_ptr)[0];
 }
 
 int wacc_print_array(char ptr) {
@@ -74,5 +74,6 @@ int wacc_print_array(char ptr) {
 int wacc_exit(char code) {
   exit(code);
 }
+
 
 #endif

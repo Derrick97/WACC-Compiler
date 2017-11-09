@@ -132,7 +132,7 @@ let rec translate_exp
             | A.DivideOp -> invalid_arg "Divide TODO"
             | A.AndOp -> [newInst (AND(dst, dst, oper))]
             | A.OrOp  -> [newInst (ORR(dst, dst, oper))]
-            | A.ModOp -> (let (fstRest:: others) = rest in trans_call "wacc_mod" [dst;fstRest])
+            | A.ModOp -> (let (fstRest::others) = rest in trans_call "wacc_mod" [dst;fstRest])
             | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
                 [newInst (CMP(dst, oper));
                  newInst ~cond: (Some GE) (MOV(dst, OperImm 1));
@@ -177,6 +177,7 @@ let rec translate_exp
                | A.OrdOp -> trans_call "wacc_ord" [dst]
                | A.ChrOp -> trans_call "wacc_chr" [dst])
          end
+       | A.ArrayIndexExp (name, exps, _) -> assert false
        | _ -> assert false
      end
    | [] -> invalid_arg "Registers have run out")
@@ -186,7 +187,11 @@ and translate (env: E.env)
     (regs: temp list) (stmt: A.stmt): (Arm.inst' list * E.env) =
   let open Ast in
   let tr x = (translate_exp env x regs) in
-  let dst::next = regs in
+  let dst::rest = regs in
+  let size_of_type = function
+    | CharTy | BoolTy -> 1
+    | IntTy -> 4
+    | _ -> assert false in
   match stmt with
   | SeqStmt (stmt, stmtlist) -> begin
       let exp,  env' = translate env frame regs stmt in
@@ -228,11 +233,22 @@ and translate (env: E.env)
       let ci = trans_call "wacc_exit" [dst] in
       expi @ ci , env
     end
+  | VarDeclStmt  (ArrayTy ty, name, LiteralExp(LitArray elements, _), _) -> begin
+      let open Arm in
+      let array_length = List.length elements in
+      let next::_ = rest in
+      let addr_reg = dst in
+      let element_size :int = size_of_type ty in
+      let size_offset = 4 in
+      let insts = [MOV (dst, OperImm(element_size * array_length + 1)), None] @
+                   trans_call "malloc" [next] @
+                  [MOV (dst, OperReg(reg_RV)), None] (* holds address to the heap allocated array *)
+      @ List.concat (List.mapi (fun i e -> (translate_exp env e rest)
+          @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in
+      insts, env
+    end
   | VarDeclStmt  (ty, name, exp, _) -> begin
-      let size = match ty with
-        | CharTy | BoolTy -> 1
-        | IntTy -> 4
-        | _ -> assert false in
+      let size = size_of_type ty in
       let local_var = allocate_local frame size in
       let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
       let expi = tr exp in
