@@ -78,6 +78,7 @@ and string_of_opcode = function
   | POP _ -> "\tpop"
   | EOR _ -> "\teor"
   | PUSH _ -> "\tpush"
+  | POP _ -> "\tpop"
   | LDR _ -> "\tldr"
   | LDRB _ -> "\tldrb"
   | STRB _ -> "\tstrb"
@@ -100,7 +101,7 @@ let string_of_inst (inst: inst) =
     | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_reg dst) ^ ", " ^
                             (string_of_reg op1) ^ ", " ^
                             (string_of_operand op2))
-  | (PUSH ops) | (POP ops) -> (opcode_str) ^
+  | POP ops | PUSH ops -> (opcode_str) ^
                               " {" ^
                               (String.concat ", " (List.map (string_of_reg) ops)) ^
                               "}"
@@ -138,7 +139,7 @@ let string_of_inst' (inst: inst') =
   | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_reg dst) ^ ", " ^
                            (string_of_reg op1) ^ ", " ^
                            (string_of_operand op2))
-  | (PUSH ops) | (POP ops) -> opcode_str ^
+  | PUSH ops | POP ops -> opcode_str ^
                               "{" ^
                               (String.concat ", " (List.map (string_of_reg) ops)) ^
                               "}"
@@ -153,7 +154,18 @@ let string_of_inst' (inst: inst') =
   | LABEL label -> label ^ ":"
   | B label -> opcode_str ^ " " ^ label
 
-let newInst ?cond inst =
-  match cond with
-  | None ->   (inst,None)
-  | Some c -> (inst, c)
+let add ?cond dst reg op = (ADD (dst,reg,op), cond)
+let sub ?cond dst reg op = (SUB (dst,reg,op), cond)
+let eor ?cond dst reg op = (EOR (dst,reg,op), cond)
+let annd ?cond dst reg op = (AND (dst,reg,op), cond)
+let orr ?cond dst reg op = (ORR (dst,reg,op), cond)
+let mov ?cond op1 op2 = (MOV (op1,op2), cond)
+let load ?cond reg1 addr = (LDR (reg1, addr), cond)
+let loadb ?cond reg1 addr = (LDRB (reg1, addr), cond)
+let str ?cond reg1 addr = (STR (reg1, addr), cond)
+let strb ?cond reg1 addr = (STRB (reg1, addr), cond)
+let jump ?cond label = (B (label), cond)
+let bl ?cond label = (BL (label), cond)
+let cmp ?cond reg op = (CMP (reg, op), cond)
+let labels label = (LABEL (label), None)
+let mul ?cond reg1 reg2 reg3 = (MUL (reg1, reg2, reg3), cond)
