@@ -47,6 +47,7 @@ let size_of_type = function
   | A.CharTy | A.BoolTy -> 1
   | A.IntTy -> 4
   | A.StringTy -> 4             (* FIXME *)
+  | A.PairTy _ -> 8
   | _ -> assert false
 
 let trans_call
@@ -75,6 +76,15 @@ let trans_ifelse (cond: temp) (t: stmt list) (f: stmt list) = begin
   [labels false_l] @ f @
   [labels end_l]
 end
+
+let split_offset offset =
+  let tempNum = ref 1 in
+  let () = if offset < 256 then tempNum := offset * 2 in
+  let () =
+     while !tempNum <= offset do
+     tempNum := !tempNum * 2
+     done in
+  (!tempNum / 2, offset - (!tempNum / 2))
 
 let trans_var (var: access) (t: temp): (stmt list) =
   match var with
@@ -263,13 +273,13 @@ and translate (env: E.env)
       let while_cond_l = new_label ~prefix:"while_cond" () in
       let while_body_l = new_label ~prefix:"while_body" () in
       let while_end_l =  new_label ~prefix:"while_done" () in
-      [Arm.LABEL(while_cond_l), None] @
+      [labels while_cond_l] @
       condi @
-      [Arm.CMP(dst, Arm.OperImm 0), None;
-       Arm.B(while_end_l), Some Arm.EQ;
-       Arm.LABEL(while_body_l), None] @ bodyi @
-      [Arm.B(while_cond_l), None;
-       Arm.LABEL(while_end_l), None], env
+      [cmp dst (Arm.OperImm 0);
+       jump ~cond: EQ while_end_l;
+       labels while_body_l] @ bodyi @
+      [jump while_cond_l;
+       labels while_end_l], env
     end
   | ExitStmt     (exp, _) -> begin
       let expi = tr exp in
@@ -358,9 +368,14 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   fprintf out "\tpush {lr}\n";
   let local_size: int = (Array.fold_left (+) 0 (Array.map (fun x -> match x with
       | InFrame (t, sz) -> sz) frame.frame_locals)) in
-  fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int local_size) ^ "\n");
+  let (valid_size1, valid_size2) = split_offset local_size in
+  fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int valid_size1) ^ "\n");
+  if valid_size2 !=0 then
+  fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int valid_size2) ^ "\n");
   List.iter (fun x -> fprintf out "%s\n" (Arm.string_of_inst' x)) insts;
-  fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int local_size) ^ "\n") ;
+  fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int valid_size1) ^ "\n") ;
+  if valid_size2 !=0 then
+  fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int valid_size2) ^ "\n") ;
   fprintf out "\tldr r0, =0\n";
   fprintf out "%s" "\tpop {pc}\n"
 
