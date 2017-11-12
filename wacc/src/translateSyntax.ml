@@ -147,7 +147,7 @@ let rec translate_exp
                             (* TODO intmultoverflow handle correctly *)
                             (* https://community.arm.com/processors/b/blog/posts/detecting-overflow-from-mul *)
                             check_overflow_inst]
-            | A.DivideOp -> invalid_arg "Divide TODO"
+            | A.DivideOp -> trans_call "wacc_div" [dst;next] @ [mov dst (OperReg (F.reg_RV, None))]
             | A.AndOp -> [annd dst dst oper]
             | A.OrOp  -> [orr dst dst oper]
             | A.ModOp -> begin

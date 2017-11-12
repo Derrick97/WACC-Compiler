@@ -80,8 +80,23 @@ int wacc_throw_overflow_error() {
   exit(255);
 }
 
+int wacc_throw_division_by_zero() {
+  printf("DivideByZeroError: division by zero.\n");
+  exit(255);
+}
+
 int wacc_mod(int n, int d) {
+  if (d == 0) {
+    wacc_throw_division_by_zero();
+  }
   return n % d;
+}
+
+int wacc_div(int a, int b) {
+  if (b == 0) {
+    wacc_throw_division_by_zero();
+  }
+  return a / b;
 }
 
 #endif

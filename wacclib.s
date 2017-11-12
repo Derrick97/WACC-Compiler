@@ -392,6 +392,30 @@ wacc_throw_overflow_error:
 .L45:
 	.word	.LC6
 	.size	wacc_throw_overflow_error, .-wacc_throw_overflow_error
+	.section	.rodata
+	.align	2
+.LC7:
+	.ascii	"DivideByZeroError: division by zero.\000"
+	.text
+	.align	2
+	.global	wacc_throw_division_by_zero
+	.syntax unified
+	.arm
+	.type	wacc_throw_division_by_zero, %function
+wacc_throw_division_by_zero:
+	@ args = 0, pretend = 0, frame = 0
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	ldr	r0, .L48
+	bl	puts
+	mov	r0, #255
+	bl	exit
+.L49:
+	.align	2
+.L48:
+	.word	.LC7
+	.size	wacc_throw_division_by_zero, .-wacc_throw_division_by_zero
 	.global	__aeabi_idivmod
 	.align	2
 	.global	wacc_mod
@@ -406,6 +430,11 @@ wacc_mod:
 	sub	sp, sp, #8
 	str	r0, [fp, #-8]
 	str	r1, [fp, #-12]
+	ldr	r3, [fp, #-12]
+	cmp	r3, #0
+	bne	.L51
+	bl	wacc_throw_division_by_zero
+.L51:
 	ldr	r3, [fp, #-8]
 	ldr	r1, [fp, #-12]
 	mov	r0, r3
@@ -416,5 +445,33 @@ wacc_mod:
 	@ sp needed
 	pop	{fp, pc}
 	.size	wacc_mod, .-wacc_mod
+	.global	__aeabi_idiv
+	.align	2
+	.global	wacc_div
+	.syntax unified
+	.arm
+	.type	wacc_div, %function
+wacc_div:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #8
+	str	r0, [fp, #-8]
+	str	r1, [fp, #-12]
+	ldr	r3, [fp, #-12]
+	cmp	r3, #0
+	bne	.L54
+	bl	wacc_throw_division_by_zero
+.L54:
+	ldr	r1, [fp, #-12]
+	ldr	r0, [fp, #-8]
+	bl	__aeabi_idiv
+	mov	r3, r0
+	mov	r0, r3
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, pc}
+	.size	wacc_div, .-wacc_div
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",%progbits
