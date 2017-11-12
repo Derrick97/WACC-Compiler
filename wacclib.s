@@ -392,5 +392,29 @@ wacc_throw_overflow_error:
 .L45:
 	.word	.LC6
 	.size	wacc_throw_overflow_error, .-wacc_throw_overflow_error
+	.global	__aeabi_idivmod
+	.align	2
+	.global	wacc_mod
+	.syntax unified
+	.arm
+	.type	wacc_mod, %function
+wacc_mod:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #8
+	str	r0, [fp, #-8]
+	str	r1, [fp, #-12]
+	ldr	r3, [fp, #-8]
+	ldr	r1, [fp, #-12]
+	mov	r0, r3
+	bl	__aeabi_idivmod
+	mov	r3, r1
+	mov	r0, r3
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, pc}
+	.size	wacc_mod, .-wacc_mod
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",%progbits

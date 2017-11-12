@@ -56,10 +56,13 @@ let trans_call
   let fname_label = new_namedlabel fname in
   let ilist = ref [] in
   let emit x = ilist := !ilist @ [x] in
-  let argreg = List.nth F.caller_saved_regs 0 in
-  assert (List.length args <= 1); (* FIXME we only handle one argument for now *)
-  List.iter (fun t ->
-      emit(F.mov argreg (Arm.OperReg (t, None)))) args;
+  let rec zip a b = match (a, b) with
+    | ([], _) -> []
+    | (_, []) -> []
+    | (x::xs, y::ys) -> (x, y)::(zip xs ys) in
+  assert (List.length args <= 3); (* FIXME we only handle one argument for now *)
+  List.iter (fun (a, b) ->
+      emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs args);
   !ilist @ [F.bl fname_label]
 end
 
@@ -148,7 +151,7 @@ let rec translate_exp
             | A.AndOp -> [annd dst dst oper]
             | A.OrOp  -> [orr dst dst oper]
             | A.ModOp -> begin
-                let (fst_rest::others) = rest in trans_call "wacc_mod" [dst;fst_rest]
+                trans_call "wacc_mod" [dst;next] @ [mov dst (OperReg (F.reg_RV, None))]
               end
             | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
                 [cmp dst oper;

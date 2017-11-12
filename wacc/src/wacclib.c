@@ -80,5 +80,8 @@ int wacc_throw_overflow_error() {
   exit(255);
 }
 
+int wacc_mod(int n, int d) {
+  return n % d;
+}
 
 #endif
