@@ -34,7 +34,7 @@ let ex_temp (exp) = match exp with
   | _ -> assert false
 
 let operand_of_exp (exp: exp): Arm.operand = match exp with
-  | InAccess (InReg (t, sz)) -> Arm.OperReg t
+  | InAccess (InReg (t, sz)) -> Arm.OperReg (t, None)
   | Imm (i, sz) -> Arm.OperImm (i)
   | CharImm (c, sz) -> Arm.OperChar c
   | _ -> assert false  (* FIXME *)
@@ -58,11 +58,11 @@ let trans_call (fname: string)
           emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperImm i), None);
         end
       | InAccess (InReg (t, sz)) -> begin
-          emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperReg t), None);
+          emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperReg (t, None)), None);
         end
       | InAccess (InLabel label) -> begin
           emit(Arm.LDR (t, Arm.AddrLabel label), None);
-          emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperReg t), None);
+          emit(Arm.MOV ((List.nth F.caller_saved_regs 0), Arm.OperReg (t, None)), None);
         end
       | _ -> assert false
     ) args;
@@ -77,7 +77,7 @@ let trans_unop  (op: A.unop) (exp: exp): (stmt list * exp) = match op with
       let exp' = ex_temp exp in
       let t = F.new_temp () in
       ([(Arm.MOV(t, Arm.OperImm 0), None);
-       (Arm.SUB(exp', t, (Arm.OperReg exp')), None)], exp)
+       (Arm.SUB(exp', t, (Arm.OperReg (exp', None))), None)], exp)
     end
   | A.LenOp -> trans_call "wacc_len" [exp]
   | A.OrdOp -> trans_call "wacc_ord" [exp]

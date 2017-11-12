@@ -367,5 +367,30 @@ wacc_exit:
 	mov	r0, r3
 	bl	exit
 	.size	wacc_exit, .-wacc_exit
+	.section	.rodata
+	.align	2
+.LC6:
+	.ascii	"OverflowError: the result is too small/large to sto"
+	.ascii	"re in a 4-byte signed-integer.\000"
+	.text
+	.align	2
+	.global	wacc_throw_overflow_error
+	.syntax unified
+	.arm
+	.type	wacc_throw_overflow_error, %function
+wacc_throw_overflow_error:
+	@ args = 0, pretend = 0, frame = 0
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	ldr	r0, .L45
+	bl	puts
+	mov	r0, #255
+	bl	exit
+.L46:
+	.align	2
+.L45:
+	.word	.LC6
+	.size	wacc_throw_overflow_error, .-wacc_throw_overflow_error
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",%progbits

@@ -59,7 +59,7 @@ let trans_call
   let argreg = List.nth F.caller_saved_regs 0 in
   assert (List.length args <= 1); (* FIXME we only handle one argument for now *)
   List.iter (fun t ->
-      emit(F.mov argreg (Arm.OperReg t))) args;
+      emit(F.mov argreg (Arm.OperReg (t, None)))) args;
   !ilist @ [F.bl fname_label]
 end
 
@@ -102,6 +102,7 @@ let rec translate_exp
     (regs: temp list): (Arm.inst' list) =
   let tr = translate_exp env in
   let open Arm in
+  let check_overflow_inst = bl ~cond:VS "wacc_throw_overflow_error" in
   (match regs with
    | (dst::rest) -> begin
        match exp with
@@ -110,10 +111,11 @@ let rec translate_exp
            trans_var acc dst
          end
        | A.LiteralExp  (literal, pos) -> begin match literal with
-           | A.LitInt i -> [mov dst (Arm.OperImm i)]
+           (* NOTE for int literal, we use load instead of move
+              to handle large literals *)
+           | A.LitInt i -> [load dst (Arm.AddrLabel (string_of_int i))]
            | A.LitString s -> begin
                let label = new_label() in
-
                strings := (label, s)::!strings;
                [load dst (AddrLabel label)]
              end
@@ -129,17 +131,24 @@ let rec translate_exp
            let (dst::next::rest) = regs in
            let lhs = (tr exp  (dst::next::rest)) in
            let rhs = (tr exp' (next::rest)) in
-           let oper = OperReg next in
+           let oper = OperReg (next, None) in
            lhs @ rhs @
            (match binop with
-            | A.PlusOp ->  [add dst dst oper]
-            | A.MinusOp -> [sub dst dst oper]
-            | A.TimesOp -> [mul dst dst next]
+            | A.PlusOp ->  [add dst dst oper;
+                            check_overflow_inst]
+            | A.MinusOp -> [sub dst dst oper;
+                            check_overflow_inst]
+            | A.TimesOp -> [smull dst next dst next;
+                            cmp next (OperReg (dst, Some (ASR 31)));
+                            bl ~cond:NE "wacc_throw_overflow_error";
+                            (* TODO intmultoverflow handle correctly *)
+                            (* https://community.arm.com/processors/b/blog/posts/detecting-overflow-from-mul *)
+                            check_overflow_inst]
             | A.DivideOp -> invalid_arg "Divide TODO"
             | A.AndOp -> [annd dst dst oper]
             | A.OrOp  -> [orr dst dst oper]
             | A.ModOp -> begin
-                let (fst_rest:: others) = rest in trans_call "wacc_mod" [dst;fst_rest]
+                let (fst_rest::others) = rest in trans_call "wacc_mod" [dst;fst_rest]
               end
             | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
                 [cmp dst oper;
@@ -179,9 +188,10 @@ let rec translate_exp
                | A.NotOp -> [eor dst dst (OperImm 1)]
                | A.NegOp -> begin
                    [mov fst_rest (OperImm 0);
-                    sub dst fst_rest (OperReg dst)]
+                    sub dst fst_rest (OperReg (dst, None));
+                    check_overflow_inst]
                  end
-               | A.LenOp -> trans_call "wacc_len" [dst] @ [mov dst (OperReg reg_RV)]
+               | A.LenOp -> trans_call "wacc_len" [dst] @ [mov dst (OperReg (reg_RV, None))]
                | A.OrdOp -> trans_call "wacc_ord" [dst]
                | A.ChrOp -> trans_call "wacc_chr" [dst])
          end
@@ -195,7 +205,7 @@ let rec translate_exp
            @ [mov o (OperImm size);
               mul index index o;
               add index index (OperImm 4);
-              add addr addr (OperReg index);
+              add addr addr (OperReg (index, None));
               load dst (AddrIndirect (addr, 0)) ]
          end
        | A.ArrayIndexExp (_, _, _)
@@ -222,7 +232,7 @@ and translate (env: E.env)
            @ [mov o (OperImm size);
               mul index index o;
               add index index (OperImm 4);
-              add addr addr (OperReg index);] in
+              add addr addr (OperReg (index, None));] in
         AddrIndirect (addr, 0), insts
       end
     | ArrayIndexExp _ -> assert false
@@ -287,7 +297,7 @@ and translate (env: E.env)
       let size_offset = 4 in
       let insts = [MOV (dst, OperImm(element_size * array_length + 4)), None] @
                    trans_call "malloc" [dst] @
-                  [MOV (dst, OperReg(reg_RV)), None ] @
+                  [MOV (dst, OperReg (reg_RV, None)), None ] @
                   (trans_assign local_var dst) (* holds address to the heap allocated array *)
       @ List.concat (List.mapi (fun i e -> (translate_exp env e rest)
                                            @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in

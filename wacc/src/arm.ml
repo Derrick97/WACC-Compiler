@@ -1,7 +1,7 @@
 open Char
 type label = string
 type operand =
-  | OperReg of reg
+  | OperReg of reg * (shift option)
   | OperImm of int
   | OperChar of char
 and inst =
@@ -10,6 +10,7 @@ and inst =
   | AND  of  reg * reg * operand
   | ORR  of  reg * reg * operand
   | MUL  of  reg * reg * reg
+  | SMULL of reg * reg * reg * reg
   | MOV  of  reg * operand
   | CMP  of  reg * operand
   | POP  of  reg list
@@ -23,16 +24,22 @@ and inst =
   | LABEL of label
   | B of label
 and inst' = inst * cond option
-and cond = GT | GE | LT | LE | EQ | NE
+and cond = GT | GE | LT | LE | EQ | NE | VS
 and reg  = Temp.temp
 and addr =
   | AddrLabel of string
   | AddrIndirect of reg * int
+and shift =
+  | ASR of int
+  | LSL of int
+  | LSR of int
+  | ROR of int
+  (* TODO support other shifts *)
 
-let caller_saved_regs = [0;1;2;3];;
+let caller_saved_regs = [0;1;2;3]
 let callee_saved_regs = [
   4;5;6;7;8;9;10;11;12
-];;
+]
 
 let reg_SP = 13
 let reg_LR = 14
@@ -45,14 +52,14 @@ let new_temp () =
   let i = !counter in
   counter := i + 1; i
 
-let string_of_reg = function
+let rec string_of_reg = function
   | 13 -> "sp"
   | 14 -> "lr"
   | 15 -> "pc"
   | i when (i >= 0 && i < 13) -> "r" ^ (string_of_int i)
   | i -> "$r" ^ (string_of_int i)
 
-let string_of_addr = function
+and string_of_addr = function
   | AddrLabel label -> "=" ^ label
   | AddrIndirect (base, offset) -> begin
       if offset = 0 then
@@ -61,9 +68,20 @@ let string_of_addr = function
         "[" ^ (string_of_reg base) ^ ", #" ^ (string_of_int offset) ^ "]"
     end
 
+and string_of_shift sh = match sh with
+  | ASR i -> "asr #" ^ (string_of_int i)
+  | LSL i -> "lsl #" ^ (string_of_int i)
+  | LSR i -> "lsr #" ^ (string_of_int i)
+  | ROR i -> "ror #" ^ (string_of_int i)
+
 and string_of_operand (op:operand) = match op with
   | OperImm i -> "#" ^ (string_of_int i)
-  | OperReg r -> string_of_reg (r)
+  | OperReg (r, shift) -> begin
+      string_of_reg r ^ (
+      match shift with
+      | None -> ""
+      | Some sh -> ", " ^ (string_of_shift sh))
+    end
   | OperChar c -> begin
       let c = match c with
         | '\000' -> "\0"
@@ -72,13 +90,12 @@ and string_of_operand (op:operand) = match op with
     end
 
 and string_of_opcode = function
-  | ADD _ -> "\tadd"
-  | SUB _ -> "\tsub"
+  | ADD _ -> "\tadds"
+  | SUB _ -> "\tsubs"
   | MOV _ -> "\tmov"
   | POP _ -> "\tpop"
   | EOR _ -> "\teor"
   | PUSH _ -> "\tpush"
-  | POP _ -> "\tpop"
   | LDR _ -> "\tldr"
   | LDRB _ -> "\tldrb"
   | STRB _ -> "\tstrb"
@@ -90,6 +107,7 @@ and string_of_opcode = function
   | CMP _ -> "\tcmp"
   | LABEL _ -> ""               (* Not used *)
   | B _ -> "\tb"
+  | SMULL _ -> "\tsmull"
 
 let string_of_inst (inst: inst) =
   let opcode_str = string_of_opcode inst in
@@ -115,6 +133,7 @@ let string_of_inst (inst: inst) =
   | CMP  (reg, op) -> "\tcmp " ^ (string_of_reg reg) ^ " " ^ (string_of_operand op)
   | LABEL label -> label ^ ":"
   | B label -> "\tb " ^ label
+  | SMULL (r0, r1, r2, r3) -> "\tsmull " ^ (String.concat ", " (List.map string_of_reg [r0;r1;r2;r3]))
 
 let string_of_cond = function
   | GT -> "gt"
@@ -123,6 +142,7 @@ let string_of_cond = function
   | LE -> "le"
   | EQ -> "eq"
   | NE -> "ne"
+  | VS -> "vs"
 
 
 let string_of_inst' (inst: inst') =
@@ -153,6 +173,7 @@ let string_of_inst' (inst: inst') =
   | CMP  (reg, op) ->  opcode_str ^ " " ^ (string_of_reg reg) ^ ", " ^ (string_of_operand op)
   | LABEL label -> label ^ ":"
   | B label -> opcode_str ^ " " ^ label
+  | SMULL (r0, r1, r2, r3) -> opcode_str ^ " " ^ (String.concat ", " (List.map string_of_reg [r0;r1;r2;r3]))
 
 let add ?cond dst reg op = (ADD (dst,reg,op), cond)
 let sub ?cond dst reg op = (SUB (dst,reg,op), cond)
@@ -169,3 +190,4 @@ let bl ?cond label = (BL (label), cond)
 let cmp ?cond reg op = (CMP (reg, op), cond)
 let labels label = (LABEL (label), None)
 let mul ?cond reg1 reg2 reg3 = (MUL (reg1, reg2, reg3), cond)
+let smull ?cond rdlo rdhi rn rm = (SMULL (rdlo, rdhi, rn, rm), cond)

@@ -75,5 +75,10 @@ int wacc_exit(char code) {
   exit(code);
 }
 
+int wacc_throw_overflow_error() {
+  printf("OverflowError: the result is too small/large to store in a 4-byte signed-integer.\n");
+  exit(255);
+}
+
 
 #endif
