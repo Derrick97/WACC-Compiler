@@ -361,63 +361,31 @@ wacc_print_array:
 	.arm
 	.type	wacc_print_pair, %function
 wacc_print_pair:
-	@ args = 0, pretend = 0, frame = 16
+	@ args = 0, pretend = 0, frame = 8
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	sub	sp, sp, #16
-	str	r0, [fp, #-16]
-	ldr	r3, [fp, #-16]
+	sub	sp, sp, #8
+	str	r0, [fp, #-8]
+	ldr	r3, [fp, #-8]
 	cmp	r3, #0
 	bne	.L44
-	ldr	r0, .L51
+	ldr	r0, .L47
 	bl	printf
 	b	.L45
 .L44:
-	ldr	r3, [fp, #-16]
-	ldr	r3, [r3]
-	str	r3, [fp, #-12]
-	ldr	r3, [fp, #-16]
-	add	r3, r3, #4
-	ldr	r3, [r3]
-	str	r3, [fp, #-8]
-	mov	r0, #40
-	bl	putchar
-	ldr	r3, [fp, #-12]
-	cmp	r3, #0
-	beq	.L46
-	ldr	r1, [fp, #-12]
-	ldr	r0, .L51+4
-	bl	printf
-	b	.L47
-.L46:
-	ldr	r0, .L51
-	bl	printf
-.L47:
-	mov	r0, #44
-	bl	putchar
-	ldr	r3, [fp, #-8]
-	cmp	r3, #0
-	beq	.L48
 	ldr	r1, [fp, #-8]
-	ldr	r0, .L51+4
+	ldr	r0, .L47+4
 	bl	printf
-	b	.L49
-.L48:
-	ldr	r0, .L51
-	bl	printf
-.L49:
-	mov	r0, #41
-	bl	putchar
 .L45:
 	mov	r3, #0
 	mov	r0, r3
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L52:
+.L48:
 	.align	2
-.L51:
+.L47:
 	.word	.LC6
 	.word	.LC5
 	.size	wacc_print_pair, .-wacc_print_pair
@@ -454,13 +422,13 @@ wacc_throw_overflow_error:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	ldr	r0, .L55
+	ldr	r0, .L51
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L56:
+.L52:
 	.align	2
-.L55:
+.L51:
 	.word	.LC7
 	.size	wacc_throw_overflow_error, .-wacc_throw_overflow_error
 	.section	.rodata
@@ -478,13 +446,13 @@ wacc_throw_division_by_zero:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	ldr	r0, .L58
+	ldr	r0, .L54
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L59:
+.L55:
 	.align	2
-.L58:
+.L54:
 	.word	.LC8
 	.size	wacc_throw_division_by_zero, .-wacc_throw_division_by_zero
 	.global	__aeabi_idivmod
@@ -503,9 +471,9 @@ wacc_mod:
 	str	r1, [fp, #-12]
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L61
+	bne	.L57
 	bl	wacc_throw_division_by_zero
-.L61:
+.L57:
 	ldr	r3, [fp, #-8]
 	ldr	r1, [fp, #-12]
 	mov	r0, r3
@@ -532,9 +500,9 @@ wacc_div:
 	str	r1, [fp, #-12]
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L64
+	bne	.L60
 	bl	wacc_throw_division_by_zero
-.L64:
+.L60:
 	ldr	r1, [fp, #-12]
 	ldr	r0, [fp, #-8]
 	bl	__aeabi_idiv

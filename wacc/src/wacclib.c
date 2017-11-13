@@ -75,19 +75,7 @@ int wacc_print_pair(void* ptr) {
   if (ptr == 0) {
     printf("(nil)");
   } else {
-    void* fst = (void*)((int*)ptr)[0];
-    void* snd = (void*)((int*)ptr)[1];
-    printf("(");
-    if (fst != 0)
-      printf("0x%x", fst);
-    else
-      printf("(nil)");
-    printf(",");
-    if (snd != 0)
-      printf("0x%x", snd);
-    else
-      printf("(nil)");
-    printf(")");
+    printf("0x%x", ptr);
   }
   return 0;
 }
