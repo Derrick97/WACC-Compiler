@@ -239,12 +239,12 @@ and translate (env: E.env)
   let open Arm in
   let tr x = (translate_exp env x regs) in
   let dst::rest = regs in
-  let addr_of_exp (e: A.exp) = match e with
+  let addr_of_exp (e: A.exp) (regss) = match e with
     | ArrayIndexExp (name, [exp], _) -> begin
         let open Arm in
         let E.VarEntry (t, Some acc) = Symbol.lookup name env in
         let size = 4 in
-        let index::addr::o::rest = rest in
+        let index::addr::o::rest = regss in
         let insts = translate_exp env exp (index::rest)
            @ trans_var acc addr
            @ [mov o (OperImm size);
@@ -257,6 +257,16 @@ and translate (env: E.env)
     | IdentExp (name, _) -> begin
         let VarEntry (ty, Some InFrame (offset, sz)) = (Symbol.lookup name env) in
         AddrIndirect (Arm.reg_SP, offset), []
+      end
+    | FstExp (exp, _) -> begin
+        let dst::next::rest = regss in
+        let insts = translate_exp env exp regss in
+        AddrIndirect (next, 0), insts @ [load next (AddrIndirect (dst, 0))]
+      end
+    | SndExp (exp, _) -> begin
+        let dst::next::rest = regss in
+        let insts = translate_exp env exp regss in
+        AddrIndirect (next, 0), insts @ [load next (AddrIndirect (dst, 4))]
       end
     | _ -> invalid_arg "Not an lvalue" in
   match stmt with
@@ -272,8 +282,8 @@ and translate (env: E.env)
       (rhs @ ass, env)
     end
   | AssignStmt   (lhs, rhs, _) -> begin
-      let rinsts = tr rhs in
-      let addr, linsts = addr_of_exp lhs in
+      let rinsts = translate_exp env rhs (dst::rest) in
+      let addr, linsts = addr_of_exp lhs rest in
       rinsts @ linsts @ [F.str dst addr], env (* TODO need to handle storeb *)
     end
   | IfStmt       (cond, then_exp, else_exp, _) -> begin

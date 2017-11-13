@@ -105,4 +105,8 @@ int wacc_div(int a, int b) {
   return a / b;
 }
 
+void wacc_free(void* ptr) {
+  free(ptr);
+}
+
 #endif
