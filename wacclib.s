@@ -351,6 +351,31 @@ wacc_print_array:
 	.word	.LC5
 	.size	wacc_print_array, .-wacc_print_array
 	.align	2
+	.global	wacc_print_pair
+	.syntax unified
+	.arm
+	.type	wacc_print_pair, %function
+wacc_print_pair:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #8
+	str	r0, [fp, #-8]
+	ldr	r1, [fp, #-8]
+	ldr	r0, .L45
+	bl	printf
+	mov	r3, #0
+	mov	r0, r3
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, pc}
+.L46:
+	.align	2
+.L45:
+	.word	.LC5
+	.size	wacc_print_pair, .-wacc_print_pair
+	.align	2
 	.global	wacc_exit
 	.syntax unified
 	.arm
@@ -383,13 +408,13 @@ wacc_throw_overflow_error:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	ldr	r0, .L45
+	ldr	r0, .L49
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L46:
+.L50:
 	.align	2
-.L45:
+.L49:
 	.word	.LC6
 	.size	wacc_throw_overflow_error, .-wacc_throw_overflow_error
 	.section	.rodata
@@ -407,13 +432,13 @@ wacc_throw_division_by_zero:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	ldr	r0, .L48
+	ldr	r0, .L52
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L49:
+.L53:
 	.align	2
-.L48:
+.L52:
 	.word	.LC7
 	.size	wacc_throw_division_by_zero, .-wacc_throw_division_by_zero
 	.global	__aeabi_idivmod
@@ -432,9 +457,9 @@ wacc_mod:
 	str	r1, [fp, #-12]
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L51
+	bne	.L55
 	bl	wacc_throw_division_by_zero
-.L51:
+.L55:
 	ldr	r3, [fp, #-8]
 	ldr	r1, [fp, #-12]
 	mov	r0, r3
@@ -461,9 +486,9 @@ wacc_div:
 	str	r1, [fp, #-12]
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L54
+	bne	.L58
 	bl	wacc_throw_division_by_zero
-.L54:
+.L58:
 	ldr	r1, [fp, #-12]
 	ldr	r0, [fp, #-8]
 	bl	__aeabi_idiv

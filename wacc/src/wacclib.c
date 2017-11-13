@@ -71,6 +71,11 @@ int wacc_print_array(char ptr) {
   return 0;
 }
 
+int wacc_print_pair(void* ptr) {
+  printf("0x%x", ptr);
+  return 0;
+}
+
 int wacc_exit(char code) {
   exit(code);
 }
@@ -90,6 +95,7 @@ int wacc_mod(int n, int d) {
     wacc_throw_division_by_zero();
   }
   return n % d;
+
 }
 
 int wacc_div(int a, int b) {

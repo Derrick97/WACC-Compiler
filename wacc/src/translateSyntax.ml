@@ -223,10 +223,10 @@ let rec translate_exp
            end
        | A.SndExp (exp, _) -> begin
            let (dst::next::rest) = regs in
-           let insts = tr exp (regs) in
+           let insts = tr exp (regs) in (* dst stores address to pair *)
            insts @
-           [load next (AddrIndirect(dst, 0));
-            load dst (AddrIndirect(next, 4))]
+           [load next (AddrIndirect(dst, 4)); (* this get address of the second element *)
+            load dst (AddrIndirect(next, 0))] (* now we load it *)
          end
        | _ -> assert false
      end
