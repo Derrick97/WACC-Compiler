@@ -215,13 +215,6 @@ pair_type:
 | array_type { $1 }
 | base_type  { $1 }
 
-%inline unary_op:
-| BANG  { NotOp }
-| MINUS { NegOp }
-| LEN   { LenOp }
-| ORD   { OrdOp }
-| CHR   { ChrOp }
-
 %inline sign:                   (* use inline so that it will force parse to int_liter before expr *)
 | PLUS  { "+" }
 | MINUS { "-" }
@@ -233,6 +226,28 @@ int_liter:
                   | _   -> assert false }
 | i=INT         { i }
 
+%inline unary_op:
+| BANG  { NotOp }
+| MINUS { NegOp }
+| LEN   { LenOp }
+| ORD   { OrdOp }
+| CHR   { ChrOp }
+
+%inline binary_op:
+| PLUS              { PlusOp                                 }
+| MINUS             { MinusOp                                }
+| TIMES             { TimesOp                                }
+| DIV               { DivideOp                               }
+| GT                { GtOp                                   }
+| LT                { LtOp                                   }
+| GE                { GeOp                                   }
+| LE                { LeOp                                   }
+| EEQ               { EqOp                                   }
+| NE                { NeOp                                   }
+| AND               { AndOp                                  }
+| OR                { OrOp                                   }
+| MOD               { ModOp                                  }
+
 expr:
 | ID                          { IdentExp (symbol $1, $startpos)                       }
 | array_elem                  { $1                                                    }
@@ -242,22 +257,9 @@ expr:
 | pair_liter                  { NullExp ($startpos)                                   }
 | CHAR;                       { LiteralExp (LitChar $1, $startpos)                    }
 | STRING;                     { LiteralExp (LitString $1, $startpos)                  }
-| expr PLUS expr              { BinOpExp ($1, PlusOp,   $3, $startpos)                }
-| expr MINUS expr             { BinOpExp ($1, MinusOp,  $3, $startpos)                }
-| expr TIMES expr             { BinOpExp ($1, TimesOp,  $3, $startpos)                }
-| expr DIV expr               { BinOpExp ($1, DivideOp, $3, $startpos)                }
-| expr GT expr                { BinOpExp ($1, GtOp,     $3, $startpos)                }
-| expr LT expr                { BinOpExp ($1, LtOp,     $3, $startpos)                }
-| expr GE expr                { BinOpExp ($1, GeOp,     $3, $startpos)                }
-| expr LE expr                { BinOpExp ($1, LeOp,     $3, $startpos)                }
-| expr EEQ expr               { BinOpExp ($1, EqOp,     $3, $startpos)                }
-| expr NE expr                { BinOpExp ($1, NeOp,     $3, $startpos)                }
-| expr AND expr               { BinOpExp ($1, AndOp,    $3, $startpos)                }
-| expr OR expr                { BinOpExp ($1, OrOp,     $3, $startpos)                }
-| expr MOD expr               { BinOpExp ($1, ModOp,    $3, $startpos)                }
 | unary_op; expr;             { UnOpExp  ($1, $2, $startpos)                          }
+| expr; binary_op; expr       { BinOpExp ($1, $2, $3, $startpos)                      }
 | LPAREN expr RPAREN          { $2                                                    }
-
 
 %%
 (* Local Variables: *)
