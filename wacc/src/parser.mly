@@ -122,8 +122,8 @@ stat:
 | SKIP;                                     { SkipStmt     $startpos                        }
 | READ; assign_lhs;                         { ReadStmt    ($2, $startpos)                   }
 | FREE; expr;                               { FreeStmt    ($2, $startpos)                   }
-| PRINT expr                                { PrintStmt   (false, $2, $startpos)                   }
-| PRINTLN expr                              { PrintStmt (true, $2, $startpos)                   }
+| PRINT expr                                { PrintStmt   (false, $2, $startpos)            }
+| PRINTLN expr                              { PrintStmt (true, $2, $startpos)               }
 | RETURN  expr                              { RetStmt     ($2, $startpos)                   }
 | EXIT    expr                              { ExitStmt    ($2, $startpos)                   }
 | lhs = assign_lhs; EQ; rhs = assign_rhs;   { AssignStmt  (lhs, rhs, $startpos)             }
@@ -239,7 +239,7 @@ expr:
 | i=int_liter                 { check_int_overflow i;
                                 LiteralExp (LitInt i, $startpos)                      }
 | bool_liter                  { LiteralExp (LitBool $1, $startpos)                    }
-| pair_liter                  { LiteralExp ($1, $startpos)                            }
+| pair_liter                  { NullExp ($startpos)                                   }
 | CHAR;                       { LiteralExp (LitChar $1, $startpos)                    }
 | STRING;                     { LiteralExp (LitString $1, $startpos)                  }
 | expr PLUS expr              { BinOpExp ($1, PlusOp,   $3, $startpos)                }

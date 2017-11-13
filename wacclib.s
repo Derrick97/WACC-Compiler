@@ -350,29 +350,75 @@ wacc_print_array:
 .L41:
 	.word	.LC5
 	.size	wacc_print_array, .-wacc_print_array
+	.section	.rodata
+	.align	2
+.LC6:
+	.ascii	"(nil)\000"
+	.text
 	.align	2
 	.global	wacc_print_pair
 	.syntax unified
 	.arm
 	.type	wacc_print_pair, %function
 wacc_print_pair:
-	@ args = 0, pretend = 0, frame = 8
+	@ args = 0, pretend = 0, frame = 16
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	sub	sp, sp, #8
-	str	r0, [fp, #-8]
-	ldr	r1, [fp, #-8]
-	ldr	r0, .L45
+	sub	sp, sp, #16
+	str	r0, [fp, #-16]
+	ldr	r3, [fp, #-16]
+	cmp	r3, #0
+	bne	.L44
+	ldr	r0, .L51
 	bl	printf
+	b	.L45
+.L44:
+	ldr	r3, [fp, #-16]
+	ldr	r3, [r3]
+	str	r3, [fp, #-12]
+	ldr	r3, [fp, #-16]
+	add	r3, r3, #4
+	ldr	r3, [r3]
+	str	r3, [fp, #-8]
+	mov	r0, #40
+	bl	putchar
+	ldr	r3, [fp, #-12]
+	cmp	r3, #0
+	beq	.L46
+	ldr	r1, [fp, #-12]
+	ldr	r0, .L51+4
+	bl	printf
+	b	.L47
+.L46:
+	ldr	r0, .L51
+	bl	printf
+.L47:
+	mov	r0, #44
+	bl	putchar
+	ldr	r3, [fp, #-8]
+	cmp	r3, #0
+	beq	.L48
+	ldr	r1, [fp, #-8]
+	ldr	r0, .L51+4
+	bl	printf
+	b	.L49
+.L48:
+	ldr	r0, .L51
+	bl	printf
+.L49:
+	mov	r0, #41
+	bl	putchar
+.L45:
 	mov	r3, #0
 	mov	r0, r3
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L46:
+.L52:
 	.align	2
-.L45:
+.L51:
+	.word	.LC6
 	.word	.LC5
 	.size	wacc_print_pair, .-wacc_print_pair
 	.align	2
@@ -394,7 +440,7 @@ wacc_exit:
 	.size	wacc_exit, .-wacc_exit
 	.section	.rodata
 	.align	2
-.LC6:
+.LC7:
 	.ascii	"OverflowError: the result is too small/large to sto"
 	.ascii	"re in a 4-byte signed-integer.\000"
 	.text
@@ -408,18 +454,18 @@ wacc_throw_overflow_error:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	ldr	r0, .L49
+	ldr	r0, .L55
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L50:
+.L56:
 	.align	2
-.L49:
-	.word	.LC6
+.L55:
+	.word	.LC7
 	.size	wacc_throw_overflow_error, .-wacc_throw_overflow_error
 	.section	.rodata
 	.align	2
-.LC7:
+.LC8:
 	.ascii	"DivideByZeroError: division by zero.\000"
 	.text
 	.align	2
@@ -432,14 +478,14 @@ wacc_throw_division_by_zero:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	ldr	r0, .L52
+	ldr	r0, .L58
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L53:
+.L59:
 	.align	2
-.L52:
-	.word	.LC7
+.L58:
+	.word	.LC8
 	.size	wacc_throw_division_by_zero, .-wacc_throw_division_by_zero
 	.global	__aeabi_idivmod
 	.align	2
@@ -457,9 +503,9 @@ wacc_mod:
 	str	r1, [fp, #-12]
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L55
+	bne	.L61
 	bl	wacc_throw_division_by_zero
-.L55:
+.L61:
 	ldr	r3, [fp, #-8]
 	ldr	r1, [fp, #-12]
 	mov	r0, r3
@@ -486,9 +532,9 @@ wacc_div:
 	str	r1, [fp, #-12]
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L58
+	bne	.L64
 	bl	wacc_throw_division_by_zero
-.L58:
+.L64:
 	ldr	r1, [fp, #-12]
 	ldr	r0, [fp, #-8]
 	bl	__aeabi_idiv
@@ -498,5 +544,24 @@ wacc_div:
 	@ sp needed
 	pop	{fp, pc}
 	.size	wacc_div, .-wacc_div
+	.align	2
+	.global	wacc_free
+	.syntax unified
+	.arm
+	.type	wacc_free, %function
+wacc_free:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #8
+	str	r0, [fp, #-8]
+	ldr	r0, [fp, #-8]
+	bl	free
+	nop
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, pc}
+	.size	wacc_free, .-wacc_free
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",%progbits

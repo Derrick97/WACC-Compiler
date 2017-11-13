@@ -48,6 +48,8 @@ let size_of_type = function
   | A.IntTy -> 4
   | A.StringTy -> 4             (* FIXME *)
   | A.PairTy _ -> 4
+  | A.NullTy -> 4
+  | A.PairTyy -> 4
   | _ -> assert false
 
 let trans_call
@@ -128,7 +130,7 @@ let rec translate_exp
              else
                [mov dst (Arm.OperImm 0)]
            | A.LitChar c -> [mov dst (Arm.OperChar c)]
-           | _ -> assert false
+           |  _ -> assert false
          end
        | A.BinOpExp    (exp, binop, exp', pos) -> begin
            let open Arm in
@@ -228,7 +230,7 @@ let rec translate_exp
            [load next (AddrIndirect(dst, 4)); (* this get address of the second element *)
             load dst (AddrIndirect(next, 0))] (* now we load it *)
          end
-       | _ -> assert false
+       | _ -> [mov dst (OperImm 0)]
      end
    | [] -> invalid_arg "Registers have run out")
 

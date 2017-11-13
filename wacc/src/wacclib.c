@@ -72,7 +72,23 @@ int wacc_print_array(char ptr) {
 }
 
 int wacc_print_pair(void* ptr) {
-  printf("0x%x", ptr);
+  if (ptr == 0) {
+    printf("(nil)");
+  } else {
+    void* fst = (void*)((int*)ptr)[0];
+    void* snd = (void*)((int*)ptr)[1];
+    printf("(");
+    if (fst != 0)
+      printf("0x%x", fst);
+    else
+      printf("(nil)");
+    printf(",");
+    if (snd != 0)
+      printf("0x%x", snd);
+    else
+      printf("(nil)");
+    printf(")");
+  }
   return 0;
 }
 
