@@ -47,6 +47,7 @@ let size_of_type = function
   | A.CharTy | A.BoolTy -> 1
   | A.IntTy -> 4
   | A.StringTy -> 4             (* FIXME *)
+  | A.PairTy _ -> 8
   | _ -> assert false
 
 let trans_call
@@ -213,6 +214,20 @@ let rec translate_exp
          end
        | A.ArrayIndexExp (_, _, _)
          -> failwith "Only single dimensional array access is supported"
+       | A.FstExp (exp, _) -> begin
+           let (dst::next::rest) = regs in
+           let insts = tr exp (regs) in
+           insts @
+           [load next (AddrIndirect(dst, 0));
+            load dst (AddrIndirect(next, 0))]
+           end
+       | A.SndExp (exp, _) -> begin
+           let (dst::next::rest) = regs in
+           let insts = tr exp (regs) in
+           insts @
+           [load next (AddrIndirect(dst, 0));
+            load dst (AddrIndirect(next, 4))]
+         end
        | _ -> assert false
      end
    | [] -> invalid_arg "Registers have run out")
@@ -308,6 +323,35 @@ and translate (env: E.env)
                            str next (AddrIndirect (addr_reg, 0))] in
       insts, env'
     end
+  | VarDeclStmt (ty, name, A.NewPairExp (exp, exp', _), _) -> begin
+      (* TODO handle newpair in translate_exp? *)
+      let (pair_addr::fst_v::snd_v::rest) = regs in
+      let tr = translate_exp env in
+      let size = size_of_type ty in
+      let local_var = allocate_local frame 4 in
+      let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
+      let exp_insts = tr exp (fst_v::snd_v::rest) in
+      let exp_ty = Semantic.check_exp env exp in
+      let exp'_insts = tr exp' (snd_v::rest) in
+      let exp'_ty = Semantic.check_exp env exp in
+      let r0::r1::_ = rest in
+      exp_insts @ exp'_insts @
+      (* allocate for pair *)
+      [mov pair_addr (OperImm(4 * 2))] @
+      trans_call "malloc" [pair_addr] @
+      [mov pair_addr (OperReg(reg_RV, None))] @
+      (* fst allocation *)
+      [mov r0 (OperImm(size_of_type exp_ty))] @
+      trans_call "malloc" [r0] @
+      [str reg_RV (AddrIndirect(pair_addr, 0));
+       str fst_v (AddrIndirect(pair_addr, 0))] (* fixme handle byte store *) @
+      (* snd allocation *)
+      [mov r1 (OperImm(size_of_type exp'_ty))] @
+      trans_call "malloc" [r1] @
+      [str reg_RV (AddrIndirect(pair_addr, 4));
+       str fst_v  (AddrIndirect(pair_addr, 4))]
+      @ trans_assign local_var pair_addr, env'
+    end
   | VarDeclStmt  (ty, name, exp, _) -> begin
       let size = size_of_type ty in
       let local_var = allocate_local frame size in
@@ -374,6 +418,8 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int local_size) ^ "\n");
   List.iter (fun x -> fprintf out "%s\n" (Arm.string_of_inst' x)) insts;
   fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int local_size) ^ "\n") ;
+
+
   fprintf out "\tldr r0, =0\n";
   fprintf out "%s" "\tpop {pc}\n"
 
