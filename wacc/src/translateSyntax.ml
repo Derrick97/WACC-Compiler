@@ -47,7 +47,7 @@ let size_of_type = function
   | A.CharTy | A.BoolTy -> 1
   | A.IntTy -> 4
   | A.StringTy -> 4             (* FIXME *)
-  | A.PairTy _ -> 8
+  | A.PairTy _ -> 4
   | _ -> assert false
 
 let trans_call
@@ -327,7 +327,6 @@ and translate (env: E.env)
       (* TODO handle newpair in translate_exp? *)
       let (pair_addr::fst_v::snd_v::rest) = regs in
       let tr = translate_exp env in
-      let size = size_of_type ty in
       let local_var = allocate_local frame 4 in
       let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
       let exp_insts = tr exp (fst_v::snd_v::rest) in
@@ -336,7 +335,7 @@ and translate (env: E.env)
       let exp'_ty = Semantic.check_exp env exp in
       let r0::r1::_ = rest in
       exp_insts @ exp'_insts @
-      (* allocate for pair *)
+      (* allocate for pair, each pair is represented with 4 * 2 bytes of addresses on the heap *)
       [mov pair_addr (OperImm(4 * 2))] @
       trans_call "malloc" [pair_addr] @
       [mov pair_addr (OperReg(reg_RV, None))] @
@@ -344,12 +343,12 @@ and translate (env: E.env)
       [mov r0 (OperImm(size_of_type exp_ty))] @
       trans_call "malloc" [r0] @
       [str reg_RV (AddrIndirect(pair_addr, 0));
-       str fst_v (AddrIndirect(pair_addr, 0))] (* fixme handle byte store *) @
+       str fst_v (AddrIndirect(reg_RV, 0))] (* fixme handle byte store *) @
       (* snd allocation *)
       [mov r1 (OperImm(size_of_type exp'_ty))] @
       trans_call "malloc" [r1] @
       [str reg_RV (AddrIndirect(pair_addr, 4));
-       str fst_v  (AddrIndirect(pair_addr, 4))]
+       str snd_v  (AddrIndirect(reg_RV, 0))]
       @ trans_assign local_var pair_addr, env'
     end
   | VarDeclStmt  (ty, name, exp, _) -> begin
