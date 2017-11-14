@@ -113,4 +113,12 @@ void wacc_free(void* ptr) {
   free(ptr);
 }
 
+void wacc_check_array_bounds(void* ptr, int index) {
+  int length = ((int*)ptr)[0];
+  if (index < 1 || index >= length) {
+    printf("ArrayOutOfBounds");
+    exit(255);
+  }
+}
+
 #endif

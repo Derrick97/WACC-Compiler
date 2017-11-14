@@ -531,5 +531,48 @@ wacc_free:
 	@ sp needed
 	pop	{fp, pc}
 	.size	wacc_free, .-wacc_free
+	.section	.rodata
+	.align	2
+.LC9:
+	.ascii	"ArrayOutOfBounds\000"
+	.text
+	.align	2
+	.global	wacc_check_array_bounds
+	.syntax unified
+	.arm
+	.type	wacc_check_array_bounds, %function
+wacc_check_array_bounds:
+	@ args = 0, pretend = 0, frame = 16
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #16
+	str	r0, [fp, #-16]
+	str	r1, [fp, #-20]
+	ldr	r3, [fp, #-16]
+	ldr	r3, [r3]
+	str	r3, [fp, #-8]
+	ldr	r3, [fp, #-20]
+	cmp	r3, #0
+	ble	.L64
+	ldr	r2, [fp, #-20]
+	ldr	r3, [fp, #-8]
+	cmp	r2, r3
+	blt	.L66
+.L64:
+	ldr	r0, .L67
+	bl	printf
+	mov	r0, #255
+	bl	exit
+.L66:
+	nop
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, pc}
+.L68:
+	.align	2
+.L67:
+	.word	.LC9
+	.size	wacc_check_array_bounds, .-wacc_check_array_bounds
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",%progbits
