@@ -255,13 +255,12 @@ and translate (env: E.env)
         let size = 4 in
         let index::addr::o::rest = regss in
         let insts = translate_exp env exp (index::rest)
-           @ trans_var acc addr
+           @ trans_var acc addr @ trans_call "wacc_check_array_bounds" [addr; index]
            @ [mov o (OperImm size);
               mul index index o;
               add index index (OperImm 4);
               add addr addr (OperReg (index, None));] in
-        let check_insts = trans_call "wacc_check_array_bounds" [addr; index] in
-        AddrIndirect (addr, 0), insts @ check_insts
+        AddrIndirect (addr, 0), insts
       end
     | ArrayIndexExp _ -> assert false
     | IdentExp (name, _) -> begin
