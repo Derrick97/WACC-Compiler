@@ -160,7 +160,7 @@ let string_of_inst' (inst: inst') =
                            (string_of_reg op1) ^ ", " ^
                            (string_of_operand op2))
   | PUSH ops | POP ops -> opcode_str ^
-                              "{" ^
+                              " {" ^
                               (String.concat ", " (List.map (string_of_reg) ops)) ^
                               "}"
   | MOV (op1, op2) -> opcode_str ^ " " ^ (string_of_reg op1) ^ ", " ^ (string_of_operand op2)
@@ -176,6 +176,8 @@ let string_of_inst' (inst: inst') =
   | SMULL (r0, r1, r2, r3) -> opcode_str ^ " " ^ (String.concat ", " (List.map string_of_reg [r0;r1;r2;r3]))
 
 let add ?cond dst reg op = (ADD (dst,reg,op), cond)
+let push ?cond ops = (PUSH (ops), cond)
+let pop ?cond ops = (POP (ops), cond)
 let sub ?cond dst reg op = (SUB (dst,reg,op), cond)
 let eor ?cond dst reg op = (EOR (dst,reg,op), cond)
 let annd ?cond dst reg op = (AND (dst,reg,op), cond)
