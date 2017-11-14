@@ -414,7 +414,10 @@ and translate (env: E.env)
         | _ -> invalid_arg "not valid read type"
       in
       let ci = trans_call ("wacc_read_" ^ ty_str) [] in
-      let ci = ci @ [Arm.STR (Arm.reg_RV, addr), None] in
+      let ci = ci @
+               (if String.equal "char" ty_str then
+                [Arm.STRB (Arm.reg_RV, addr), None]
+                else [Arm.STR (Arm.reg_RV, addr), None]) in
       insts @ ci, env
     end
   | FreeStmt     (exp, _) -> begin
