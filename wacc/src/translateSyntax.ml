@@ -274,12 +274,12 @@ and translate (env: E.env)
       end
     | FstExp (exp, _) -> begin
         let dst::next::rest = regss in
-        let insts = translate_exp env exp regss in
+        let insts = translate_exp env exp regss @ trans_call "wacc_check_pair_null" [dst] in
         AddrIndirect (next, 0), insts @ [load next (AddrIndirect (dst, 0))]
       end
     | SndExp (exp, _) -> begin
         let dst::next::rest = regss in
-        let insts = translate_exp env exp regss in
+        let insts = translate_exp env exp regss @ trans_call "wacc_check_pair_null" [dst] in
         AddrIndirect (next, 0), insts @ [load next (AddrIndirect (dst, 4))]
       end
     | _ -> invalid_arg "Not an lvalue" in
@@ -297,8 +297,12 @@ and translate (env: E.env)
     end
   | AssignStmt   (lhs, rhs, _) -> begin
       let rinsts = translate_exp env rhs (dst::rest) in
-      let addr, linsts = addr_of_exp lhs rest in
-      rinsts @ linsts @ [F.str dst addr], env (* TODO need to handle storeb *)
+      let (AddrIndirect (b, offset)) as addr,
+          linsts = addr_of_exp lhs rest in
+      let other::_ = rest in
+      let check_null_insts = [add other b (OperImm(offset))] @ trans_call "wacc_check_pair_null" [other] in
+      rinsts @ linsts @ check_null_insts @
+      [F.str dst addr], env (* TODO need to handle storeb *)
     end
   | IfStmt       (cond, then_exp, else_exp, _) -> begin
       let env' = Symbol.new_scope env in

@@ -512,25 +512,6 @@ wacc_div:
 	@ sp needed
 	pop	{fp, pc}
 	.size	wacc_div, .-wacc_div
-	.align	2
-	.global	wacc_free
-	.syntax unified
-	.arm
-	.type	wacc_free, %function
-wacc_free:
-	@ args = 0, pretend = 0, frame = 8
-	@ frame_needed = 1, uses_anonymous_args = 0
-	push	{fp, lr}
-	add	fp, sp, #4
-	sub	sp, sp, #8
-	str	r0, [fp, #-8]
-	ldr	r0, [fp, #-8]
-	bl	free
-	nop
-	sub	sp, fp, #4
-	@ sp needed
-	pop	{fp, pc}
-	.size	wacc_free, .-wacc_free
 	.section	.rodata
 	.align	2
 .LC9:
@@ -554,24 +535,24 @@ wacc_check_array_bounds:
 	str	r3, [fp, #-8]
 	ldr	r3, [fp, #-20]
 	cmp	r3, #0
-	blt	.L64
+	blt	.L63
 	ldr	r2, [fp, #-20]
 	ldr	r3, [fp, #-8]
 	cmp	r2, r3
-	blt	.L66
-.L64:
-	ldr	r0, .L67
+	blt	.L65
+.L63:
+	ldr	r0, .L66
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L66:
+.L65:
 	nop
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L68:
-	.align	2
 .L67:
+	.align	2
+.L66:
 	.word	.LC9
 	.size	wacc_check_array_bounds, .-wacc_check_array_bounds
 	.section	.rodata
@@ -593,20 +574,56 @@ wacc_check_pair_null:
 	str	r0, [fp, #-8]
 	ldr	r3, [fp, #-8]
 	cmp	r3, #0
-	bne	.L71
-	ldr	r0, .L72
+	bne	.L70
+	ldr	r0, .L71
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L71:
+.L70:
 	nop
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L73:
-	.align	2
 .L72:
+	.align	2
+.L71:
 	.word	.LC10
 	.size	wacc_check_pair_null, .-wacc_check_pair_null
+	.section	.rodata
+	.align	2
+.LC11:
+	.ascii	"Freeing of null reference\000"
+	.text
+	.align	2
+	.global	wacc_free
+	.syntax unified
+	.arm
+	.type	wacc_free, %function
+wacc_free:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #8
+	str	r0, [fp, #-8]
+	ldr	r3, [fp, #-8]
+	cmp	r3, #0
+	bne	.L74
+	ldr	r0, .L75
+	bl	puts
+	mov	r0, #255
+	bl	exit
+.L74:
+	ldr	r0, [fp, #-8]
+	bl	free
+	nop
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, pc}
+.L76:
+	.align	2
+.L75:
+	.word	.LC11
+	.size	wacc_free, .-wacc_free
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",%progbits
