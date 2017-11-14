@@ -415,7 +415,7 @@ and translate (env: E.env)
       in
       let ci = trans_call ("wacc_read_" ^ ty_str) [] in
       let ci = ci @
-               (if String.equal "char" ty_str then
+               (if ty = CharTy then
                 [Arm.STRB (Arm.reg_RV, addr), None]
                 else [Arm.STR (Arm.reg_RV, addr), None]) in
       insts @ ci, env
