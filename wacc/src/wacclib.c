@@ -116,7 +116,14 @@ void wacc_free(void* ptr) {
 void wacc_check_array_bounds(void* ptr, int index) {
   int length = ((int*)ptr)[0];
   if (index < 1 || index >= length) {
-    printf("ArrayOutOfBounds");
+    printf("ArrayOutOfBounds\n");
+    exit(255);
+  }
+}
+
+void wacc_check_pair_null(void* ptr) {
+  if (ptr == 0) {
+    printf("PairNullReference\n");
     exit(255);
   }
 }

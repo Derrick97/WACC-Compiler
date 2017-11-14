@@ -114,7 +114,13 @@ let rec translate_exp
        match exp with
        | A.IdentExp    (name, pos) -> begin
            let E.VarEntry (t, Some acc) = Symbol.lookup name env in
-           trans_var acc dst
+	   let is_pair = function
+	    | A.PairTy _ | A.PairTyy -> true
+	    | _ -> false in
+	   if is_pair t then
+	     trans_var acc dst @ trans_call "wacc_check_pair_null" [dst]
+	   else
+             trans_var acc dst
          end
        | A.LiteralExp  (literal, pos) -> begin match literal with
            (* NOTE for int literal, we use load instead of move
@@ -254,13 +260,18 @@ and translate (env: E.env)
               mul index index o;
               add index index (OperImm 4);
               add addr addr (OperReg (index, None));] in
-        let check_insts = trans_call "wacc_array_check_bounds" [addr; index] in
+        let check_insts = trans_call "wacc_check_array_bounds" [addr; index] in
         AddrIndirect (addr, 0), insts @ check_insts
       end
     | ArrayIndexExp _ -> assert false
     | IdentExp (name, _) -> begin
-        let VarEntry (ty, Some InFrame (offset, sz)) = (Symbol.lookup name env) in
-        AddrIndirect (Arm.reg_SP, offset), []
+        let VarEntry (ty, Some (InFrame (offset, sz) as acc)) = (Symbol.lookup name env) in
+	let is_pair = function
+	  | A.PairTy _ | A.PairTyy -> true
+	  | _ -> false in
+	let insts = if is_pair ty then
+	  trans_var acc dst @ trans_call "wacc_check_pair_null" [dst] else [] in
+        AddrIndirect (Arm.reg_SP, offset), insts
       end
     | FstExp (exp, _) -> begin
         let dst::next::rest = regss in

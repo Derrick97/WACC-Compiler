@@ -561,7 +561,7 @@ wacc_check_array_bounds:
 	blt	.L66
 .L64:
 	ldr	r0, .L67
-	bl	printf
+	bl	puts
 	mov	r0, #255
 	bl	exit
 .L66:
@@ -574,5 +574,39 @@ wacc_check_array_bounds:
 .L67:
 	.word	.LC9
 	.size	wacc_check_array_bounds, .-wacc_check_array_bounds
+	.section	.rodata
+	.align	2
+.LC10:
+	.ascii	"PairNullReference\000"
+	.text
+	.align	2
+	.global	wacc_check_pair_null
+	.syntax unified
+	.arm
+	.type	wacc_check_pair_null, %function
+wacc_check_pair_null:
+	@ args = 0, pretend = 0, frame = 8
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #8
+	str	r0, [fp, #-8]
+	ldr	r3, [fp, #-8]
+	cmp	r3, #0
+	bne	.L71
+	ldr	r0, .L72
+	bl	puts
+	mov	r0, #255
+	bl	exit
+.L71:
+	nop
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, pc}
+.L73:
+	.align	2
+.L72:
+	.word	.LC10
+	.size	wacc_check_pair_null, .-wacc_check_pair_null
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
 	.section	.note.GNU-stack,"",%progbits
