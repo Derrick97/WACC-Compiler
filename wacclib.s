@@ -554,7 +554,7 @@ wacc_check_array_bounds:
 	str	r3, [fp, #-8]
 	ldr	r3, [fp, #-20]
 	cmp	r3, #0
-	ble	.L64
+	blt	.L64
 	ldr	r2, [fp, #-20]
 	ldr	r3, [fp, #-8]
 	cmp	r2, r3

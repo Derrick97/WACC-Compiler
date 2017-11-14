@@ -104,6 +104,7 @@ int wacc_mod(int n, int d) {
 
 int wacc_div(int a, int b) {
   if (b == 0) {
+
     wacc_throw_division_by_zero();
   }
   return a / b;
@@ -115,7 +116,7 @@ void wacc_free(void* ptr) {
 
 void wacc_check_array_bounds(void* ptr, int index) {
   int length = ((int*)ptr)[0];
-  if (index < 1 || index >= length) {
+  if (index < 0 || index >= length) {
     printf("ArrayOutOfBounds\n");
     exit(255);
   }
