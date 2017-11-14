@@ -118,7 +118,7 @@ let rec translate_exp
 	    | A.PairTy _ | A.PairTyy -> true
 	    | _ -> false in
 	   if is_pair t then
-	     trans_var acc dst @ trans_call "wacc_check_pair_null" [dst]
+	     trans_var acc dst
 	   else
              trans_var acc dst
          end
@@ -226,14 +226,14 @@ let rec translate_exp
        | A.FstExp (exp, _) -> begin
            let (dst::next::rest) = regs in
            let insts = tr exp (regs) in
-           insts @
+           insts @ trans_call "wacc_check_pair_null" [dst] @
            [load next (AddrIndirect(dst, 0));
             load dst (AddrIndirect(next, 0))]
            end
        | A.SndExp (exp, _) -> begin
            let (dst::next::rest) = regs in
            let insts = tr exp (regs) in (* dst stores address to pair *)
-           insts @
+           insts @ trans_call "wacc_check_pair_null" [dst] @
            [load next (AddrIndirect(dst, 4)); (* this get address of the second element *)
             load dst (AddrIndirect(next, 0))] (* now we load it *)
          end
@@ -269,8 +269,7 @@ and translate (env: E.env)
 	let is_pair = function
 	  | A.PairTy _ | A.PairTyy -> true
 	  | _ -> false in
-	let insts = if is_pair ty then
-	  trans_var acc dst @ trans_call "wacc_check_pair_null" [dst] else [] in
+	let insts = trans_var acc dst in
         AddrIndirect (Arm.reg_SP, offset), insts
       end
     | FstExp (exp, _) -> begin
