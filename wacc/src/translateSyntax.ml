@@ -506,7 +506,7 @@ let rec translate_function_decs decs env inst_list =
     let label_inst = labels ("f_" ^ name ) in
     let push_inst = push [reg_LR] in
     let pop_inst = pop [reg_PC] in
-    let insts, _ = translate env'' frame callee_saved_regs stmt in (* FIXME *)
+    let insts, _ = translate new_env frame callee_saved_regs stmt in (* FIXME *)
     let func_insts = label_inst::push_inst::(inst_list @ insts) in
     (func_insts @ [pop_inst]);
   end in
