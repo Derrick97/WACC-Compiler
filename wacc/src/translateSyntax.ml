@@ -65,8 +65,10 @@ let trans_call
     | (_, []) -> []
     | (x::xs, y::ys) -> (x, y)::(zip xs ys) in
   assert (List.length args <= 3); (* FIXME we only handle arguments less than 3 for now *)
+  let all_reg = [0;1;2;3;4;5;6;7;8;9;10;11] in
+  (*let () = ilist := !ilist @ [F.push F.caller_saved_regs] in*)
   List.iter (fun (a, b) ->
-      emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs args);
+      emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs (List.rev(args)));
   !ilist @ [F.bl fname_label]
 end
 
@@ -101,7 +103,7 @@ let trans_assign
     | 4 -> [F.str rv (Arm.AddrIndirect  (Arm.reg_SP, offset))]
     | 1 -> [F.strb rv (Arm.AddrIndirect (Arm.reg_SP, offset))]
     | _ -> assert false)
-  | InReg (reg_num) -> [F.mov rv (F.OperReg(reg_num,None))]
+  | InReg (reg_num) -> [F.mov reg_num (OperReg(rv,None))]
 end
 
 let trans_noop: stmt list = []
@@ -242,10 +244,10 @@ let rec translate_exp
             load dst (AddrIndirect(next, 0))] (* now we load it *)
          end
        | A.CallExp (sym, exp_list, _) -> begin
-           if List.length exp_list > 0 then
+           (*if List.length exp_list > 0 then
            process_function_arguments sym exp_list caller_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))]
-           else
-           process_function_arguments sym exp_list caller_saved_regs [] env
+           else*)
+           process_function_arguments sym exp_list callee_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))]
         end
      end
    | [] -> invalid_arg "Registers have run out")
@@ -265,7 +267,7 @@ let rec translate_exp
             translate_exp env h [dst] @
             save_para_inst @ [sub reg_SP reg_SP (OperImm(size_offset))] @
             process_function_arguments sym r rest (dst::used_reg) env (offset+size_offset)*)
-            translate_exp env h [dst]  @ process_function_arguments sym r rest (dst::used_reg) env
+            translate_exp env h regs @  process_function_arguments sym r rest (dst::used_reg) env
             end
 
 and translate (env: E.env)
@@ -425,11 +427,13 @@ and translate (env: E.env)
         | PairTy _ | PairTyy -> "pair"
         | IntTy -> "int"
         | _ -> assert false in
+      let push_inst = push caller_saved_regs in
       let ci = trans_call ("wacc_print_" ^ ty_str) [dst] in
       let ci' = (if (newline) then
                    (trans_call("wacc_println") [])
                  else []) in
-      expi @ ci @ ci', env
+      let pop_inst = pop caller_saved_regs in
+      expi @ [push_inst] @ ci @ ci' @ [pop_inst], env
     end
   | RetStmt      (exp, _) -> begin
     let inst_list = tr exp in
@@ -484,13 +488,13 @@ let rec translate_function_decs decs env inst_list =
   let allocate_in_regs reg = InReg(reg) in
   let rec allocate_field_list regs field_list env =
     match field_list with
-    | [] -> ([], env)
-    | [(ty, sym)] ->  begin
+    | [] -> env
+    | (ty, sym)::r -> begin
         let (first_reg::others) = regs in
         let local_var = allocate_in_regs first_reg in
         let env' = Symbol.insert sym (VarEntry(ty, Some local_var)) env in
-        ([ty], env')
-      end
+        allocate_field_list others r env'
+        end
     (*  | (ty, _)::r -> begin
         allocate_local frame (size_of_type ty);
         ty::allocate_field_list frame r
@@ -499,16 +503,22 @@ let rec translate_function_decs decs env inst_list =
                        let tys = List.map fst fields in
                        env' := Symbol.insert ident (FuncEntry (ty, tys)) !env'
                       )) decs;
+
+
   let tr_func (Ast.FuncDec(retty, name, field_list, stmt, _)) = begin
     let frame = new_frame ("func_" ^ name) in
     let env'' = Symbol.new_scope !env' in
-    let (arg_types, new_env) = allocate_field_list caller_saved_regs field_list env'' in
+    let new_env = allocate_field_list caller_saved_regs field_list env'' in
     let label_inst = labels ("f_" ^ name ) in
     let push_inst = push [reg_LR] in
     let pop_inst = pop [reg_PC] in
+
+    let push_reg = push callee_saved_regs in
+    let pop_reg = pop callee_saved_regs in
+
     let insts, _ = translate new_env frame callee_saved_regs stmt in (* FIXME *)
-    let func_insts = label_inst::push_inst::(inst_list @ insts) in
-    (func_insts @ [pop_inst]);
+    let func_insts = label_inst::push_inst::push_reg::(inst_list @ insts) in
+    (func_insts @  [pop_reg] @ [pop_inst]);
   end in
   !env', List.concat (List.map tr_func decs)
 
