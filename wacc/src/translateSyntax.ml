@@ -162,11 +162,11 @@ let rec translate_exp
                             (* TODO intmultoverflow handle correctly *)
                             (* https://community.arm.com/processors/b/blog/posts/detecting-overflow-from-mul *)
                             check_overflow_inst]
-            | A.DivideOp -> trans_call "wacc_div" [dst;next] @ [mov dst (OperReg (F.reg_RV, None))]
+            | A.DivideOp -> trans_call "wacc_div" [next;dst] @ [mov dst (OperReg (F.reg_RV, None))]
             | A.AndOp -> [annd dst dst oper]
             | A.OrOp  -> [orr dst dst oper]
             | A.ModOp -> begin
-                trans_call "wacc_mod" [dst;next] @ [mov dst (OperReg (F.reg_RV, None))]
+                trans_call "wacc_mod" [next;dst] @ [mov dst (OperReg (F.reg_RV, None))]
               end
             | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
                 [cmp dst oper;
@@ -437,7 +437,9 @@ and translate (env: E.env)
     end
   | RetStmt      (exp, _) -> begin
     let inst_list = tr exp in
-    inst_list @ [mov (reg_RV) (OperReg (dst, None))] , env
+    let pop_inst = pop [reg_PC] in
+    let pop_reg = pop callee_saved_regs in
+    inst_list @ [mov (reg_RV) (OperReg (dst, None)); pop_reg; pop_inst] , env
     end
   | ReadStmt (exp, _) -> begin
       let addr, insts = addr_of_exp exp rest in
@@ -486,14 +488,16 @@ let rec translate_function_decs decs env inst_list =
   let open Arm in
   let env' = ref env in
   let allocate_in_regs reg = InReg(reg) in
-  let rec allocate_field_list regs field_list env =
+  let rec allocate_field_list regs frame field_list env =
     match field_list with
     | [] -> env
     | (ty, sym)::r -> begin
         let (first_reg::others) = regs in
         let local_var = allocate_in_regs first_reg in
-        let env' = Symbol.insert sym (VarEntry(ty, Some local_var)) env in
-        allocate_field_list others r env'
+        let duplicate_local = allocate_local frame (size_of_type ty) in
+        let env2 = Symbol.insert sym (VarEntry(ty, Some local_var)) env in
+        let env' = Symbol.insert sym (VarEntry(ty, Some duplicate_local)) env2 in
+        allocate_field_list others frame r env'
         end
     (*  | (ty, _)::r -> begin
         allocate_local frame (size_of_type ty);
@@ -508,17 +512,15 @@ let rec translate_function_decs decs env inst_list =
   let tr_func (Ast.FuncDec(retty, name, field_list, stmt, _)) = begin
     let frame = new_frame ("func_" ^ name) in
     let env'' = Symbol.new_scope !env' in
-    let new_env = allocate_field_list caller_saved_regs field_list env'' in
+    let new_env = allocate_field_list caller_saved_regs frame field_list env'' in
     let label_inst = labels ("f_" ^ name ) in
     let push_inst = push [reg_LR] in
-    let pop_inst = pop [reg_PC] in
 
     let push_reg = push callee_saved_regs in
-    let pop_reg = pop callee_saved_regs in
 
     let insts, _ = translate new_env frame callee_saved_regs stmt in (* FIXME *)
     let func_insts = label_inst::push_inst::push_reg::(inst_list @ insts) in
-    (func_insts @  [pop_reg] @ [pop_inst]);
+    func_insts;
   end in
   !env', List.concat (List.map tr_func decs)
 
