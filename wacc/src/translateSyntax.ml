@@ -115,7 +115,7 @@ let rec translate_exp
   let tr = translate_exp env in
   let open Arm in
   let check_overflow_inst = bl ~cond:VS "wacc_throw_overflow_error" in
-  (match regs with
+  ((match regs with
    | (dst::rest) -> begin
        match exp with
        | A.IdentExp    (name, pos) -> begin
@@ -249,8 +249,12 @@ let rec translate_exp
            else*)
            process_function_arguments sym exp_list callee_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))]
         end
+       | A.NullExp _ -> begin
+           [mov dst (OperImm 0)]
+         end
+       | A.NewPairExp _ -> invalid_arg "newpair handled rhs"
      end
-   | [] -> invalid_arg "Registers have run out")
+   | [] -> invalid_arg "Registers have run out"))
 
    and process_function_arguments sym exp_list regs used_reg env =
       let open Arm in
@@ -523,7 +527,7 @@ let rec translate_function_decs decs env inst_list =
   !env', List.concat (List.map tr_func decs)
 
 let translate_prog (decs, stmt) env out =
-let open Printf in
+  let open Printf in
   let frame = new_frame "main" in
   let (env', all_func_insts) = translate_function_decs decs env [] in
   let insts, _ = translate env' frame Arm.callee_saved_regs stmt in
