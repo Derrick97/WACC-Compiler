@@ -43,6 +43,7 @@ let allocate_local (frame: frame) (size: size) =
   frame.frame_locals <- Array.append frame.frame_locals [|a|];
   a
 
+
 let size_of_type = function
   | A.CharTy | A.BoolTy -> 1
   | A.IntTy -> 4
@@ -63,7 +64,7 @@ let trans_call
     | ([], _) -> []
     | (_, []) -> []
     | (x::xs, y::ys) -> (x, y)::(zip xs ys) in
-  assert (List.length args <= 3); (* FIXME we only handle one argument for now *)
+  assert (List.length args <= 3); (* FIXME we only handle arguments less than 3 for now *)
   List.iter (fun (a, b) ->
       emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs args);
   !ilist @ [F.bl fname_label]
@@ -89,15 +90,18 @@ let trans_var (var: access) (t: temp): (stmt list) =
      | 4 -> [F.load t (Arm.AddrIndirect  (Arm.reg_SP, offset))]
      | 1 -> [F.loadb t (Arm.AddrIndirect (Arm.reg_SP, offset))]
      | _ -> assert false)
+  | InReg (reg_num) -> [F.mov t (F.OperReg(reg_num,None))]
 
 let trans_assign
     (lv: access)
     (rv: temp): (stmt list) = begin
-  let InFrame (offset, sz) = lv in
-  match sz with
-  | 4 -> [F.str rv (Arm.AddrIndirect  (Arm.reg_SP, offset))]
-  | 1 -> [F.strb rv (Arm.AddrIndirect (Arm.reg_SP, offset))]
-  | _ -> assert false
+  match lv with
+  | InFrame (offset, sz) -> (
+    match sz with
+    | 4 -> [F.str rv (Arm.AddrIndirect  (Arm.reg_SP, offset))]
+    | 1 -> [F.strb rv (Arm.AddrIndirect (Arm.reg_SP, offset))]
+    | _ -> assert false)
+  | InReg (reg_num) -> [F.mov rv (F.OperReg(reg_num,None))]
 end
 
 let trans_noop: stmt list = []
@@ -114,7 +118,13 @@ let rec translate_exp
        match exp with
        | A.IdentExp    (name, pos) -> begin
            let E.VarEntry (t, Some acc) = Symbol.lookup name env in
-           trans_var acc dst
+	   let is_pair = function
+	    | A.PairTy _ | A.PairTyy -> true
+	    | _ -> false in
+	   if is_pair t then
+	     trans_var acc dst
+	   else
+             trans_var acc dst
          end
        | A.LiteralExp  (literal, pos) -> begin match literal with
            (* NOTE for int literal, we use load instead of move
@@ -208,6 +218,7 @@ let rec translate_exp
            let index::addr::o::rest = rest in
            tr exp (index::rest)
            @ trans_var acc addr
+           @ trans_call "wacc_check_array_bounds" [addr; index]
            @ [mov o (OperImm size);
               mul index index o;
               add index index (OperImm 4);
@@ -219,20 +230,43 @@ let rec translate_exp
        | A.FstExp (exp, _) -> begin
            let (dst::next::rest) = regs in
            let insts = tr exp (regs) in
-           insts @
+           insts @ trans_call "wacc_check_pair_null" [dst] @
            [load next (AddrIndirect(dst, 0));
             load dst (AddrIndirect(next, 0))]
            end
        | A.SndExp (exp, _) -> begin
            let (dst::next::rest) = regs in
            let insts = tr exp (regs) in (* dst stores address to pair *)
-           insts @
+           insts @ trans_call "wacc_check_pair_null" [dst] @
            [load next (AddrIndirect(dst, 4)); (* this get address of the second element *)
             load dst (AddrIndirect(next, 0))] (* now we load it *)
          end
-       | _ -> [mov dst (OperImm 0)]
+       | A.CallExp (sym, exp_list, _) -> begin
+           if List.length exp_list > 0 then
+           process_function_arguments sym exp_list caller_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))]
+           else
+           process_function_arguments sym exp_list caller_saved_regs [] env
+        end
      end
    | [] -> invalid_arg "Registers have run out")
+
+   and process_function_arguments sym exp_list regs used_reg env =
+      let open Arm in
+      let (dst::rest) = regs in
+      match exp_list with
+        | [] -> begin
+          trans_call ("f_" ^ sym) used_reg
+          (*@ [add reg_SP reg_SP (OperImm(offset)); mov last_reg (OperReg(reg_RV, None))]*)
+          end
+        | h::r -> begin
+            (*let exp_ty = Semantic.check_exp env h in
+            let size_offset =  size_of_type exp_ty in
+            let save_para_inst = if size_offset = 4 then [str dst (AddrIndirect(reg_SP, -size_offset))] else [strb dst (AddrIndirect(reg_SP, -size_offset))] in
+            translate_exp env h [dst] @
+            save_para_inst @ [sub reg_SP reg_SP (OperImm(size_offset))] @
+            process_function_arguments sym r rest (dst::used_reg) env (offset+size_offset)*)
+            translate_exp env h [dst]  @ process_function_arguments sym r rest (dst::used_reg) env
+            end
 
 and translate (env: E.env)
     (frame: frame)
@@ -248,7 +282,7 @@ and translate (env: E.env)
         let size = 4 in
         let index::addr::o::rest = regss in
         let insts = translate_exp env exp (index::rest)
-           @ trans_var acc addr
+           @ trans_var acc addr @ trans_call "wacc_check_array_bounds" [addr; index]
            @ [mov o (OperImm size);
               mul index index o;
               add index index (OperImm 4);
@@ -257,17 +291,21 @@ and translate (env: E.env)
       end
     | ArrayIndexExp _ -> assert false
     | IdentExp (name, _) -> begin
-        let VarEntry (ty, Some InFrame (offset, sz)) = (Symbol.lookup name env) in
-        AddrIndirect (Arm.reg_SP, offset), []
+        let VarEntry (ty, Some (InFrame (offset, sz) as acc)) = (Symbol.lookup name env) in
+	let is_pair = function
+	  | A.PairTy _ | A.PairTyy -> true
+	  | _ -> false in
+	let insts = trans_var acc dst in
+        AddrIndirect (Arm.reg_SP, offset), insts
       end
     | FstExp (exp, _) -> begin
         let dst::next::rest = regss in
-        let insts = translate_exp env exp regss in
+        let insts = translate_exp env exp regss @ trans_call "wacc_check_pair_null" [dst] in
         AddrIndirect (next, 0), insts @ [load next (AddrIndirect (dst, 0))]
       end
     | SndExp (exp, _) -> begin
         let dst::next::rest = regss in
-        let insts = translate_exp env exp regss in
+        let insts = translate_exp env exp regss @ trans_call "wacc_check_pair_null" [dst] in
         AddrIndirect (next, 0), insts @ [load next (AddrIndirect (dst, 4))]
       end
     | _ -> invalid_arg "Not an lvalue" in
@@ -285,8 +323,12 @@ and translate (env: E.env)
     end
   | AssignStmt   (lhs, rhs, _) -> begin
       let rinsts = translate_exp env rhs (dst::rest) in
-      let addr, linsts = addr_of_exp lhs rest in
-      rinsts @ linsts @ [F.str dst addr], env (* TODO need to handle storeb *)
+      let (AddrIndirect (b, offset)) as addr,
+          linsts = addr_of_exp lhs rest in
+      let other::_ = rest in
+      let check_null_insts = [add other b (OperImm(offset))] @ trans_call "wacc_check_pair_null" [other] in
+      rinsts @ linsts @ check_null_insts @
+      [F.str dst addr], env (* TODO need to handle storeb *)
     end
   | IfStmt       (cond, then_exp, else_exp, _) -> begin
       let env' = Symbol.new_scope env in
@@ -389,21 +431,25 @@ and translate (env: E.env)
                  else []) in
       expi @ ci @ ci', env
     end
-  | RetStmt      (exp, _) -> assert false
-  | ReadStmt     (Ast.IdentExp (name, _) as exp, _) -> begin
-      let expi = tr exp in
-      let expt = Semantic.check_exp env exp in
-      let VarEntry (ty, Some Env.InFrame (offset, _)) = Symbol.lookup name env in
-      let ty_str = match expt with
+  | RetStmt      (exp, _) -> begin
+    let inst_list = tr exp in
+    inst_list @ [mov (reg_RV) (OperReg (dst, None))] , env
+    end
+  | ReadStmt (exp, _) -> begin
+      let addr, insts = addr_of_exp exp rest in
+      let ty = Semantic.check_exp env exp in
+      let ty_str = match ty with
         | IntTy -> "int"
         | CharTy -> "char"
         | _ -> invalid_arg "not valid read type"
       in
       let ci = trans_call ("wacc_read_" ^ ty_str) [] in
-      let ci = ci @ [Arm.STR (Arm.reg_RV, Arm.AddrIndirect(Arm.reg_SP, offset)), None] in
-      expi @ ci, env
+      let ci = ci @
+               (if ty = CharTy then
+                [Arm.STRB (Arm.reg_RV, addr), None]
+                else [Arm.STR (Arm.reg_RV, addr), None]) in
+      insts @ ci, env
     end
-  | ReadStmt _ -> assert false
   | FreeStmt     (exp, _) -> begin
       let expi = tr exp in
       let ci = trans_call "wacc_free" [dst] in
@@ -429,12 +475,47 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int local_size) ^ "\n");
   List.iter (fun x -> fprintf out "%s\n" (Arm.string_of_inst' x)) insts;
   fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int local_size) ^ "\n") ;
-
-
   fprintf out "\tldr r0, =0\n";
   fprintf out "%s" "\tpop {pc}\n"
 
+let rec translate_function_decs decs env inst_list =
+  let open Arm in
+  let env' = ref env in
+  let allocate_in_regs reg = InReg(reg) in
+  let rec allocate_field_list regs field_list env =
+    match field_list with
+    | [] -> ([], env)
+    | [(ty, sym)] ->  begin
+        let (first_reg::others) = regs in
+        let local_var = allocate_in_regs first_reg in
+        let env' = Symbol.insert sym (VarEntry(ty, Some local_var)) env in
+        ([ty], env')
+      end
+    (*  | (ty, _)::r -> begin
+        allocate_local frame (size_of_type ty);
+        ty::allocate_field_list frame r
+        end*)  in
+  List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt, pos) = f in
+                       let tys = List.map fst fields in
+                       env' := Symbol.insert ident (FuncEntry (ty, tys)) !env'
+                      )) decs;
+  let tr_func (Ast.FuncDec(retty, name, field_list, stmt, _)) = begin
+    let frame = new_frame ("func_" ^ name) in
+    let env'' = Symbol.new_scope !env' in
+    let (arg_types, new_env) = allocate_field_list caller_saved_regs field_list env'' in
+    let label_inst = labels ("f_" ^ name ) in
+    let push_inst = push [reg_LR] in
+    let pop_inst = pop [reg_PC] in
+    let insts, _ = translate new_env frame callee_saved_regs stmt in (* FIXME *)
+    let func_insts = label_inst::push_inst::(inst_list @ insts) in
+    (func_insts @ [pop_inst]);
+  end in
+  !env', List.concat (List.map tr_func decs)
+
 let translate_prog (decs, stmt) env out =
+let open Printf in
   let frame = new_frame "main" in
-  let insts, _ = translate env frame Arm.callee_saved_regs stmt in
-  ignore(print_insts out frame insts)
+  let (env', all_func_insts) = translate_function_decs decs env [] in
+  let insts, _ = translate env' frame Arm.callee_saved_regs stmt in
+  List.iter (fun x -> fprintf out "%s\n" (Arm.string_of_inst' x)) all_func_insts;
+  ignore(print_insts out frame insts);

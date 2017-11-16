@@ -104,13 +104,34 @@ int wacc_mod(int n, int d) {
 
 int wacc_div(int a, int b) {
   if (b == 0) {
+
     wacc_throw_division_by_zero();
   }
   return a / b;
 }
 
+void wacc_check_array_bounds(void* ptr, int index) {
+  int length = ((int*)ptr)[0];
+  if (index < 0 || index >= length) {
+    printf("ArrayOutOfBounds\n");
+    exit(255);
+  }
+}
+
+void wacc_check_pair_null(void* ptr) {
+  if (ptr == 0) {
+    printf("PairNullReference\n");
+    exit(255);
+  }
+}
+
 void wacc_free(void* ptr) {
-  free(ptr);
+  if (ptr == 0) {
+    printf("Freeing of null reference\n");
+    exit(255);
+  } else {
+    free(ptr);
+  }
 }
 
 void wacc_check_array_bounds(void* ptr, int index) {
