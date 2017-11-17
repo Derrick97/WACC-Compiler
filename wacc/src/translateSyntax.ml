@@ -51,7 +51,7 @@ let size_of_type = function
   | A.PairTy _ -> 4
   | A.NullTy -> 4
   | A.PairTyy -> 4
-  | _ -> assert false
+  | A.ArrayTy _ -> 4
 
 let trans_call
     (fname: string)
@@ -60,17 +60,27 @@ let trans_call
   let fname_label = new_namedlabel fname in
   let ilist = ref [] in
   let emit x = ilist := !ilist @ [x] in
+  let open Arm in
   let rec zip a b = match (a, b) with
     | ([], _) -> []
     | (_, []) -> []
     | (x::xs, y::ys) -> (x, y)::(zip xs ys) in
-  assert (List.length args <= 3); (* FIXME we only handle arguments less than 3 for now *)
+  let split_reg_stack_passed regs =
+    let reg_passed = ref [] in
+    let stack_passed = ref [] in
+    (List.iteri (fun i x -> if i <= 3
+                 then reg_passed := !reg_passed @ [x]
+                 else stack_passed := !stack_passed @ [x]) regs);
+    !reg_passed, !stack_passed in
   let all_reg = [0;1;2;3;        (* argument registers *)
                  4;5;6;7;8;9;10;11] in
-  (*let () = ilist := !ilist @ [F.push F.caller_saved_regs] in*)
+  let reg_passed, stack_passed = split_reg_stack_passed args in
+  (* First we mov the first 4 registers *)
   List.iter (fun (a, b) ->
-      emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs args);
-  !ilist @ [F.bl fname_label]
+      emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs reg_passed);
+  (* The other registers are pushed to stack *)
+  List.iter (fun x -> emit (Arm.push [x])) (List.rev stack_passed);
+  !ilist @ [F.bl fname_label] @ (List.map (fun x -> (pop [x])) (stack_passed));
 end
 
 let trans_ifelse (cond: temp) (t: stmt list) (f: stmt list) = begin
@@ -494,30 +504,26 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
 let rec translate_function_decs decs env inst_list =
   let open Arm in
   let env' = ref env in
-  let allocate_in_regs reg = InReg(reg) in
-  let rec allocate_field_list regs field_list env =
-    match field_list with
-    | [] -> env
-    | (ty, sym)::r -> begin
-        let (first_reg::others) = regs in
-        let local_var = allocate_in_regs first_reg in
-        let env' = Symbol.insert sym (VarEntry(ty, Some local_var)) env in
-        allocate_field_list others r env'
-        end
-    (*  | (ty, _)::r -> begin
-        allocate_local frame (size_of_type ty);
-        ty::allocate_field_list frame r
-        end*)  in
   List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt, pos) = f in
                        let tys = List.map fst fields in
                        env' := Symbol.insert ident (FuncEntry (ty, tys)) !env'
                       )) decs;
-
-
   let tr_func (Ast.FuncDec(retty, name, field_list, stmt, _)) = begin
     let frame = new_frame ("func_" ^ name) in
-    let env'' = Symbol.new_scope !env' in
-    let new_env = allocate_field_list caller_saved_regs field_list env'' in
+    let env'' = ref (Symbol.new_scope !env') in
+    let offset = ref 0 in
+    ignore(List.mapi (fun i (ty, name) -> begin
+          if (i <= 3) then
+            let acc = InReg (List.nth caller_saved_regs i) in
+            env'' := Symbol.insert name (VarEntry (ty, Some acc)) !env'';
+            acc
+          else
+            let sz = size_of_type ty in
+            let acc = InFrame (!offset, sz) in
+            env'' := Symbol.insert name (VarEntry (ty, Some acc)) !env'';
+            offset := !offset - sz;
+            acc
+        end) field_list);
     let label_inst = labels ("f_" ^ name ) in
     let push_inst = push [reg_LR] in
     let pop_inst = pop [reg_PC] in
@@ -525,7 +531,7 @@ let rec translate_function_decs decs env inst_list =
     let push_reg = push callee_saved_regs in
     let pop_reg = pop callee_saved_regs in
 
-    let insts, _ = translate new_env frame callee_saved_regs stmt in (* FIXME *)
+    let insts, _ = translate !env'' frame callee_saved_regs stmt in (* FIXME *)
     let func_insts = label_inst::push_inst::push_reg::(inst_list @ insts) in
     (func_insts @  [pop_reg] @ [pop_inst]);
   end in
