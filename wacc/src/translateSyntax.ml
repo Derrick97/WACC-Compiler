@@ -179,11 +179,11 @@ let rec translate_exp
                             (* TODO intmultoverflow handle correctly *)
                             (* https://community.arm.com/processors/b/blog/posts/detecting-overflow-from-mul *)
                             check_overflow_inst]
-            | A.DivideOp -> trans_call "wacc_div" [dst;next] @ [mov dst (OperReg (F.reg_RV, None))]
+            | A.DivideOp -> trans_call ~result:dst "wacc_div" [dst;next]
             | A.AndOp -> [annd dst dst oper]
             | A.OrOp  -> [orr dst dst oper]
             | A.ModOp -> begin
-                trans_call "wacc_mod" [dst;next] @ [mov dst (OperReg (F.reg_RV, None))]
+                trans_call "wacc_mod" ~result:dst  [dst;next]
               end
             | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
                 [cmp dst oper;
@@ -226,7 +226,7 @@ let rec translate_exp
                     sub dst fst_rest (OperReg (dst, None));
                     check_overflow_inst]
                  end
-               | A.LenOp -> trans_call "wacc_len" [dst] @ [mov dst (OperReg (reg_RV, None))]
+               | A.LenOp -> trans_call ~result:dst "wacc_len" [dst]
                | A.OrdOp -> trans_call "wacc_ord" [dst]
                | A.ChrOp -> trans_call "wacc_chr" [dst])
          end
@@ -391,8 +391,7 @@ and translate (env: E.env)
       let env' = Symbol.insert name (VarEntry (ArrayTy ty, Some local_var)) env in
       let size_offset = 4 in
       let insts = [MOV (dst, OperImm(element_size * array_length + 4)), None] @
-                   trans_call "malloc" [dst] @
-                  [MOV (dst, OperReg (reg_RV, None)), None ] @
+                   trans_call ~result:dst "malloc" [dst] @
                   (trans_assign local_var dst) (* holds address to the heap allocated array *)
       @ List.concat (List.mapi (fun i e -> (translate_exp env e rest)
                                            @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in
@@ -402,7 +401,7 @@ and translate (env: E.env)
     end
   | VarDeclStmt (ty, name, A.NewPairExp (exp, exp', _), _) -> begin
       (* TODO handle newpair in translate_exp? *)
-      let (pair_addr::fst_v::snd_v::rest) = regs in
+      let (pair_addr::fst_v::snd_v::tmp::rest) = regs in
       let tr = translate_exp env in
       let local_var = allocate_local frame 4 in
       let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
@@ -414,18 +413,17 @@ and translate (env: E.env)
       exp_insts @ exp'_insts @
       (* allocate for pair, each pair is represented with 4 * 2 bytes of addresses on the heap *)
       [mov pair_addr (OperImm(4 * 2))] @
-      trans_call "malloc" [pair_addr] @
-      [mov pair_addr (OperReg(reg_RV, None))] @
+      trans_call ~result:pair_addr "malloc" [pair_addr] @
       (* fst allocation *)
       [mov r0 (OperImm(size_of_type exp_ty))] @
-      trans_call "malloc" [r0] @
-      [str reg_RV (AddrIndirect(pair_addr, 0));
-       str fst_v (AddrIndirect(reg_RV, 0))] (* fixme handle byte store *) @
+      trans_call ~result:tmp "malloc" [r0] @
+      [str tmp (AddrIndirect(pair_addr, 0));
+       str fst_v (AddrIndirect(tmp, 0))] (* fixme handle byte store *) @
       (* snd allocation *)
       [mov r1 (OperImm(size_of_type exp'_ty))] @
-      trans_call "malloc" [r1] @
-      [str reg_RV (AddrIndirect(pair_addr, 4));
-       str snd_v  (AddrIndirect(reg_RV, 0))]
+      trans_call ~result:tmp "malloc" [r1] @
+      [str tmp (AddrIndirect(pair_addr, 4));
+       str snd_v  (AddrIndirect(tmp, 0))]
       @ trans_assign local_var pair_addr, env'
     end
   | VarDeclStmt  (ty, name, exp, _) -> begin
