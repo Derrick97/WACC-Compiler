@@ -20,6 +20,9 @@ type frame = {
 
 let counter = ref 0
 
+let frame_size (frame:frame): int = (Array.fold_left (+) 0 (Array.map (fun x -> match x with
+    | InFrame (t, sz) -> sz) frame.frame_locals))
+
 let new_label ?(prefix="L") (): string =
   let i = !counter in
   counter := !counter + 1;
@@ -47,13 +50,10 @@ let allocate_local (frame: frame) (size: size) =
 let size_of_type = function
   | A.CharTy | A.BoolTy -> 1
   | A.IntTy -> 4
-  | A.StringTy -> 4             (* FIXME *)
-  | A.PairTy _ -> 4
-  | A.NullTy -> 4
-  | A.PairTyy -> 4
-  | A.ArrayTy _ -> 4
+  | A.StringTy | A.PairTy _ | A.NullTy | A.PairTyy | A.ArrayTy _ -> 4 (* addresses *)
 
 let trans_call
+    ?(result: temp option)
     (fname: string)
     (args: temp list): (stmt list) = begin
   (* FIXME transfer the result back to some register *)
@@ -72,15 +72,20 @@ let trans_call
                  then reg_passed := !reg_passed @ [x]
                  else stack_passed := !stack_passed @ [x]) regs);
     !reg_passed, !stack_passed in
-  let all_reg = [0;1;2;3;        (* argument registers *)
-                 4;5;6;7;8;9;10;11] in
   let reg_passed, stack_passed = split_reg_stack_passed args in
   (* First we mov the first 4 registers *)
+  emit(F.push caller_saved_regs);
   List.iter (fun (a, b) ->
       emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs reg_passed);
   (* The other registers are pushed to stack *)
   List.iter (fun x -> emit (Arm.push [x])) (List.rev stack_passed);
-  !ilist @ [F.bl fname_label] @ (List.map (fun x -> (pop [x])) (stack_passed));
+  !ilist @
+  [F.bl fname_label] @
+  (match result with
+   | None -> []
+   | Some t -> [mov t (OperReg(reg_RV, None))]) @
+  [(F.pop caller_saved_regs)] @
+  (List.map (fun x -> (pop [x])) (stack_passed));
 end
 
 let trans_ifelse (cond: temp) (t: stmt list) (f: stmt list) = begin
@@ -122,7 +127,8 @@ let trans_noop: stmt list = []
 let rec translate_exp
     (env: E.env)
     (exp: A.exp)
-    (regs: temp list): (Arm.inst' list) =
+    (regs: temp list)
+  : (Arm.inst' list) =
   let tr = translate_exp env in
   let open Arm in
   let check_overflow_inst = bl ~cond:VS "wacc_throw_overflow_error" in
@@ -258,11 +264,7 @@ let rec translate_exp
            let args, _, inst = List.fold_left
                (fun (used, r::rs, ins) e -> (used @ [r], rs, ins @ (tr e (r::rs))))
                ([], regs, []) exp_list in
-           inst @ trans_call ("f_" ^ fname) args @ [mov dst (OperReg (F.reg_RV, None))]
-           (*if List.length exp_list > 0 then
-           process_function_arguments sym exp_list caller_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))]
-           else*)
-           (* process_function_arguments sym exp_list callee_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))] *)
+           inst @ trans_call ~result:dst ("f_" ^ fname) args
         end
        | A.NullExp _ -> begin
            [mov dst (OperImm 0)]
@@ -446,17 +448,19 @@ and translate (env: E.env)
         | PairTy _ | PairTyy -> "pair"
         | IntTy -> "int"
         | _ -> assert false in
-      let push_inst = push caller_saved_regs in
       let ci = trans_call ("wacc_print_" ^ ty_str) [dst] in
       let ci' = (if (newline) then
                    (trans_call("wacc_println") [])
                  else []) in
-      let pop_inst = pop caller_saved_regs in
-      expi @ [push_inst] @ ci @ ci' @ [pop_inst], env
+      expi @ ci @ ci', env
     end
   | RetStmt      (exp, _) -> begin
-    let inst_list = tr exp in
-    inst_list @ [mov (reg_RV) (OperReg (dst, None))] , env
+      let inst_list = tr exp in
+      inst_list @ [mov (reg_RV) (OperReg (dst, None));
+                   pop (callee_saved_regs);
+                   add reg_SP reg_SP (OperImm (frame_size frame));
+                   pop [reg_PC];
+                  ], env
     end
   | ReadStmt (exp, _) -> begin
       let addr, insts = addr_of_exp exp rest in
@@ -466,11 +470,11 @@ and translate (env: E.env)
         | CharTy -> "char"
         | _ -> invalid_arg "not valid read type"
       in
-      let ci = trans_call ("wacc_read_" ^ ty_str) [] in
+      let ci = trans_call ~result:dst ("wacc_read_" ^ ty_str) [] in
       let ci = ci @
                (if ty = CharTy then
-                [Arm.STRB (Arm.reg_RV, addr), None]
-                else [Arm.STR (Arm.reg_RV, addr), None]) in
+                [Arm.STRB (dst, addr), None]
+                else [Arm.STR (dst, addr), None]) in
       insts @ ci, env
     end
   | FreeStmt     (exp, _) -> begin
@@ -484,6 +488,15 @@ and translate (env: E.env)
       (insts, env)
     end
 
+let recompute_allocation frame insts =
+  let open Arm in
+  let localsize = frame_size frame in
+  List.map (fun i -> match i with
+      | (ADD (o1, o2, OperImm (n)), cond) when o1 = reg_SP && o2 = reg_SP ->
+        (ADD (o1, o2, OperImm (localsize)), cond)
+      | _ -> i
+    ) insts
+
 let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   let open Printf in
   fprintf out ".data\n";
@@ -493,8 +506,7 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   fprintf out ".global main\n";
   fprintf out "main:\n";
   fprintf out "\tpush {lr}\n";
-  let local_size: int = (Array.fold_left (+) 0 (Array.map (fun x -> match x with
-      | InFrame (t, sz) -> sz) frame.frame_locals)) in
+  let local_size = frame_size frame in
   fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int local_size) ^ "\n");
   List.iter (fun x -> fprintf out "%s\n" (Arm.string_of_inst' x)) insts;
   fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int local_size) ^ "\n") ;
@@ -532,8 +544,12 @@ let rec translate_function_decs decs env inst_list =
     let pop_reg = pop callee_saved_regs in
 
     let insts, _ = translate !env'' frame callee_saved_regs stmt in (* FIXME *)
-    let func_insts = label_inst::push_inst::push_reg::(inst_list @ insts) in
-    (func_insts @  [pop_reg] @ [pop_inst]);
+    let local_size: int = (Array.fold_left (+) 0 (Array.map (fun x -> match x with
+        | InFrame (t, sz) -> sz) frame.frame_locals)) in
+    let alloc_insts = [(sub reg_SP reg_SP (OperImm local_size))] in
+    let dealloc_insts = [(add reg_SP reg_SP (OperImm local_size))] in
+    let func_insts = label_inst::push_inst::push_reg::(alloc_insts@(inst_list @ insts)) in
+    (recompute_allocation frame (func_insts @ dealloc_insts @ [pop_reg] @ [pop_inst]));
   end in
   !env', List.concat (List.map tr_func decs)
 
