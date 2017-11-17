@@ -65,10 +65,11 @@ let trans_call
     | (_, []) -> []
     | (x::xs, y::ys) -> (x, y)::(zip xs ys) in
   assert (List.length args <= 3); (* FIXME we only handle arguments less than 3 for now *)
-  let all_reg = [0;1;2;3;4;5;6;7;8;9;10;11] in
+  let all_reg = [0;1;2;3;        (* argument registers *)
+                 4;5;6;7;8;9;10;11] in
   (*let () = ilist := !ilist @ [F.push F.caller_saved_regs] in*)
   List.iter (fun (a, b) ->
-      emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs (List.rev(args)));
+      emit(F.mov a (Arm.OperReg (b, None)))) (zip F.caller_saved_regs args);
   !ilist @ [F.bl fname_label]
 end
 
@@ -243,11 +244,15 @@ let rec translate_exp
            [load next (AddrIndirect(dst, 4)); (* this get address of the second element *)
             load dst (AddrIndirect(next, 0))] (* now we load it *)
          end
-       | A.CallExp (sym, exp_list, _) -> begin
+       | A.CallExp (fname, exp_list, _) -> begin
+           let args, _, inst = List.fold_left
+               (fun (used, r::rs, ins) e -> (used @ [r], rs, ins @ (tr e (r::rs))))
+               ([], regs, []) exp_list in
+           inst @ trans_call ("f_" ^ fname) args @ [mov dst (OperReg (F.reg_RV, None))]
            (*if List.length exp_list > 0 then
            process_function_arguments sym exp_list caller_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))]
            else*)
-           process_function_arguments sym exp_list callee_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))]
+           (* process_function_arguments sym exp_list callee_saved_regs [] env @ [mov dst (OperReg(reg_RV, None))] *)
         end
        | A.NullExp _ -> begin
            [mov dst (OperImm 0)]
