@@ -39,6 +39,7 @@ let new_frame frame = {
 }
 
 let split_offset offset =
+  if offset = 0 then (0,0) else
   let tempNum = ref 1 in
   let () = if offset < 256 then tempNum := offset * 2 in
   let () =
