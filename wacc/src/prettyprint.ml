@@ -1,4 +1,5 @@
-open Ast;;
+open Ast_v2;;
+
 let rec prettyprint_type = function
   | BoolTy -> "bool"
   | ArrayTy t -> prettyprint_type t ^ "[]"
@@ -8,14 +9,15 @@ let rec prettyprint_type = function
   | CharTy -> "char"
   | StringTy -> "string"
   | NullTy -> "pair"
-and prettyprint_literal = function
+and prettyprint_literal l =
+  match l with
   | LitString str -> "\"" ^ str ^ "\""
   | LitBool b -> string_of_bool b
   | LitChar c -> "\'" ^ (Char.escaped c) ^ "\'"
   | LitInt i  -> string_of_int i
-  | LitArray exps -> "[" ^ String.concat ", " (List.map prettyprint_exp exps) ^ "]"
-  | LitPair (fst_exp, snd_exp) -> "(" ^ prettyprint_exp fst_exp ^ ", " ^ prettyprint_exp snd_exp ^ ")"
-  | Null -> "null"
+  | LitArray exps -> "[" ^ String.concat ", " (List.map pp_exp exps) ^ "]"
+  | LitPair (fst_exp, snd_exp) -> "(" ^ pp_exp fst_exp ^ ", " ^ pp_exp snd_exp ^ ")"
+  | LitNull -> "null"
 (* pretty print expressions *)
 and prettyprint_binop = function
   | PlusOp   -> " + "                    (* + *)
@@ -37,30 +39,32 @@ and prettyprint_unop = function
   | LenOp -> "len"                       (* len *)
   | OrdOp -> "ord"                       (* ord *)
   | ChrOp -> "chr"                       (* chr *)
-and prettyprint_exp = function
-  | IdentExp    (name, pos) -> name
-  | LiteralExp  (literal, pos) -> prettyprint_literal literal
-  | BinOpExp    (exp, binop, exp', pos) -> prettyprint_exp exp ^ prettyprint_binop binop ^ prettyprint_exp exp'
-  | UnOpExp     (unop, exp, pos) -> prettyprint_unop unop ^ prettyprint_exp exp
-  | NullExp     (pos)  -> "null"
-  | NewPairExp  (exp, exp', pos) -> "newpair(" ^ prettyprint_exp exp ^ ", " ^ prettyprint_exp exp' ^ ")"
-  | CallExp     (fname, exps, pos) -> "call " ^ fname ^ "(" ^ String.concat ", " (List.map prettyprint_exp exps) ^ ")"
-  | ArrayIndexExp (name, exps, pos) -> name
-  | FstExp      (exp, pos) -> "fst " ^ prettyprint_exp exp
-  | SndExp      (exp, pos) -> "snd " ^ prettyprint_exp exp
-and prettyprint_stmt = function
-  | AssignStmt   (lhs, rhs, pos) -> prettyprint_exp lhs ^ "=" ^ prettyprint_exp rhs
-  | IfStmt       (pred, then_, else_, pos) -> "if (" ^ prettyprint_exp  pred ^ ")" ^ "then " ^ prettyprint_stmt then_ ^ "else " ^ prettyprint_stmt else_
-  | WhileStmt    (pred, body, pos) -> "while" ^ prettyprint_exp pred ^ "{" ^ prettyprint_stmt body ^ "}"
-  | ExitStmt     (exp, pos) ->  "exit " ^ prettyprint_exp exp
-  | VarDeclStmt  (ty, name, exp, pos) -> prettyprint_type ty ^ " " ^ name ^ " = " ^ prettyprint_exp exp
-  | PrintStmt    (newline, exp, pos) ->  (if newline
-    then
-      "println "^ prettyprint_exp exp
-    else "print " ^ prettyprint_exp exp)
-  | RetStmt      (exp, pos) ->  "return" ^ prettyprint_exp exp
-  | SeqStmt      (stmt, stmtlist) -> prettyprint_stmt stmt ^ ";\n" ^ (prettyprint_stmt stmtlist)
-  | ReadStmt     (exp, pos) -> "read " ^ prettyprint_exp exp
-  | FreeStmt     (exp, pos) -> "free " ^ prettyprint_exp exp
-  | SkipStmt     (pos) -> "skip"
-  | BlockStmt    (block, pos) -> "begin " ^ prettyprint_stmt block ^ " end"
+and pp_exp (exp, _) = prettyprint_exp exp
+and prettyprint_exp (e: exp') =
+  match e with
+  | IdentExp       name -> name
+  | LiteralExp     literal -> prettyprint_literal literal
+  | BinOpExp      (exp, binop, exp') -> pp_exp exp ^ prettyprint_binop binop ^ pp_exp exp'
+  | UnOpExp       (unop, exp) -> prettyprint_unop unop ^ pp_exp exp
+  | NullExp        -> "null"
+  | NewPairExp    (exp, exp') -> "newpair(" ^ pp_exp exp ^ ", " ^ pp_exp exp' ^ ")"
+  | CallExp       (fname, exps) -> "call " ^ fname ^ "(" ^ String.concat ", " (List.map pp_exp exps) ^ ")"
+  | ArrayIndexExp (name, exps) -> name
+  | FstExp         exp -> "fst " ^ pp_exp exp
+  | SndExp         exp -> "snd " ^ pp_exp exp
+and pp_stmt (stmt, _) = prettyprint_stmt stmt
+and prettyprint_stmt stmt: string =
+  match stmt with
+  | AssignStmt    (lhs, rhs) -> pp_exp lhs ^ "=" ^ pp_exp rhs
+  | IfStmt        (pred, then_, else_) -> "if (" ^ pp_exp  pred ^ ")" ^ "then " ^ pp_stmt then_ ^ "else " ^ pp_stmt else_
+  | WhileStmt     (pred, body) -> "while" ^ pp_exp pred ^ "{" ^ pp_stmt body ^ "}"
+  | ExitStmt      (exp) ->  "exit " ^ pp_exp exp
+  | VarDeclStmt   (ty, name, exp) -> prettyprint_type ty ^ " " ^ name ^ " = " ^ pp_exp exp
+  | PrintStmt     (newline, exp) ->  (if newline then "println "^ pp_exp exp
+                                          else "print " ^ pp_exp exp)
+  | RetStmt      (exp) ->  "return" ^ pp_exp exp
+  | SeqStmt      (stmt, stmtlist) -> pp_stmt stmt ^ ";\n" ^ (pp_stmt stmtlist)
+  | ReadStmt     exp -> "read " ^ pp_exp exp
+  | FreeStmt     exp -> "free " ^ pp_exp exp
+  | SkipStmt     -> "skip"
+  | BlockStmt   block -> "begin " ^ pp_stmt block ^ " end"

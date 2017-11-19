@@ -1,3 +1,5 @@
+exception SyntaxError of string
+
 type pos = Lexing.position
 and 'a identified = 'a * pos
 and symbol = Symbol.symbol
@@ -32,7 +34,7 @@ and exp' =
   | LiteralExp    of literal
   | BinOpExp      of exp * binop * exp
   | UnOpExp       of unop * exp
-  | NullExp       of pos
+  | NullExp
   | NewPairExp    of exp * exp
   | CallExp       of ident * (exp list)
   | FstExp        of exp
@@ -62,11 +64,7 @@ and literal =
   | LitNull
   (* for a particular field in function definition *)
 and field = ty * ident
-and function_dec' = {
-  func_retty: ty;
-  func_name: ident;
-  func_args: field list;
-  func_body: stmt
-}
+and function_dec' = FuncDec of ty * ident * field list * stmt
+
 and function_dec = function_dec' identified
 and t = function_dec list * stmt
