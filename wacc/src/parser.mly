@@ -118,7 +118,7 @@ param_list:
 | p = param; COMMA; pl = param_list { if (pl == []) then raise (SyntaxError "Bad args") else p::pl }
 
 stat:
-| typ ID EQ rhs=assign_rhs                  { VarDeclStmt($1, $2, rhs), $startpos   }
+| typ ID EQ rhs=assign_rhs                  { VarDeclStmt($1, $2, rhs), $startpos          }
 | SKIP;                                     { SkipStmt, $startpos                          }
 | READ; assign_lhs;                         { ReadStmt($2), $startpos                      }
 | FREE; expr;                               { FreeStmt($2), $startpos                      }
@@ -234,32 +234,32 @@ int_liter:
 | CHR   { ChrOp }
 
 %inline binary_op:
-| PLUS              { PlusOp                                 }
-| MINUS             { MinusOp                                }
-| TIMES             { TimesOp                                }
-| DIV               { DivideOp                               }
-| GT                { GtOp                                   }
-| LT                { LtOp                                   }
-| GE                { GeOp                                   }
-| LE                { LeOp                                   }
-| EEQ               { EqOp                                   }
-| NE                { NeOp                                   }
-| AND               { AndOp                                  }
-| OR                { OrOp                                   }
-| MOD               { ModOp                                  }
+| PLUS              { PlusOp         }
+| MINUS             { MinusOp        }
+| TIMES             { TimesOp        }
+| DIV               { DivideOp       }
+| GT                { GtOp           }
+| LT                { LtOp           }
+| GE                { GeOp           }
+| LE                { LeOp           }
+| EEQ               { EqOp           }
+| NE                { NeOp           }
+| AND               { AndOp          }
+| OR                { OrOp           }
+| MOD               { ModOp          }
 
 expr:
-| ID                          { IdentExp ($1), $startpos                              }
-| array_elem                  { $1                                                    }
+| ID                          { IdentExp ($1), $startpos               }
+| array_elem                  { $1                                     }
 | i=int_liter                 { check_int_overflow i;
-                                LiteralExp (LitInt i), $startpos                      }
-| bool_liter                  { LiteralExp (LitBool $1), $startpos                    }
-| pair_liter                  { NullExp, ($startpos)                                  }
-| CHAR;                       { LiteralExp (LitChar $1), $startpos                    }
-| STRING;                     { LiteralExp (LitString $1), $startpos                  }
-| unary_op; expr;             { UnOpExp  ($1, $2), $startpos                          }
-| expr; binary_op; expr       { BinOpExp ($1, $2, $3), $startpos                      }
-| LPAREN expr RPAREN          { $2                                                    }
+                                LiteralExp (LitInt i), $startpos       }
+| bool_liter                  { LiteralExp (LitBool $1), $startpos     }
+| pair_liter                  { NullExp, ($startpos)                   }
+| CHAR;                       { LiteralExp (LitChar $1), $startpos     }
+| STRING;                     { LiteralExp (LitString $1), $startpos   }
+| unary_op; expr;             { UnOpExp  ($1, $2), $startpos           }
+| expr; binary_op; expr       { BinOpExp ($1, $2, $3), $startpos       }
+| LPAREN expr RPAREN          { $2                                     }
 
 %%
 (* Local Variables: *)
