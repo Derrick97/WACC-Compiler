@@ -480,7 +480,7 @@ and translate (env: E.env)
       inst_list @ [mov (reg_RV) (OperReg (dst, None));
                    pop (callee_saved_regs);
                    add reg_SP reg_SP (OperImm (frame_size frame));
-                   pop [reg_PC];
+                   pop [reg_PC]; (LTORG, None)
                   ], env
     end
   | ReadStmt (exp, _) -> begin
@@ -577,7 +577,7 @@ let rec translate_function_decs decs env inst_list =
     let alloc_insts = [(sub reg_SP reg_SP (OperImm local_size))] in
     let dealloc_insts = [(add reg_SP reg_SP (OperImm local_size))] in
     let func_insts = label_inst::push_inst::push_reg::(alloc_insts@(inst_list @ insts)) in
-    (recompute_allocation frame (func_insts @ dealloc_insts @ [pop_reg] @ [pop_inst]));
+    (recompute_allocation frame (func_insts @ dealloc_insts @ [pop_reg] @ [pop_inst] @ [(LTORG, None)]));
   end in
   !env', List.concat (List.map tr_func decs)
 
