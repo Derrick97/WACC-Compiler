@@ -38,6 +38,17 @@ let new_frame frame = {
   frame_locals = [| |];
 }
 
+let split_offset offset =
+  if offset = 0 then (0,0) else
+  let tempNum = ref 1 in
+  let () = if offset < 256 then tempNum := offset * 2 in
+  let () =
+     while !tempNum <= offset do
+     tempNum := !tempNum * 2
+     done in
+  (!tempNum / 2, offset - (!tempNum / 2))
+
+
 
 let allocate_local (frame: frame) (size: size) =
   let offset = frame.frame_offset in
@@ -302,14 +313,23 @@ and translate (env: E.env)
     | ArrayIndexExp (name, [exp], _) -> begin
         let open Arm in
         let E.VarEntry (t, Some acc) = Symbol.lookup name env in
-        let size = 4 in
+        let check_if_string some_ty = match some_ty with
+          | StringTy -> true
+          | _-> false
+        in
+        let check_if_char_array some_ty = match some_ty with
+          | ArrayTy(CharTy) -> true
+          | _-> false
+        in
+        let size = if check_if_string t || check_if_char_array t then 1 else size_of_type t in
         let index::addr::o::rest = regss in
+        let skip_length_inst = if check_if_string t then [] else [add index index (OperImm 4)] in
         let insts = translate_exp env exp (index::rest)
            @ trans_var acc addr @ trans_call "wacc_check_array_bounds" [addr; index]
            @ [mov o (OperImm size);
-              mul index index o;
-              add index index (OperImm 4);
-              add addr addr (OperReg (index, None));] in
+              mul index index o]
+           @ skip_length_inst @
+              [add addr addr (OperReg (index, None))] in
         AddrIndirect (addr, 0), insts
       end
     | ArrayIndexExp _ -> assert false
@@ -350,8 +370,10 @@ and translate (env: E.env)
           linsts = addr_of_exp lhs rest in
       let other::_ = rest in
       let check_null_insts = [add other b (OperImm(offset))] @ trans_call "wacc_check_pair_null" [other] in
-      rinsts @ linsts @ check_null_insts @
-      [F.str dst addr], env (* TODO need to handle storeb *)
+      let insts = rinsts @ linsts @ check_null_insts in
+      let str_inst = if size_of_type (Semantic.check_exp env rhs) = 4 then
+      [F.str dst addr] else [F.strb dst addr] in (* TODO need to handle storeb *)
+      (insts @ str_inst, env)
     end
   | IfStmt       (cond, then_exp, else_exp, _) -> begin
       let env' = Symbol.new_scope env in
@@ -442,6 +464,7 @@ and translate (env: E.env)
         | StringTy -> "string"
         | BoolTy -> "bool"
         | CharTy -> "char"
+        | ArrayTy CharTy -> "char_array"
         | ArrayTy _ -> "array"
         | PairTy _ | PairTyy -> "pair"
         | IntTy -> "int"
@@ -505,11 +528,18 @@ let print_insts (out: out_channel) (frame: frame) (insts: stmt list) =
   fprintf out "main:\n";
   fprintf out "\tpush {lr}\n";
   let local_size = frame_size frame in
-  fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int local_size) ^ "\n");
+  let (valid_size1, valid_size2) = split_offset local_size in
+  fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int valid_size1) ^ "\n");
+  if valid_size2 !=0 then
+  fprintf out "%s" ("\tsub sp, sp, #" ^ (string_of_int valid_size2) ^ "\n");
   List.iter (fun x -> fprintf out "%s\n" (Arm.string_of_inst' x)) insts;
-  fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int local_size) ^ "\n") ;
+  fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int valid_size1) ^ "\n") ;
+  if valid_size2 !=0 then
+  fprintf out "%s" ("\tadd sp, sp, #" ^ (string_of_int valid_size2) ^ "\n") ;
   fprintf out "\tldr r0, =0\n";
-  fprintf out "%s" "\tpop {pc}\n"
+  fprintf out "%s" "\tpop {pc}\n";
+  fprintf out "%s" "\t.ltorg\n"
+
 
 let rec translate_function_decs decs env inst_list =
   let open Arm in

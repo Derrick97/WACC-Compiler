@@ -23,6 +23,8 @@ and inst =
   | BL   of  label
   | LABEL of label
   | B of label
+  | LTORG (*This instruction makes sure that the literal pools are assembled within the range of LDR instruction*)
+          (*http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0041c/Babbfdih.html*)
 and inst' = inst * cond option
 and cond = GT | GE | LT | LE | EQ | NE | VS
 and reg  = Temp.temp
