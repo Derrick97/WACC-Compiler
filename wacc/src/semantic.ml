@@ -1,7 +1,7 @@
-module A = Ast;;
+module A = Ast_v2;;
 module S = Symbol;;
 module T = Translate;;
-open Ast;;
+open Ast_v2;;
 open Env;;
 open Printf;;
 
@@ -16,8 +16,6 @@ let pos_lnum_cnum pos =
   let lnum = pos.pos_lnum in
   let cnum = (pos.pos_cnum - pos.pos_bol + 1) in
   (lnum, cnum)
-
-(* UnOp ArgType ReturnType *)
 
 let unop_arg_type = function
   | NotOp -> BoolTy
@@ -40,7 +38,7 @@ let type_mismatch expected actual pos =
   raise (TypeMismatch (expected, actual, pos))
 
 let var_name ident = match ident with
-  | IdentExp (name, pos) -> name
+  | IdentExp name -> name
   | _ -> invalid_arg "not a variable"
 
 let is_comparable = function
@@ -118,14 +116,15 @@ let rec check_function_call table fname exps pos = try
     | _ -> raise (SemanticError ("Not a valid function", pos))
   with
   | Not_found -> raise (UnknownIdentifier (fname, pos))
-(* Return type of an expression, will raise TypeMismatch if type mismatch *)
+
 and check_exp (table: env) (exp: A.exp): ty = begin
+  let (exp, pos) = exp in
   match exp with
-  | IdentExp    (name, pos) -> (
+  | IdentExp    (name) -> (
       try var_type table name
       with
       | Not_found -> raise (UnknownIdentifier (name, pos)))
-  | LiteralExp  (literal, pos) -> begin match literal with
+  | LiteralExp  (literal) -> begin match literal with
       | LitBool _ -> BoolTy
       | LitChar _ -> CharTy
       | LitString _ -> StringTy
@@ -133,9 +132,9 @@ and check_exp (table: env) (exp: A.exp): ty = begin
       | LitArray [] -> NullTy
       | LitArray (x::xs) -> ArrayTy (check_exp table x)
       | LitPair (f, s) -> PairTy ((check_exp table f), (check_exp table s))
-      | Null      -> PairTyy
+      | LitNull      -> PairTyy
     end
-  | BinOpExp    (exp, binop, exp', pos) -> (
+  | BinOpExp    (exp, binop, exp') -> (
       let lty = check_exp table exp in
       let rty = check_exp table exp' in
       let () = (match binop with
@@ -151,18 +150,18 @@ and check_exp (table: env) (exp: A.exp): ty = begin
              raise (SemanticError(("Inequality operations cannot be applied on strings, pairs and arrays." ), pos))
            )) in
       binop_type binop;)
-  | UnOpExp     (unop, exp, pos) -> (
+  | UnOpExp     (unop, exp) -> (
       let ty = check_exp table exp in
       let expected_ty = (unop_arg_type unop) in
       check_type expected_ty ty pos;
       unop_ret_type unop)
-  | NullExp     pos -> PairTyy
-  | NewPairExp  (exp, exp', pos) -> begin
+  | NullExp -> PairTyy
+  | NewPairExp  (exp, exp') -> begin
       let fst_ty = check_exp table exp in
       let snd_ty = check_exp table exp' in
       PairTy (fst_ty, snd_ty)
     end
-  | CallExp     (fname, exps, pos) -> begin
+  | CallExp     (fname, exps) -> begin
       try
         let (retty, argtys) = function_type table fname in
         let exp_tys = List.map (check_exp table) exps in
@@ -171,17 +170,17 @@ and check_exp (table: env) (exp: A.exp): ty = begin
       with
       | Not_found -> raise (UnknownIdentifier (fname, pos))
     end
-  | ArrayIndexExp (name, exps, pos) -> (match var_type table name with
+  | ArrayIndexExp (name, exps) -> (match var_type table name with
       | ArrayTy ty -> ty
       | StringTy -> CharTy
       | _ -> raise  (SemanticError ("Only indexing on array is supported", pos)))
-  | FstExp (exp, pos) -> begin
+  | FstExp (exp) -> begin
       let ty = check_exp table exp in
       match ty with
       | PairTy (t, t') -> t
       | _ -> type_mismatch PairTyy ty pos
     end
-  | SndExp (exp, pos) -> begin
+  | SndExp (exp) -> begin
       let ty = check_exp table exp in
       match ty with
       | PairTy (t, t') -> t'
@@ -189,123 +188,13 @@ and check_exp (table: env) (exp: A.exp): ty = begin
     end
 end
 
-(* and translate_exp (env: env) (exp: A.exp): (T.stmt list * T.exp) = begin
- *   let tr = translate_exp env in
- *   match exp with
- *   | IdentExp    (name, pos) -> begin
- *       let VarEntry (t, Some a) = Symbol.lookup name env in
- *       T.trans_var a
- *     end
- *   | LiteralExp  (literal, pos) -> begin
- *     let v = T.trans_lit literal in
- *     match v with
- *     | Translate.Imm (i, sz) -> begin
- *         let t = Arm.new_temp () in
- *         [(Arm.MOV (t, Arm.OperImm i), None)], T.InAccess(T.InReg (t, sz))
- *       end
- *     | _ -> [], v
- *     end
- *   | BinOpExp    (exp, binop, exp', pos) -> begin
- *       let lhsi, lhsv = (tr exp) in
- *       let rhsi, rhsv = (tr exp') in
- *       let ri, rv = T.trans_binop binop lhsv rhsv in
- *       lhsi @ rhsi @ ri, rv
- *     end
- *   | UnOpExp     (unop, exp, pos) ->
- *     let ri, rv = (translate_exp env exp) in
- *     let ri', rv' = T.trans_unop unop rv in
- *     ri @ ri', rv'
- *   | _ -> assert false
- * end
- *
- * and translate (env: env)
- *     (frame: T.frame)
- *     (stmt: stmt): (T.stmt list * env) =
- *   let tr x = (translate_exp env x) in
- *   match stmt with
- *   | SeqStmt (stmt, stmtlist) -> begin
- *       let exp, env' = translate env frame stmt in
- *       let exp', env'' = (translate env' frame stmtlist) in
- *       (exp @ exp', env'')
- *     end
- *   | AssignStmt   (IdentExp (name, _), rhs, _) -> begin
- *       let VarEntry (ty, Some lhsa) = Symbol.lookup name env in
- *       let rhsi, rhsv = tr rhs in
- *       let assi, assv = (T.trans_assign lhsa rhsv) in
- *       (rhsi @ assi, env)
- *     end
- *   | AssignStmt   (_, rhs, _) -> assert false
- *   | IfStmt       (cond, then_exp, else_exp, _) -> begin
- *       let env' = Symbol.new_scope env in
- *       let condi, cond_v = tr cond in
- *       let theni, _ = translate env' frame then_exp in
- *       let elsei, _ = translate env' frame else_exp in
- *       let endi = T.trans_ifelse cond_v (theni) (elsei) in
- *       condi @ endi, env
- *     end
- *   | WhileStmt    (cond, body_stmt, _) -> begin
- *       let env' = Symbol.new_scope env in
- *       let condi, condv = tr cond in
- *       let bodyi, _ = translate env' frame body_stmt in
- *       let ii = T.trans_while condv bodyi in
- *       condi @ ii, env
- *     end
- *   | ExitStmt     (exp, _) -> begin
- *       let expi, expv = tr exp in
- *       let ci, cv = T.trans_call "wacc_exit" [expv] in
- *       expi @ ci , env
- *     end
- *   | VarDeclStmt  (ty, name, exp, _) -> begin
- *       let size = match ty with
- *         | CharTy | BoolTy -> 1
- *         | IntTy -> 4
- *         | _ -> assert false in
- *       let local_var = T.allocate_local frame size in
- *       let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
- *       let expi, expv = tr exp in
- *       let assigni, assignv = T.trans_assign (local_var) expv in
- *       expi @ assigni, env'
- *     end
- *   | SkipStmt      _ -> T.trans_noop, env
- *   | PrintStmt    (newline, exp, _) -> begin
- *       let expi, expv = tr exp in
- *       let expt = check_exp env exp in
- *       let ty_str = match expt with
- *         | StringTy -> "string"
- *         | BoolTy -> "bool"
- *         | CharTy -> "char"
- *         | ArrayTy _ -> "array"
- *         | PairTy _ | PairTyy -> "pair"
- *         | IntTy -> "int"
- *         | _ -> assert false in
- *       let ci, cv = T.trans_call ("wacc_print_" ^ ty_str) [expv] in
- *       let ci' = (if (newline) then
- *                    fst (T.trans_call("wacc_println") [])
- *                  else []) in
- *       expi @ ci @ ci', env
- *     end
- *   | RetStmt      (exp, _) -> assert false
- *   | ReadStmt     (exp, _) -> begin
- *       let expi, expv = tr exp in
- *       let ci, cv = T.trans_call "wacc_read" [expv] in
- *       expi @ ci, env
- *     end
- *   | FreeStmt     (exp, _) -> begin
- *       let expi, expv = tr exp in
- *       let ci, cv = T.trans_call "wacc_free" [expv] in
- *       expi @ ci, env
- *     end
- *   | BlockStmt    (stmt, _) -> begin
- *       let env' = Symbol.new_scope env in
- *       translate env' frame stmt
- *     end *)
-
 and check_stmt env stmt =
   let check_in_this_scope = check_exp env in
   let env' = S.new_scope env in
   let check_with_new_scope = check_stmt env' in
+  let (stmt, pos) = stmt in
   match stmt with
-  | SeqStmt (RetStmt (_, pos), stmtlist) -> begin
+  | SeqStmt ((RetStmt _, _), stmtlist) -> begin
       if (is_global_env env) then
         raise (SemanticError ("Return early in global", pos))
       else
@@ -314,7 +203,7 @@ and check_stmt env stmt =
   | SeqStmt (stmt, stmtlist) ->
     (let env' = check_stmt env stmt in
      (check_stmt env' stmtlist))
-  | AssignStmt (IdentExp (name, _), exp, pos) -> begin
+  | AssignStmt ((IdentExp (name), _), exp) -> begin
       try
         if not (is_var env name) then raise (SemanticError ("Not a variable", pos))
         else
@@ -323,30 +212,30 @@ and check_stmt env stmt =
           if eq_type ty ty' then env else raise (TypeMismatch (ty, ty', pos))
       with Not_found -> raise (SemanticError ("Variable not found: " ^ name, pos))
     end
-  | AssignStmt   (lhs, rhs, pos) -> begin
+  | AssignStmt   (lhs, rhs) -> begin
       try
         let ty = check_exp env lhs in
         let ty' = check_exp env rhs in
         check_type ty ty' pos; env
       with Not_found -> raise (SemanticError ("Variable not found", pos))
     end
-  | IfStmt       (exp, exp', exp'', pos) -> begin
+  | IfStmt       (exp, exp', exp'') -> begin
       ignore(check_in_this_scope exp);
       let ty = check_exp env exp in
       check_type BoolTy ty pos;
       check_with_new_scope exp''
     end
-  | WhileStmt    (exp, exp', pos) -> begin
+  | WhileStmt    (exp, exp') -> begin
       let ty = check_exp env exp in
       check_type BoolTy ty pos;
       ignore(check_with_new_scope exp');
       env
     end
-  | ExitStmt     (exp, pos) -> (
+  | ExitStmt     (exp) -> begin
    check_type IntTy (check_exp env exp) pos;
    env;
-   )
-  | VarDeclStmt  (ty, symbol, exp, pos) -> begin
+   end
+  | VarDeclStmt  (ty, symbol, exp) -> begin
       let ty' = check_exp env exp in
       let _ = (match S.lookup_opt' symbol env with
           | Some _ -> raise (SemanticError ("redeclared variable: " ^ symbol, pos))
@@ -354,33 +243,33 @@ and check_stmt env stmt =
       let env' = S.insert symbol (VarEntry (ty, None)) env in
       check_type ty ty' pos; env'
     end
-  | SkipStmt      pos -> env
-  | PrintStmt    (_, exp, pos) -> ignore(check_in_this_scope exp); env
-  | RetStmt      (exp, pos) -> begin
+  | SkipStmt -> env
+  | PrintStmt    (_, exp) -> ignore(check_in_this_scope exp); env
+  | RetStmt      (exp) -> begin
       let ty = check_in_this_scope exp in
       Symbol.insert "$result" (VarEntry (ty, None)) env
     end
-  | ReadStmt     (exp, pos) -> begin
+  | ReadStmt     (exp) -> begin
       let ty = check_exp env exp in
        let check_read_ty = function
          | (A.IntTy | A.CharTy) -> ()
          | _ -> raise (SemanticError ("Unsupported read input type", pos)) in
        check_read_ty ty; env
     end
-  | FreeStmt     (exp, pos) -> begin
+  | FreeStmt     (exp) -> begin
       let rty = check_exp env exp in
       if (not (is_heap_type rty)) then
         raise (SemanticError ("Can only free heap allocated data", pos))
       else env
     end
-  | BlockStmt    (stmt, pos) -> begin
+  | BlockStmt    (stmt) -> begin
       ignore(check_with_new_scope stmt);
       env
     end
 and check_function_decls decls = begin
     let ctx = ref Symbol.empty in
     ignore(List.iter (fun x -> (match x with
-        | FuncDec (ty, name, args, body, pos) ->
+        | FuncDec (ty, name, args, body), pos ->
           (try
              let _ = function_type !ctx name in
              raise (SemanticError ("Function redefined", pos))
@@ -389,7 +278,7 @@ and check_function_decls decls = begin
           ctx := Symbol.insert name (FuncEntry (ty, List.map (fun (ft, name) -> ft) args)) !ctx
       )) decls);
     let check_dec decl = (match decl with
-        | FuncDec (ty, name, args, body, pos) -> begin
+        | FuncDec (ty, name, args, body), pos -> begin
             let inner_ctx = ref (Symbol.new_scope !ctx) in
             let () = List.iter (fun x -> inner_ctx := (let (t, name) = x in Symbol.insert name (VarEntry (t, None)) !inner_ctx)) args in
             ignore(check_stmt !inner_ctx body)
@@ -427,7 +316,7 @@ let rec check_prog (decs, stmt) =
 
 and add_function_declarations env ff =
   let env' = ref env in
-  List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt, pos) = f in
+  List.iter (fun f -> (let A.FuncDec (ty, ident, fields, stmt), pos = f in
                        let tys = List.map fst fields in
                        (match Symbol.lookup_opt ident !env' with
                         | Some _ -> raise (SemanticError ("Function " ^ ident ^  " has been redefined", pos))
@@ -437,7 +326,7 @@ and add_function_declarations env ff =
   match ff with
   | [] -> env
   | (f::fs) -> begin match f with
-      | A.FuncDec (ty, ident, fields, stmt, pos) ->
+      | A.FuncDec (ty, ident, fields, stmt), pos ->
         let env'' = List.fold_left (fun env (ty, ident) -> Symbol.insert ident (VarEntry (ty, None)) env) !env' fields in
         let env''' = check_stmt env'' stmt in
         let rt = var_type env''' "$result" in

@@ -1,9 +1,7 @@
 open Lexing
 open Printf
-open Stack
-open Interpreter
 
-module A = Ast
+module A = Ast_v2
 
 let usage = "The WACC compiler\nUsage:\n"
 let syntax_error_code = 100
@@ -33,12 +31,13 @@ let () =
       let table = Semantic.baseenv in
       let table' = Symbol.new_scope (Semantic.add_function_declarations table decs) in
       (* TODO backend code generation *)
-      let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
-      let out = open_out out_filename in
-      TranslateSyntax.translate_prog (decs, stmt) table' out;
-      (* Translate.print_insts out frame stmts; *)
-      close_out out;
-      ignore(Sys.command ("cat wacclib.s >> " ^ out_filename));
+      (* let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
+       * let out = open_out out_filename in
+       * let wacclib = "wacclib.s" in
+       * TranslateSyntax.translate_prog (decs, stmt) table' out;
+       * (\* Translate.print_insts out frame stmts; *\)
+       * close_out out;
+       * ignore(Sys.command (Printf.sprintf "cat %s >> %s " wacclib out_filename)); *)
       ()
     with
-    | A.SyntaxError _ | Parser.Error _ -> handle_syntax_error lexbuf
+    | A.SyntaxError _ | Parser.Error -> handle_syntax_error lexbuf
