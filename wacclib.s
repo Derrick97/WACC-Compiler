@@ -56,7 +56,7 @@ wacc_ord:
 	.section	.rodata
 	.align	2
 .LC0:
-	.ascii	"%c\000"
+	.ascii	" %c\000"
 	.text
 	.align	2
 	.global	wacc_read_char
@@ -334,10 +334,8 @@ wacc_print_array:
 	push	{fp, lr}
 	add	fp, sp, #4
 	sub	sp, sp, #8
-	mov	r3, r0
-	strb	r3, [fp, #-5]
-	ldrb	r3, [fp, #-5]	@ zero_extendqisi2
-	mov	r1, r3
+	str	r0, [fp, #-8]
+	ldr	r1, [fp, #-8]
 	ldr	r0, .L41
 	bl	printf
 	mov	r3, #0
@@ -350,6 +348,49 @@ wacc_print_array:
 .L41:
 	.word	.LC5
 	.size	wacc_print_array, .-wacc_print_array
+	.align	2
+	.global	wacc_print_char_array
+	.syntax unified
+	.arm
+	.type	wacc_print_char_array, %function
+wacc_print_char_array:
+	@ args = 0, pretend = 0, frame = 24
+	@ frame_needed = 1, uses_anonymous_args = 0
+	push	{fp, lr}
+	add	fp, sp, #4
+	sub	sp, sp, #24
+	str	r0, [fp, #-24]
+	ldr	r0, [fp, #-24]
+	bl	wacc_len
+	str	r0, [fp, #-8]
+	mov	r3, #1
+	str	r3, [fp, #-12]
+	b	.L44
+.L45:
+	ldr	r3, [fp, #-12]
+	lsl	r3, r3, #2
+	mov	r2, r3
+	ldr	r3, [fp, #-24]
+	add	r3, r3, r2
+	ldrb	r3, [r3]
+	strb	r3, [fp, #-13]
+	ldrb	r3, [fp, #-13]	@ zero_extendqisi2
+	mov	r0, r3
+	bl	putchar
+	ldr	r3, [fp, #-12]
+	add	r3, r3, #1
+	str	r3, [fp, #-12]
+.L44:
+	ldr	r2, [fp, #-12]
+	ldr	r3, [fp, #-8]
+	cmp	r2, r3
+	ble	.L45
+	mov	r3, #0
+	mov	r0, r3
+	sub	sp, fp, #4
+	@ sp needed
+	pop	{fp, pc}
+	.size	wacc_print_char_array, .-wacc_print_char_array
 	.section	.rodata
 	.align	2
 .LC6:
@@ -369,23 +410,23 @@ wacc_print_pair:
 	str	r0, [fp, #-8]
 	ldr	r3, [fp, #-8]
 	cmp	r3, #0
-	bne	.L44
-	ldr	r0, .L47
+	bne	.L48
+	ldr	r0, .L51
 	bl	printf
-	b	.L45
-.L44:
+	b	.L49
+.L48:
 	ldr	r1, [fp, #-8]
-	ldr	r0, .L47+4
+	ldr	r0, .L51+4
 	bl	printf
-.L45:
+.L49:
 	mov	r3, #0
 	mov	r0, r3
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L48:
+.L52:
 	.align	2
-.L47:
+.L51:
 	.word	.LC6
 	.word	.LC5
 	.size	wacc_print_pair, .-wacc_print_pair
@@ -422,13 +463,13 @@ wacc_throw_overflow_error:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	ldr	r0, .L51
+	ldr	r0, .L55
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L52:
+.L56:
 	.align	2
-.L51:
+.L55:
 	.word	.LC7
 	.size	wacc_throw_overflow_error, .-wacc_throw_overflow_error
 	.section	.rodata
@@ -446,13 +487,13 @@ wacc_throw_division_by_zero:
 	@ frame_needed = 1, uses_anonymous_args = 0
 	push	{fp, lr}
 	add	fp, sp, #4
-	ldr	r0, .L54
+	ldr	r0, .L58
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L55:
+.L59:
 	.align	2
-.L54:
+.L58:
 	.word	.LC8
 	.size	wacc_throw_division_by_zero, .-wacc_throw_division_by_zero
 	.global	__aeabi_idivmod
@@ -471,9 +512,9 @@ wacc_mod:
 	str	r1, [fp, #-12]
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L57
+	bne	.L61
 	bl	wacc_throw_division_by_zero
-.L57:
+.L61:
 	ldr	r3, [fp, #-8]
 	ldr	r1, [fp, #-12]
 	mov	r0, r3
@@ -500,9 +541,9 @@ wacc_div:
 	str	r1, [fp, #-12]
 	ldr	r3, [fp, #-12]
 	cmp	r3, #0
-	bne	.L60
+	bne	.L64
 	bl	wacc_throw_division_by_zero
-.L60:
+.L64:
 	ldr	r1, [fp, #-12]
 	ldr	r0, [fp, #-8]
 	bl	__aeabi_idiv
@@ -535,24 +576,24 @@ wacc_check_array_bounds:
 	str	r3, [fp, #-8]
 	ldr	r3, [fp, #-20]
 	cmp	r3, #0
-	blt	.L63
+	blt	.L67
 	ldr	r2, [fp, #-20]
 	ldr	r3, [fp, #-8]
 	cmp	r2, r3
-	blt	.L65
-.L63:
-	ldr	r0, .L66
+	blt	.L69
+.L67:
+	ldr	r0, .L70
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L65:
+.L69:
 	nop
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L67:
+.L71:
 	.align	2
-.L66:
+.L70:
 	.word	.LC9
 	.size	wacc_check_array_bounds, .-wacc_check_array_bounds
 	.section	.rodata
@@ -574,19 +615,19 @@ wacc_check_pair_null:
 	str	r0, [fp, #-8]
 	ldr	r3, [fp, #-8]
 	cmp	r3, #0
-	bne	.L70
-	ldr	r0, .L71
+	bne	.L74
+	ldr	r0, .L75
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L70:
+.L74:
 	nop
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L72:
+.L76:
 	.align	2
-.L71:
+.L75:
 	.word	.LC10
 	.size	wacc_check_pair_null, .-wacc_check_pair_null
 	.section	.rodata
@@ -608,21 +649,21 @@ wacc_free:
 	str	r0, [fp, #-8]
 	ldr	r3, [fp, #-8]
 	cmp	r3, #0
-	bne	.L74
-	ldr	r0, .L75
+	bne	.L78
+	ldr	r0, .L79
 	bl	puts
 	mov	r0, #255
 	bl	exit
-.L74:
+.L78:
 	ldr	r0, [fp, #-8]
 	bl	free
 	nop
 	sub	sp, fp, #4
 	@ sp needed
 	pop	{fp, pc}
-.L76:
+.L80:
 	.align	2
-.L75:
+.L79:
 	.word	.LC11
 	.size	wacc_free, .-wacc_free
 	.ident	"GCC: (Ubuntu/Linaro 5.4.0-6ubuntu1~16.04.4) 5.4.0 20160609"
