@@ -1,17 +1,34 @@
-type label
-type temp
+(** An Intermediate language similar to ILOC
+   The goal of the designing this IR is two fold
+   1) we desugar as much information as possible from the frontend.
+   2) we provide good representation for data-flow analysis,
+    optimisation and code generation.
+
+    One design requirement is to make control flow explicit in the IR.
+    Hence, for branch instructions, all branches must be explicitly present in
+    the instructions
+
+    We use a small subset of the ILOC IR, which is introduced
+    in the book Engineering a Compiler.
+*)
+
+type label = string [@@deriving show]
+type temp = string [@@deriving show]
 and size =
   | WORD
-  | BYTE
+  | BYTE [@@deriving show]
 type operand =
-  | OperReg of int
-  | OperImm of int * size
-and cond =  GT | GE | LT | LE | EQ | NE | VS
+  | OperReg of temp
+  | OperImm of int [@@deriving show]
+and cond =  GT | GE | LT | LE | EQ | NE | VS [@@deriving show]
 and addr =
   | ADDR_LABEL of label
   | ADDR_INDIRECT of temp * int
-and il' =
-  | ADD   of operand * operand * operand
+  | ADDR_IMM of int
+and opcode =
+  | Op_add
+and il =
+  | ADD   of temp * temp * temp
   | SUB   of operand * operand * operand
   | DIV   of operand * operand * operand
   | MUL   of operand * operand * operand
@@ -25,5 +42,5 @@ and il' =
   | PUSH  of operand
   | BL    of label
   | B     of label
-  | LABEL of label
-and il = il' * cond
+  | RET   of operand
+  | LABEL of label  [@@deriving show]

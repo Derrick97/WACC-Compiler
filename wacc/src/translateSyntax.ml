@@ -69,8 +69,8 @@ let trans_call
     let reg_passed = ref [] in
     let stack_passed = ref [] in
     (List.iteri (fun i x -> if i <= 3
-                 then reg_passed := !reg_passed @ [x]
-                 else stack_passed := !stack_passed @ [x]) regs);
+                  then reg_passed := !reg_passed @ [x]
+                  else stack_passed := !stack_passed @ [x]) regs);
     !reg_passed, !stack_passed in
   let reg_passed, stack_passed = split_reg_stack_passed args in
   (* First we mov the first 4 registers *)
@@ -104,10 +104,10 @@ end
 let trans_var (var: access) (t: temp): (stmt list) =
   match var with
   | InFrame (offset, sz) ->
-    (match sz with
-     | 4 -> [F.load t (Arm.AddrIndirect  (Arm.reg_SP, offset))]
-     | 1 -> [F.loadb t (Arm.AddrIndirect (Arm.reg_SP, offset))]
-     | _ -> assert false)
+      (match sz with
+       | 4 -> [F.load t (Arm.AddrIndirect  (Arm.reg_SP, offset))]
+       | 1 -> [F.loadb t (Arm.AddrIndirect (Arm.reg_SP, offset))]
+       | _ -> assert false)
   | InReg (reg_num) -> [F.mov t (F.OperReg(reg_num,None))]
 
 let trans_assign
@@ -115,10 +115,10 @@ let trans_assign
     (rv: temp): (stmt list) = begin
   match lv with
   | InFrame (offset, sz) -> (
-    match sz with
-    | 4 -> [F.str rv (Arm.AddrIndirect  (Arm.reg_SP, offset))]
-    | 1 -> [F.strb rv (Arm.AddrIndirect (Arm.reg_SP, offset))]
-    | _ -> assert false)
+      match sz with
+      | 4 -> [F.str rv (Arm.AddrIndirect  (Arm.reg_SP, offset))]
+      | 1 -> [F.strb rv (Arm.AddrIndirect (Arm.reg_SP, offset))]
+      | _ -> assert false)
   | InReg (reg_num) -> [F.mov reg_num (OperReg(rv,None))]
 end
 
@@ -133,163 +133,163 @@ let rec translate_exp
   let open Arm in
   let check_overflow_inst = bl ~cond:VS "wacc_throw_overflow_error" in
   ((match regs with
-   | (dst::rest) -> begin
-       match exp with
-       | A.IdentExp    (name, pos) -> begin
-           let E.VarEntry (t, Some acc) = Symbol.lookup name env in
-	   let is_pair = function
-	    | A.PairTy _ | A.PairTyy -> true
-	    | _ -> false in
-	   if is_pair t then
-	     trans_var acc dst
-	   else
-             trans_var acc dst
-         end
-       | A.LiteralExp  (literal, pos) -> begin match literal with
-           (* NOTE for int literal, we use load instead of move
-              to handle large literals *)
-           | A.LitInt i -> [load dst (Arm.AddrLabel (string_of_int i))]
-           | A.LitString s -> begin
-               let label = new_label() in
-               strings := (label, s)::!strings;
-               [load dst (AddrLabel label)]
-             end
-           | A.LitBool b -> if b then
-               [mov dst (Arm.OperImm 1)]
-             else
-               [mov dst (Arm.OperImm 0)]
-           | A.LitChar c -> [mov dst (Arm.OperChar c)]
-           |  _ -> assert false
-         end
-       | A.BinOpExp    (exp, binop, exp', pos) -> begin
-           let open Arm in
-           let (dst::next::rest) = regs in
-           let lhs = (tr exp  (dst::next::rest)) in
-           let rhs = (tr exp' (next::rest)) in
-           let oper = OperReg (next, None) in
-           lhs @ rhs @
-           (match binop with
-            | A.PlusOp ->  [add dst dst oper;
-                            check_overflow_inst]
-            | A.MinusOp -> [sub dst dst oper;
-                            check_overflow_inst]
-            | A.TimesOp -> [smull dst next dst next;
-                            cmp next (OperReg (dst, Some (ASR 31)));
-                            bl ~cond:NE "wacc_throw_overflow_error";
-                            (* TODO intmultoverflow handle correctly *)
-                            (* https://community.arm.com/processors/b/blog/posts/detecting-overflow-from-mul *)
-                            check_overflow_inst]
-            | A.DivideOp -> trans_call ~result:dst "wacc_div" [dst;next]
-            | A.AndOp -> [annd dst dst oper]
-            | A.OrOp  -> [orr dst dst oper]
-            | A.ModOp -> begin
-                trans_call "wacc_mod" ~result:dst  [dst;next]
-              end
-            | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
-                [cmp dst oper;
-                 mov ~cond:GE dst (OperImm 1);
-                 mov ~cond:LT dst (OperImm 0)]
-              end
-            | A.GtOp -> begin
-                [cmp dst oper;
-                 mov ~cond:GT dst (OperImm 1);
-                 mov ~cond:LE dst (OperImm 0)]
-              end
-            | A.LeOp -> begin
-                [cmp dst oper;
-                 mov ~cond:LE dst (OperImm 1);
-                 mov ~cond:GT dst (OperImm 0)]
-              end
-            | A.LtOp -> begin
-                [cmp dst oper;
-                 mov ~cond:LT dst (OperImm 1);
-                 mov ~cond:GE dst (OperImm 0)]
-              end
-            | A.EqOp -> begin
-                [cmp dst oper;
-                 mov ~cond:EQ dst (OperImm 1);
-                 mov ~cond:NE dst (OperImm 0)]
-              end
-            | A.NeOp -> begin
-                [cmp dst oper;
-                 mov ~cond:NE dst (OperImm 1);
-                 mov ~cond:EQ dst (OperImm 0)]
-              end)
-         end
-       | A.UnOpExp     (unop, exp, pos) -> begin
-           let ri = (translate_exp env exp regs) in
-           let (fst_rest::others) = rest in
-           ri @ (match unop with
-               | A.NotOp -> [eor dst dst (OperImm 1)]
-               | A.NegOp -> begin
-                   [mov fst_rest (OperImm 0);
-                    sub dst fst_rest (OperReg (dst, None));
-                    check_overflow_inst]
-                 end
-               | A.LenOp -> trans_call ~result:dst "wacc_len" [dst]
-               | A.OrdOp -> trans_call "wacc_ord" [dst]
-               | A.ChrOp -> trans_call "wacc_chr" [dst])
-         end
-       | A.ArrayIndexExp (name, [exp], _) -> begin
-           let open Arm in
-           let E.VarEntry (t, Some acc) = Symbol.lookup name env in
-           let size = 4 in
-           let index::addr::o::rest = rest in
-           tr exp (index::rest)
-           @ trans_var acc addr
-           @ trans_call "wacc_check_array_bounds" [addr; index]
-           @ [mov o (OperImm size);
-              mul index index o;
-              add index index (OperImm 4);
-              add addr addr (OperReg (index, None));
-              load dst (AddrIndirect (addr, 0)) ]
-         end
-       | A.ArrayIndexExp (_, _, _)
-         -> failwith "Only single dimensional array access is supported"
-       | A.FstExp (exp, _) -> begin
-           let (dst::next::rest) = regs in
-           let insts = tr exp (regs) in
-           insts @ trans_call "wacc_check_pair_null" [dst] @
-           [load next (AddrIndirect(dst, 0));
-            load dst (AddrIndirect(next, 0))]
-           end
-       | A.SndExp (exp, _) -> begin
-           let (dst::next::rest) = regs in
-           let insts = tr exp (regs) in (* dst stores address to pair *)
-           insts @ trans_call "wacc_check_pair_null" [dst] @
-           [load next (AddrIndirect(dst, 4)); (* this get address of the second element *)
-            load dst (AddrIndirect(next, 0))] (* now we load it *)
-         end
-       | A.CallExp (fname, exp_list, _) -> begin
-           let args, _, inst = List.fold_left
-               (fun (used, r::rs, ins) e -> (used @ [r], rs, ins @ (tr e (r::rs))))
-               ([], regs, []) exp_list in
-           inst @ trans_call ~result:dst ("f_" ^ fname) args
-        end
-       | A.NullExp _ -> begin
-           [mov dst (OperImm 0)]
-         end
-       | A.NewPairExp _ -> invalid_arg "newpair handled rhs"
-     end
-   | [] -> invalid_arg "Registers have run out"))
-
-   and process_function_arguments sym exp_list regs used_reg env =
-      let open Arm in
-      let (dst::rest) = regs in
-      match exp_list with
-        | [] -> begin
-          trans_call ("f_" ^ sym) used_reg
-          (*@ [add reg_SP reg_SP (OperImm(offset)); mov last_reg (OperReg(reg_RV, None))]*)
-          end
-        | h::r -> begin
-            (*let exp_ty = Semantic.check_exp env h in
-            let size_offset =  size_of_type exp_ty in
-            let save_para_inst = if size_offset = 4 then [str dst (AddrIndirect(reg_SP, -size_offset))] else [strb dst (AddrIndirect(reg_SP, -size_offset))] in
-            translate_exp env h [dst] @
-            save_para_inst @ [sub reg_SP reg_SP (OperImm(size_offset))] @
-            process_function_arguments sym r rest (dst::used_reg) env (offset+size_offset)*)
-            translate_exp env h regs @  process_function_arguments sym r rest (dst::used_reg) env
+      | (dst::rest) -> begin
+          match exp with
+          | A.IdentExp    (name, pos) -> begin
+              let E.VarEntry (t, Some acc) = Symbol.lookup name env in
+	      let is_pair = function
+	        | A.PairTy _ | A.PairTyy -> true
+	        | _ -> false in
+	      if is_pair t then
+	        trans_var acc dst
+	      else
+                trans_var acc dst
             end
+          | A.LiteralExp  (literal, pos) -> begin match literal with
+              (* NOTE for int literal, we use load instead of move
+                 to handle large literals *)
+              | A.LitInt i -> [load dst (Arm.AddrLabel (string_of_int i))]
+              | A.LitString s -> begin
+                  let label = new_label() in
+                  strings := (label, s)::!strings;
+                  [load dst (AddrLabel label)]
+                end
+              | A.LitBool b -> if b then
+                    [mov dst (Arm.OperImm 1)]
+                  else
+                    [mov dst (Arm.OperImm 0)]
+              | A.LitChar c -> [mov dst (Arm.OperChar c)]
+              |  _ -> assert false
+            end
+          | A.BinOpExp    (exp, binop, exp', pos) -> begin
+              let open Arm in
+              let (dst::next::rest) = regs in
+              let lhs = (tr exp  (dst::next::rest)) in
+              let rhs = (tr exp' (next::rest)) in
+              let oper = OperReg (next, None) in
+              lhs @ rhs @
+              (match binop with
+               | A.PlusOp ->  [add dst dst oper;
+                               check_overflow_inst]
+               | A.MinusOp -> [sub dst dst oper;
+                               check_overflow_inst]
+               | A.TimesOp -> [smull dst next dst next;
+                               cmp next (OperReg (dst, Some (ASR 31)));
+                               bl ~cond:NE "wacc_throw_overflow_error";
+                               (* TODO intmultoverflow handle correctly *)
+                               (* https://community.arm.com/processors/b/blog/posts/detecting-overflow-from-mul *)
+                               check_overflow_inst]
+               | A.DivideOp -> trans_call ~result:dst "wacc_div" [dst;next]
+               | A.AndOp -> [annd dst dst oper]
+               | A.OrOp  -> [orr dst dst oper]
+               | A.ModOp -> begin
+                   trans_call "wacc_mod" ~result:dst  [dst;next]
+                 end
+               | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
+                   [cmp dst oper;
+                    mov ~cond:GE dst (OperImm 1);
+                    mov ~cond:LT dst (OperImm 0)]
+                 end
+               | A.GtOp -> begin
+                   [cmp dst oper;
+                    mov ~cond:GT dst (OperImm 1);
+                    mov ~cond:LE dst (OperImm 0)]
+                 end
+               | A.LeOp -> begin
+                   [cmp dst oper;
+                    mov ~cond:LE dst (OperImm 1);
+                    mov ~cond:GT dst (OperImm 0)]
+                 end
+               | A.LtOp -> begin
+                   [cmp dst oper;
+                    mov ~cond:LT dst (OperImm 1);
+                    mov ~cond:GE dst (OperImm 0)]
+                 end
+               | A.EqOp -> begin
+                   [cmp dst oper;
+                    mov ~cond:EQ dst (OperImm 1);
+                    mov ~cond:NE dst (OperImm 0)]
+                 end
+               | A.NeOp -> begin
+                   [cmp dst oper;
+                    mov ~cond:NE dst (OperImm 1);
+                    mov ~cond:EQ dst (OperImm 0)]
+                 end)
+            end
+          | A.UnOpExp     (unop, exp, pos) -> begin
+              let ri = (translate_exp env exp regs) in
+              let (fst_rest::others) = rest in
+              ri @ (match unop with
+                  | A.NotOp -> [eor dst dst (OperImm 1)]
+                  | A.NegOp -> begin
+                      [mov fst_rest (OperImm 0);
+                       sub dst fst_rest (OperReg (dst, None));
+                       check_overflow_inst]
+                    end
+                  | A.LenOp -> trans_call ~result:dst "wacc_len" [dst]
+                  | A.OrdOp -> trans_call "wacc_ord" [dst]
+                  | A.ChrOp -> trans_call "wacc_chr" [dst])
+            end
+          | A.ArrayIndexExp (name, [exp], _) -> begin
+              let open Arm in
+              let E.VarEntry (t, Some acc) = Symbol.lookup name env in
+              let size = 4 in
+              let index::addr::o::rest = rest in
+              tr exp (index::rest)
+              @ trans_var acc addr
+              @ trans_call "wacc_check_array_bounds" [addr; index]
+              @ [mov o (OperImm size);
+                 mul index index o;
+                 add index index (OperImm 4);
+                 add addr addr (OperReg (index, None));
+                 load dst (AddrIndirect (addr, 0)) ]
+            end
+          | A.ArrayIndexExp (_, _, _)
+            -> failwith "Only single dimensional array access is supported"
+          | A.FstExp (exp, _) -> begin
+              let (dst::next::rest) = regs in
+              let insts = tr exp (regs) in
+              insts @ trans_call "wacc_check_pair_null" [dst] @
+              [load next (AddrIndirect(dst, 0));
+               load dst (AddrIndirect(next, 0))]
+            end
+          | A.SndExp (exp, _) -> begin
+              let (dst::next::rest) = regs in
+              let insts = tr exp (regs) in (* dst stores address to pair *)
+              insts @ trans_call "wacc_check_pair_null" [dst] @
+              [load next (AddrIndirect(dst, 4)); (* this get address of the second element *)
+               load dst (AddrIndirect(next, 0))] (* now we load it *)
+            end
+          | A.CallExp (fname, exp_list, _) -> begin
+              let args, _, inst = List.fold_left
+                  (fun (used, r::rs, ins) e -> (used @ [r], rs, ins @ (tr e (r::rs))))
+                  ([], regs, []) exp_list in
+              inst @ trans_call ~result:dst ("f_" ^ fname) args
+            end
+          | A.NullExp _ -> begin
+              [mov dst (OperImm 0)]
+            end
+          | A.NewPairExp _ -> invalid_arg "newpair handled rhs"
+        end
+      | [] -> invalid_arg "Registers have run out"))
+
+and process_function_arguments sym exp_list regs used_reg env =
+  let open Arm in
+  let (dst::rest) = regs in
+  match exp_list with
+  | [] -> begin
+      trans_call ("f_" ^ sym) used_reg
+      (*@ [add reg_SP reg_SP (OperImm(offset)); mov last_reg (OperReg(reg_RV, None))]*)
+    end
+  | h::r -> begin
+      (*let exp_ty = Semantic.check_exp env h in
+        let size_offset =  size_of_type exp_ty in
+        let save_para_inst = if size_offset = 4 then [str dst (AddrIndirect(reg_SP, -size_offset))] else [strb dst (AddrIndirect(reg_SP, -size_offset))] in
+        translate_exp env h [dst] @
+        save_para_inst @ [sub reg_SP reg_SP (OperImm(size_offset))] @
+        process_function_arguments sym r rest (dst::used_reg) env (offset+size_offset)*)
+      translate_exp env h regs @  process_function_arguments sym r rest (dst::used_reg) env
+    end
 
 and translate (env: E.env)
     (frame: frame)
@@ -305,11 +305,11 @@ and translate (env: E.env)
         let size = 4 in
         let index::addr::o::rest = regss in
         let insts = translate_exp env exp (index::rest)
-           @ trans_var acc addr @ trans_call "wacc_check_array_bounds" [addr; index]
-           @ [mov o (OperImm size);
-              mul index index o;
-              add index index (OperImm 4);
-              add addr addr (OperReg (index, None));] in
+                    @ trans_var acc addr @ trans_call "wacc_check_array_bounds" [addr; index]
+                    @ [mov o (OperImm size);
+                       mul index index o;
+                       add index index (OperImm 4);
+                       add addr addr (OperReg (index, None));] in
         AddrIndirect (addr, 0), insts
       end
     | ArrayIndexExp _ -> assert false
@@ -391,10 +391,10 @@ and translate (env: E.env)
       let env' = Symbol.insert name (VarEntry (ArrayTy ty, Some local_var)) env in
       let size_offset = 4 in
       let insts = [MOV (dst, OperImm(element_size * array_length + 4)), None] @
-                   trans_call ~result:dst "malloc" [dst] @
+                  trans_call ~result:dst "malloc" [dst] @
                   (trans_assign local_var dst) (* holds address to the heap allocated array *)
-      @ List.concat (List.mapi (fun i e -> (translate_exp env e rest)
-                                           @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in
+                  @ List.concat (List.mapi (fun i e -> (translate_exp env e rest)
+                                                       @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in
       let insts = insts @ [mov next (OperImm array_length);
                            str next (AddrIndirect (addr_reg, 0))] in
       insts, env'
@@ -471,7 +471,7 @@ and translate (env: E.env)
       let ci = trans_call ~result:dst ("wacc_read_" ^ ty_str) [] in
       let ci = ci @
                (if ty = CharTy then
-                [Arm.STRB (dst, addr), None]
+                  [Arm.STRB (dst, addr), None]
                 else [Arm.STR (dst, addr), None]) in
       insts @ ci, env
     end
@@ -491,7 +491,7 @@ let recompute_allocation frame insts =
   let localsize = frame_size frame in
   List.map (fun i -> match i with
       | (ADD (o1, o2, OperImm (n)), cond) when o1 = reg_SP && o2 = reg_SP ->
-        (ADD (o1, o2, OperImm (localsize)), cond)
+          (ADD (o1, o2, OperImm (localsize)), cond)
       | _ -> i
     ) insts
 
