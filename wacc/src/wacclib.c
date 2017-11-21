@@ -16,7 +16,7 @@ int wacc_ord(char c) {
 
 char wacc_read_char() {
   char c;
-  scanf("%c", &c);
+  scanf(" %c", &c);
   return c;
 }
 
@@ -66,8 +66,17 @@ int wacc_len(void* arr_ptr){
   return ((int*)arr_ptr)[0];
 }
 
-int wacc_print_array(char ptr) {
+int wacc_print_array(void* ptr) {
   printf("0x%x",  ptr);
+  return 0;
+}
+
+int wacc_print_char_array(void* ptr) {
+  int length = wacc_len (ptr);
+  for(int i = 1; i <= length ; i++){
+  char c = ((char*)ptr)[4*i];
+  printf("%c",  c);
+  }
   return 0;
 }
 
@@ -133,5 +142,6 @@ void wacc_free(void* ptr) {
     free(ptr);
   }
 }
+
 
 #endif
