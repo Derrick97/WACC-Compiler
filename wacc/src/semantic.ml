@@ -171,7 +171,12 @@ and check_exp (table: env) (exp: A.exp): ty = begin
       | Not_found -> raise (UnknownIdentifier (fname, pos))
     end
   | ArrayIndexExp (name, exps) -> (match var_type table name with
-      | ArrayTy ty -> ty
+      | ArrayTy ty -> begin
+        let rec check_array_type ty = match ty with
+        | ArrayTy ty -> check_array_type ty
+        | _ -> ty
+        in check_array_type ty
+      end
       | StringTy -> CharTy
       | _ -> raise  (SemanticError ("Only indexing on array is supported", pos)))
   | FstExp (exp) -> begin
