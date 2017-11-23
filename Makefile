@@ -34,7 +34,7 @@ rules:
 	$(RM) rules
 
 clean:
-	$(RM) rules $(OUTPUT_DIR) && cd wacc && make clean && find test/wacc_examples -name "*.s" -delete
+	$(RM) rules $(OUTPUT_DIR) && cd wacc && make clean 
 
 wacclib.s:
 	./tools/arm-gcc -S wacc/src/wacclib.c -o wacclib.s

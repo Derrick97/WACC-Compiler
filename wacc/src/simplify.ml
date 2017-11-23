@@ -13,7 +13,7 @@ let rec simplify (exp: A.exp): A.exp =
         | PlusOp -> LiteralExp (LitInt(a+b))
         | MinusOp -> LiteralExp (LitInt(a-b))
         | TimesOp -> LiteralExp (LitInt(a*b))
-        | DivideOp -> LiteralExp (LitInt(a/b))
+        | DivideOp -> exp'
         | ModOp -> LiteralExp (LitInt(a mod b))
         | GeOp -> LiteralExp (LitBool(a>=b))
         | GtOp -> LiteralExp (LitBool(a>b))
