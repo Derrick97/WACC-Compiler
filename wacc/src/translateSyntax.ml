@@ -63,6 +63,14 @@ let size_of_type = function
   | A.IntTy -> 4
   | A.StringTy | A.PairTy _ | A.NullTy | A.PairTyy | A.ArrayTy _ -> 4 (* addresses *)
 
+let is_string some_ty = match some_ty with
+  | A.StringTy -> true
+  | _ -> false
+
+let is_char_array some_ty = match some_ty with
+  | A.ArrayTy(A.CharTy) -> true
+  | _ -> false
+
 let trans_call
     ?(result: temp option)
     (fname: string)
@@ -246,17 +254,9 @@ let rec translate_exp
        | A.ArrayIndexExp (name, [exp]) -> begin
        let open Arm in
        let E.VarEntry (t, Some acc) = Symbol.lookup name env in
-       let check_if_string some_ty = match some_ty with
-         | Ast_v2.StringTy -> true
-         | _-> false
-       in
-       let check_if_char_array some_ty = match some_ty with
-         | Ast_v2.ArrayTy(CharTy) -> true
-         | _-> false
-       in
-       let size = if check_if_string t then 1 else 4 in
        let index::addr::o::rest = rest in
-       let skip_length_inst = if check_if_string t then [] else [add index index (OperImm 4)] in
+       let size = if is_string t then 1 else 4 in
+       let skip_length_inst = if is_string t then [] else [add index index (OperImm 4)] in
        let insts = translate_exp env exp (index::rest)
           @ trans_var acc addr @ trans_call "wacc_check_array_bounds" [addr; index]
           @ [mov o (OperImm size);
@@ -280,20 +280,27 @@ let rec translate_exp
          end
        | A.ArrayIndexExp (name, explist) -> begin
            let open Arm in
-           match explist with
-           | fst_exp::snd_exp::others -> begin
-             let fst_insts = translate_exp env (A.ArrayIndexExp(name, [fst_exp]),pos) regs in
-             let index::addr::o::rests = rest in
-             let inst = [mov addr dst] @ translate_exp env snd_exp (index::rests) @ trans_call "wacc_check_array_bounds" [addr; index]
-             @ [mov o (OperImm 4);
-                mul index index o]
-             @ [add addr addr (OperReg (index, None));
-                load dst (AddrIndirect (addr, 0)) ]
-             in fst_insts @ inst
-           end
-           | [] -> []
+           let E.VarEntry (t, Some acc) = Symbol.lookup name env in
+           let size = if is_string t then 1 else 4 in
+           let buffer = ref [] in
+           let (index::addr::o::rest) = rest in
+           let skip_length_inst = if is_string t then [] else [add index index (OperImm 4)] in
+           buffer := !buffer @ trans_var acc addr;
+           let rec emit_addressing = (function
+             | exp::other -> begin
+                 buffer := !buffer @ translate_exp env exp (index::rest);
+                 buffer := !buffer @ [mov o (OperImm size);
+                                      mul index index o]
+                                   @ skip_length_inst
+                                   @ [add addr addr (OperReg (index, None));
+                                      load addr (AddrIndirect (addr, 0))
+                                     ];
+                             emit_addressing other
+               end
+             | [] -> ()) in
+           emit_addressing explist;
+           !buffer @ [mov dst (OperReg (addr, None))]
          end
-      (* failwith "Only single dimensional array access is supported"*)
        | A.FstExp (exp) -> begin
            let (dst::next::rest) = regs in
            let insts = tr exp (regs) in
