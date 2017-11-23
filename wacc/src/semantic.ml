@@ -332,7 +332,8 @@ and add_function_declarations env ff =
   | [] -> env
   | (f::fs) -> begin match f with
       | A.FuncDec (ty, ident, fields, stmt), pos ->
-        let env'' = List.fold_left (fun env (ty, ident) -> Symbol.insert ident (VarEntry (ty, None)) env) !env' fields in
+        let env'' = List.fold_left (fun env (ty, ident) ->
+            Symbol.insert ident (VarEntry (ty, None)) env) !env' fields in
         let env''' = check_stmt env'' stmt in
         let rt = var_type env''' "$result" in
         if (not (eq_type rt ty)) then raise (SemanticError ("Result type mismatch", pos))

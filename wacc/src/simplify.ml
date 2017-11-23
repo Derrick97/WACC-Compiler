@@ -33,6 +33,3 @@ let rec simplify (exp: A.exp): A.exp =
       in (simple_exp', pos)
     end
   | _ -> exp
-
-
-(*let simplify (ast: A.stmt): A.stmt = ast*)
