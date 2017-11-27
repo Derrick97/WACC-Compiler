@@ -34,7 +34,11 @@ let () =
       let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
       let out = open_out out_filename in
       let wacclib = "wacclib.s" in
-      TranslateSyntax.translate_prog (decs, stmt) table' out;
+      let simple_stmt = Simplify.simplify_stmt stmt in
+      let (stmt' ,pos) = simple_stmt in
+    (*  let printer = Prettyprint.prettyprint_stmt stmt' in
+      print_string printer;*)
+      TranslateSyntax.translate_prog (decs, simple_stmt) table' out;
       (* Translate.print_insts out frame stmts; *)
       close_out out;
       ignore(Sys.command (Printf.sprintf "cat %s >> %s " wacclib out_filename));

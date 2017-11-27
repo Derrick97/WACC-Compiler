@@ -26,7 +26,9 @@ and binop =
   | AndOp
   | OrOp
   | ModOp
-and unop = NotOp | NegOp | LenOp | OrdOp | ChrOp
+and unop = NotOp | NegOp | LenOp | OrdOp | ChrOp | IncOp
+and side_effect_op = | IncOp | DecOp
+and side_effect_two_args_op = | PlusEqOp | MinusEqOp | TimesEqOp
 and ident = symbol
 and exp' =
   | IdentExp      of ident
@@ -42,6 +44,8 @@ and exp' =
 and exp = exp' identified
 and stmt' =
   | SkipStmt
+  | SideEffectStmt of exp * side_effect_op
+  | TwoArgsSideEffectStmt of exp * side_effect_two_args_op * exp
   | VarDeclStmt of ty * ident * exp
   | AssignStmt of exp * exp
   | ReadStmt of exp

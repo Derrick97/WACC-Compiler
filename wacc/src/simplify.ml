@@ -26,7 +26,7 @@ let rec simplify (exp: A.exp): A.exp =
       | (LiteralExp (LitBool(a)), LiteralExp (LitBool(b))) -> begin
         match op with
         | AndOp -> LiteralExp (LitBool(a&&b))
-        | OrOp -> LiteralExp (LitBool(a||b))
+        | OrOp  -> LiteralExp (LitBool(a||b))
         | _ -> assert false
         end
       | _ -> exp'
@@ -35,4 +35,20 @@ let rec simplify (exp: A.exp): A.exp =
   | _ -> exp
 
 
-(*let simplify (ast: A.stmt): A.stmt = ast*)
+let rec simplify_stmt (ast: A.stmt): A.stmt =
+  let open Ast_v2 in
+  let (stmt', pos) = ast in
+  match stmt' with
+  | A. IfStmt (cond, then_stmt, else_stmt) -> begin
+    let (cond', pos) = cond in
+    match cond' with
+    | LiteralExp(LitBool(b)) -> if b then simplify_stmt then_stmt else simplify_stmt else_stmt
+    | _ -> ast
+    end
+  | A. WhileStmt (cond, body_stmt) -> begin
+    let (cond', pos) = cond in
+    match cond' with
+    | LiteralExp(LitBool(b)) -> if b then ast else (SkipStmt, pos)
+    | _ -> ast
+    end
+  | _ -> ast

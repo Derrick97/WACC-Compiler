@@ -284,7 +284,7 @@ let rec translate_exp
            | fst_exp::snd_exp::others -> begin
              let fst_insts = translate_exp env (A.ArrayIndexExp(name, [fst_exp]),pos) regs in
              let index::addr::o::rests = rest in
-             let inst = [mov addr dst] @ translate_exp env snd_exp (index::rests) @ trans_call "wacc_check_array_bounds" [addr; index]
+             let inst = [mov addr (OperReg(dst,None))] @ translate_exp env snd_exp (index::rests) @ trans_call "wacc_check_array_bounds" [addr; index]
              @ [mov o (OperImm 4);
                 mul index index o]
              @ [add addr addr (OperReg (index, None));
@@ -398,6 +398,22 @@ and translate (env: E.env)
       let exp', env'' = (translate env' frame regs stmtlist) in
       (exp @ exp', env'')
     end
+  | SideEffectStmt(exp, op) -> begin
+      match op with
+      | IncOp ->
+        translate env frame regs (AssignStmt(exp, (BinOpExp(exp, PlusOp, (LiteralExp(LitInt(1)), pos)), pos)), pos)
+      | DecOp ->
+        translate env frame regs (AssignStmt(exp, (BinOpExp(exp, MinusOp, (LiteralExp(LitInt(1)), pos)), pos)), pos)
+      end
+  | TwoArgsSideEffectStmt(lhs, op, rhs) -> begin
+      match op with
+      | PlusEqOp ->
+        translate env frame regs (AssignStmt(lhs, (BinOpExp(lhs, PlusOp, rhs), pos)), pos)
+      | MinusEqOp ->
+        translate env frame regs (AssignStmt(lhs, (BinOpExp(lhs, MinusOp, rhs), pos)), pos)
+      | TimesEqOp ->
+        translate env frame regs (AssignStmt(lhs, (BinOpExp(lhs, TimesOp, rhs), pos)), pos)
+      end
   | AssignStmt   ((IdentExp (name), _), rhs) -> begin
       let VarEntry (ty, Some acc) = Symbol.lookup name env in
       let rhs = tr rhs in
