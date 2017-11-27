@@ -1,2 +1,5 @@
 S src
 B _build/src
+PKG ocamlgraph
+PKG ppx_deriving.std
+PKG oUnit

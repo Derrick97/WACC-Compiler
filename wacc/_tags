@@ -1,3 +1,4 @@
 true : bin_annot,debug
-# true : package(llvm), package(llvm.analysis)
 <lib>: -traverse
+<src/*>: package(ocamlgraph), package(ppx_deriving.std), package(unix)
+<test/*>: package(ounit), package(ocamlgraph), package(ppx_deriving.std), package(unix)
