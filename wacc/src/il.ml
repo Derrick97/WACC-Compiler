@@ -25,22 +25,19 @@ and addr =
   | ADDR_LABEL of label
   | ADDR_INDIRECT of temp * int
   | ADDR_IMM of int
-and opcode =
-  | Op_add
 and il =
-  | ADD   of temp * temp * temp
-  | SUB   of operand * operand * operand
-  | DIV   of operand * operand * operand
-  | MUL   of operand * operand * operand
-  | AND   of operand * operand * operand
-  | ORR   of operand * operand * operand
-  | MOV   of operand * operand
-  | CMP   of operand * operand
-  | LOAD  of operand * addr
-  | STORE of operand * addr
-  | POP   of operand
-  | PUSH  of operand
-  | BL    of label
-  | B     of label
-  | RET   of operand
+  | NOOP
+  | ADD   of temp * operand * operand
+  | SUB   of temp * operand * operand
+  | DIV   of temp * operand * operand
+  | MUL   of temp * operand * operand
+  | AND   of temp * operand * operand
+  | ORR   of temp * operand * operand
+  | CMP   of cond * temp * operand * operand
+  | LOAD  of size * temp * addr
+  | STORE of size * temp * addr
+  | JUMP  of label
+  | COMP  of temp * temp
+  | CBR   of temp * label * label
+  | RET   of temp
   | LABEL of label  [@@deriving show]
