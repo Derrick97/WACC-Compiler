@@ -30,6 +30,7 @@ and il =
   | POP   of temp list
   | MOV   of temp * operand
   | ADD   of temp * operand * operand
+  | EOR   of temp * operand * operand
   | SUB   of temp * operand * operand
   | DIV   of temp * operand * operand
   | MUL   of temp * operand * operand
