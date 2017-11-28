@@ -384,13 +384,30 @@ and translate (env: E.env)
         AddrIndirect (next, 0), insts @ [load next (AddrIndirect (dst, 4))]
       end
     | _ -> invalid_arg "Not an lvalue" in
-  let (stmt', pos) = stmt in
+  let simple_stmt = Simplify.simplify_stmt stmt in
+  let (stmt', pos) = simple_stmt in
   match stmt' with
   | SeqStmt (stmt, stmtlist) -> begin
       let exp,  env' = translate env frame regs stmt in
       let exp', env'' = (translate env' frame regs stmtlist) in
       (exp @ exp', env'')
     end
+  | SideEffectStmt(exp, op) -> begin
+      match op with
+      | IncOp ->
+        translate env frame regs (AssignStmt(exp, (BinOpExp(exp, PlusOp, (LiteralExp(LitInt(1)), pos)), pos)), pos)
+      | DecOp ->
+        translate env frame regs (AssignStmt(exp, (BinOpExp(exp, MinusOp, (LiteralExp(LitInt(1)), pos)), pos)), pos)
+      end
+  | TwoArgsSideEffectStmt(lhs, op, rhs) -> begin
+      match op with
+      | PlusEqOp ->
+        translate env frame regs (AssignStmt(lhs, (BinOpExp(lhs, PlusOp, rhs), pos)), pos)
+      | MinusEqOp ->
+        translate env frame regs (AssignStmt(lhs, (BinOpExp(lhs, MinusOp, rhs), pos)), pos)
+      | TimesEqOp ->
+        translate env frame regs (AssignStmt(lhs, (BinOpExp(lhs, TimesOp, rhs), pos)), pos)
+      end
   | AssignStmt   ((IdentExp (name), _), rhs) -> begin
       let (ty, acc) = get_access name in
       let rhs = tr rhs in
@@ -431,11 +448,12 @@ and translate (env: E.env)
       [Arm.B(while_cond_l), None;
        Arm.LABEL(while_end_l), None], env
     end
-  | ExitStmt     (exp) -> begin
+  | ExitStmt     (exp) -> failwith "Exit has been deprecated, using CallStmt"
+   (*begin
       let expi = tr exp in
       let ci = trans_call "wacc_exit" [dst] in
       expi @ ci , env
-    end
+    end*)
   | VarDeclStmt  (ArrayTy ty, name, (LiteralExp(LitArray elements),_)) -> begin
       let open Arm in
       let array_length = List.length elements in
@@ -489,7 +507,8 @@ and translate (env: E.env)
       let assigni = trans_assign (local_var) dst in
       expi @ assigni, env'
     end
-  | SkipStmt -> trans_noop, env
+  | SkipStmt      _ -> trans_noop, env
+  | CallStmt (exp) -> translate_exp env exp regs, env
   | PrintStmt    (newline, exp) -> begin
       let expi = tr exp in
       let ty = S.check_exp env exp in

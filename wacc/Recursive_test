@@ -1,0 +1,106 @@
+#!/bin/bash
+ 
+dirs=$1
+output_suffix="_actual_output.txt"
+output_prefix="Test_output/"
+output=$output_prefix$dirs$output_suffix 
+assemble_suffix=".s"
+
+touch "$output"
+mkdir -p "Test_output"
+declare -a all_input
+
+contain=false
+
+if [ -s $output ] 
+then 
+   rm $output
+fi 
+
+extract_input () {
+test_dir="/homes/jr2216/wacc_41/testsuite/valid/$1"
+  allfiles=$(ls $test_dir)
+  count=0
+  for x in $allfiles
+  do
+  if [ $x != "read" ] 
+  then
+    if ! [ -f "$test_dir/$x" ]
+    then 
+      extract_input $1/$x
+    else
+      suffix="${x##*.}"
+      if [ $suffix == "in" ] 
+      then
+        file_length=${#x}-3
+        file_name="${x[@]:0:$file_length}"
+        all_input[count]=$file_name
+        ((count++))
+      fi
+    fi
+  fi
+  done
+}
+
+has_input () {
+for elem in ${all_input[@]} 
+do
+  if [ $elem == $1 ] 
+  then 
+    contain=true
+  fi
+done
+}
+
+
+recursive_testing () {
+  test_dir="/homes/jr2216/wacc_41/testsuite/valid/$1"
+  allfiles=$(ls $test_dir)
+  for x in $allfiles
+  do
+  if [ $x != "read" ] 
+  then
+    if ! [ -f "$test_dir/$x" ]
+    then 
+      recursive_testing $1/$x
+    else
+      suffix="${x##*.}"
+      if [ $suffix == "wacc" ] 
+      then
+        file_length=${#x}-5
+        file_name="${x[@]:0:$file_length}"
+        has_input $file_name
+        echo $x &>> "$output"
+        if $contain 
+        then
+          input_suffix=".in"
+          out=$(./driver.byte $test_dir/$x &>> "$output" ) 
+          ./arm-gcc $file_name$assemble_suffix &>> "$output"
+          ./arm-run a.out < $test_dir/$file_name$input_suffix &>> "$output"
+          rm $file_name$assemble_suffix
+          echo "-----------------------------" &>> "$output" 
+          contain=false
+        else 
+          out=$(./driver.byte $test_dir/$x &>> "$output" ) 
+          ./arm-gcc $file_name$assemble_suffix &>> "$output"
+          ./arm-run a.out &>> "$output"
+          rm $file_name$assemble_suffix
+          echo "-----------------------------" &>> "$output" 
+        fi
+      fi
+    fi
+  fi
+  done
+}
+
+extract_input $dirs
+recursive_testing $dirs
+echo "Test output has been saved at the Test_output folder, named as $dirs$output_suffix"
+
+
+
+
+
+
+
+

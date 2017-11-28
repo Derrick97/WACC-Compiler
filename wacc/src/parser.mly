@@ -44,6 +44,7 @@ let check_int_overflow num =
 %token CHR
 
 %token PLUS MINUS TIMES DIV MOD
+%token INC DEC PLUS_EQ MINUS_EQ TIMES_EQ
 %token EQ GT LT GE LE EEQ NE
 %token AND OR                   (* && || *)
 
@@ -67,6 +68,7 @@ let check_int_overflow num =
 %token <int> INT
 %token <char> CHAR
 %token <string> STRING
+%token <int> HEX
 
 %token INTT                     (* int *)
 %token BOOLT                    (* bool *)
@@ -117,10 +119,25 @@ param_list:
 | p = param; { [p] }
 | p = param; COMMA; pl = param_list { if (pl == []) then raise (SyntaxError "Bad args") else p::pl }
 
+%inline side_effect_op:
+| INC  { IncOp }
+| DEC  { DecOp }
+
+%inline side_effect_two_args_op:
+| PLUS_EQ { PlusEqOp }
+| MINUS_EQ { MinusEqOp }
+| TIMES_EQ { TimesEqOp }
+
+
+%inline ident:
+| ID { $1 }
+
 stat:
 | typ ID EQ rhs=assign_rhs                  { VarDeclStmt($1, $2, rhs), $startpos          }
 | SKIP;                                     { SkipStmt, $startpos                          }
 | READ; assign_lhs;                         { ReadStmt($2), $startpos                      }
+| assign_lhs; side_effect_op;               { SideEffectStmt($1,$2), $startpos             }
+| assign_lhs; side_effect_two_args_op; expr { TwoArgsSideEffectStmt($1,$2,$3), $startpos   }
 | FREE; expr;                               { FreeStmt($2), $startpos                      }
 | PRINT expr                                { PrintStmt(false, $2), $startpos              }
 | PRINTLN expr                              { PrintStmt (true, $2), $startpos              }
@@ -134,9 +151,6 @@ stat:
 
  sequential_stmt:
 | SEMICOLON; rest=stat; { rest }
-
-%inline ident:
-| ID { $1 }
 
 (* Assignment *)
 assign_lhs:
@@ -226,12 +240,16 @@ int_liter:
                   | _   -> assert false }
 | i=INT         { i }
 
+hex_literal:
+| h=HEX { h }
+
 %inline unary_op:
 | BANG  { NotOp }
 | MINUS { NegOp }
 | LEN   { LenOp }
 | ORD   { OrdOp }
 | CHR   { ChrOp }
+
 
 %inline binary_op:
 | PLUS              { PlusOp         }
@@ -254,6 +272,8 @@ expr:
 | i=int_liter                 { check_int_overflow i;
                                 LiteralExp (LitInt i), $startpos       }
 | bool_liter                  { LiteralExp (LitBool $1), $startpos     }
+| hex_literal                 { check_int_overflow $1;
+                                LiteralExp (LitInt $1), $startpos       }
 | pair_liter                  { NullExp, ($startpos)                   }
 | CHAR;                       { LiteralExp (LitChar $1), $startpos     }
 | STRING;                     { LiteralExp (LitString $1), $startpos   }
@@ -266,4 +286,3 @@ expr:
 (* eval: (merlin-mode -1) *)
 (* eval: (electric-indent-mode -1)*)
 (* End: *)
-

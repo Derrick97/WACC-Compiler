@@ -207,6 +207,15 @@ and check_stmt env stmt =
   | SeqStmt (stmt, stmtlist) ->
     (let env' = check_stmt env stmt in
      (check_stmt env' stmtlist))
+  | SideEffectStmt (exp, op) ->
+    let ty = check_exp env exp in
+    if eq_type ty IntTy then env else raise (TypeMismatch (IntTy, ty, pos))
+  | TwoArgsSideEffectStmt (lhs, op, rhs) ->
+    let ty1 = check_exp env lhs in
+    let ty2 = check_exp env rhs in
+    if eq_type ty1 IntTy then
+       if eq_type ty2 IntTy then env else raise (TypeMismatch (IntTy, ty2, pos))
+    else raise (TypeMismatch (IntTy, ty1, pos))
   | AssignStmt ((IdentExp (name), _), exp) -> begin
       try
         if not (is_var env name) then raise (SemanticError ("Not a variable", pos))

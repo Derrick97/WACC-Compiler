@@ -1,0 +1,123 @@
+#!/bin/bash
+ 
+dirs=$1
+output_suffix="_expect_output.txt"
+output_prefix="Test_output/"
+output=$output_prefix$dirs$output_suffix 
+assemble_suffix=".s"
+
+mkdir -p "Test_output"
+touch "$output"
+declare -a all_output
+
+contain=false
+
+if [ -s $output ] 
+then 
+   rm $output
+fi 
+
+extract_output () {
+test_dir="/homes/jr2216/wacc_41/testsuite/valid/$1"
+  allfiles=$(ls $test_dir)
+  count=0
+  for x in $allfiles
+  do
+  if [ $x != "read" ] 
+  then
+    if ! [ -f "$test_dir/$x" ]
+    then 
+      extract_output $1/$x
+    else
+      suffix="${x##*.}"
+      if [ $suffix == "output" ] 
+      then
+        file_length=${#x}-7
+        file_name="${x[@]:0:$file_length}"
+        all_output[count]=$file_name
+        ((count++))
+      fi
+    fi
+  fi
+  done
+}
+
+has_output () {
+for elem in ${all_output[@]} 
+do
+  if [ $elem == $1 ] 
+  then 
+    contain=true
+  fi
+done
+}
+
+parser () {
+cat "$1" | while read line 
+do
+  if [ "$line" == "# Output:" ] 
+  then 
+    read line
+    while [ "$line" != "" ]
+    do
+      line_length=${#line}
+      line_content="${line[@]:2:$line_length}"
+      if [ "$line_content" == "#empty#" ]
+      then
+        printf "%s" "" >> "$output"
+      else
+        echo -e "$line_content" >> "$output"
+      fi
+      read line
+    done
+  fi
+done
+}
+
+
+recursive_parsing () {
+  test_dir="/homes/jr2216/wacc_41/testsuite/valid/$1"
+  allfiles=$(ls $test_dir)
+  for x in $allfiles
+  do
+  if [ $x != "read" ] 
+  then
+    if ! [ -f "$test_dir/$x" ]
+    then 
+      recursive_parsing $1/$x
+    else
+      suffix="${x##*.}"
+      if [ $suffix == "wacc" ] 
+      then
+        echo $x >> "$output"
+        file_length=${#x}-5
+        file_name="${x[@]:0:$file_length}"
+        has_output $file_name
+        if $contain 
+        then
+          out_suffix=".output"
+          parser $test_dir/$file_name$out_suffix
+        else 
+          wacc_suffix=".wacc"
+          parser $test_dir/$file_name$wacc_suffix
+        fi
+        echo "-----------------------------" >> "$output" 
+      fi
+    fi
+    contain=false
+  fi
+  done
+  
+}
+
+extract_output $dirs
+recursive_parsing $dirs
+echo "Expected output has been saved at the Test_output folder, named as $dirs$output_suffix"
+
+
+
+
+
+
+
+
