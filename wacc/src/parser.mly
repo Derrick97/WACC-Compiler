@@ -68,6 +68,7 @@ let check_int_overflow num =
 %token <int> INT
 %token <char> CHAR
 %token <string> STRING
+%token <int> HEX
 
 %token INTT                     (* int *)
 %token BOOLT                    (* bool *)
@@ -239,6 +240,9 @@ int_liter:
                   | _   -> assert false }
 | i=INT         { i }
 
+hex_literal:
+| h=HEX { h }
+
 %inline unary_op:
 | BANG  { NotOp }
 | MINUS { NegOp }
@@ -268,6 +272,8 @@ expr:
 | i=int_liter                 { check_int_overflow i;
                                 LiteralExp (LitInt i), $startpos       }
 | bool_liter                  { LiteralExp (LitBool $1), $startpos     }
+| hex_literal                 { check_int_overflow $1;
+                                LiteralExp (LitInt $1), $startpos       }
 | pair_liter                  { NullExp, ($startpos)                   }
 | CHAR;                       { LiteralExp (LitChar $1), $startpos     }
 | STRING;                     { LiteralExp (LitString $1), $startpos   }

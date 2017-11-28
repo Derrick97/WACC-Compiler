@@ -23,6 +23,7 @@ let alpha = ['a'-'z' 'A'-'Z']
 let newline = '\r' | '\n' | "\r\n"
 let ident = ('_'|alpha)('_'| alpha | digit )*
 let int_literal = digit+
+let hex_literal = '0' ('x'|'X')(['0'-'9' 'A'-'F' ]+)
 let escaped_chars = ['0' 'b' 't' 'n' 'f' 'r' '\"' '\'' '\\' ]
 
 
@@ -122,6 +123,8 @@ rule main = parse
   | "print"       { PRINT }
   | int_literal   { let num = int_of_string (Lexing.lexeme lexbuf) in
                     INT(num) }
+  | hex_literal   { let num = int_of_string (Lexing.lexeme lexbuf) in
+                    HEX(num) }
   | ident         { ID(Lexing.lexeme lexbuf) }
   | eof           { EOF }
   | _             { raise Parser.Error }
