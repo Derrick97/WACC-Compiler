@@ -36,10 +36,19 @@ let () =
       (* let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
        * let out = open_out out_filename in *)
       let wacclib = "wacclib.s" in
+<<<<<<< variant A
       TranslateIl.trans_prog table' (decs, stmt);
+>>>>>>> variant B
+      TranslateSyntax.translate_prog (decs, stmt) table' out;
+======= end
       (* Translate.print_insts out frame stmts; *)
+<<<<<<< variant A
       (* close_out out; *)
       (* ignore(Sys.command (Printf.sprintf "cat %s >> %s " wacclib out_filename)); *)
+>>>>>>> variant B
+      close_out out;
+      ignore(Sys.command (Printf.sprintf "cat %s >> %s " wacclib out_filename));
+======= end
       ()
     with
     | A.SyntaxError _ | Parser.Error -> handle_syntax_error lexbuf

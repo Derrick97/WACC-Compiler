@@ -103,6 +103,7 @@ and string_of_opcode = function
   | LABEL _ -> ""               (* Not used *)
   | B _ -> "\tb"
   | SMULL _ -> "\tsmull"
+  | LTORG -> "\t.ltorg"
 
 let string_of_inst (inst: inst) =
   let opcode_str = string_of_opcode inst in
@@ -128,7 +129,8 @@ let string_of_inst (inst: inst) =
   | CMP  (reg, op) -> "\tcmp " ^ (reg) ^ " " ^ (string_of_operand op)
   | LABEL label -> label ^ ":"
   | B label -> "\tb " ^ label
-  | SMULL (r0, r1, r2, r3) -> "\tsmull " ^ (String.concat ", " (List.map (string_of_reg) [r0;r1;r2;r3]))
+  | SMULL (r0, r1, r2, r3) -> "\tsmull " ^ (String.concat ", " (List.map string_of_reg [r0;r1;r2;r3]))
+  | LTORG -> "\t.ltorg"
 
 let string_of_cond = function
   | GT -> "gt"
@@ -169,6 +171,7 @@ let string_of_inst' (inst: inst') =
   | LABEL label -> label ^ ":"
   | B label -> opcode_str ^ " " ^ label
   | SMULL (r0, r1, r2, r3) -> opcode_str ^ " " ^ (String.concat ", " (List.map string_of_reg [r0;r1;r2;r3]))
+  | LTORG -> "\t.ltorg"
 
 let add ?cond dst reg op = (ADD (dst,reg,op), cond)
 let push ?cond ops = (PUSH (ops), cond)
@@ -188,3 +191,4 @@ let cmp ?cond reg op = (CMP (reg, op), cond)
 let labels label = (LABEL (label), None)
 let mul ?cond reg1 reg2 reg3 = (MUL (reg1, reg2, reg3), cond)
 let smull ?cond rdlo rdhi rn rm = (SMULL (rdlo, rdhi, rn, rm), cond)
+let ltorg ?cond = (LTORG, cond)

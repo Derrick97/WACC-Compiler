@@ -170,7 +170,12 @@ and check_exp (table: env) (exp: A.exp): ty = begin
       | Not_found -> raise (UnknownIdentifier (fname, pos))
     end
   | ArrayIndexExp (name, exps) -> (match var_type table name with
-      | ArrayTy ty -> ty
+      | ArrayTy ty -> begin
+        let rec check_array_type ty = match ty with
+        | ArrayTy ty -> check_array_type ty
+        | _ -> ty
+        in check_array_type ty
+      end
       | StringTy -> CharTy
       | _ -> raise  (SemanticError ("Only indexing on array is supported", pos)))
   | FstExp (exp) -> begin
@@ -326,7 +331,8 @@ and add_function_declarations env ff =
   | [] -> env
   | (f::fs) -> begin match f with
       | A.FuncDec (ty, ident, fields, stmt), pos ->
-        let env'' = List.fold_left (fun env (ty, ident) -> Symbol.insert ident (VarEntry (ty, None)) env) !env' fields in
+        let env'' = List.fold_left (fun env (ty, ident) ->
+            Symbol.insert ident (VarEntry (ty, None)) env) !env' fields in
         let env''' = check_stmt env'' stmt in
         let rt = var_type env''' "$result" in
         if (not (eq_type rt ty)) then raise (SemanticError ("Result type mismatch", pos))
