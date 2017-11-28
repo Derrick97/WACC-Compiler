@@ -3,6 +3,7 @@
 # build a local version of menhir since it is NA on HXLY machines
 OCB_FLAGS = -use-ocamlfind -I src -use-menhir -yaccflags --dump,--graph,--explain
 PATH := $(PWD)/../menhir-20170712/build/bin:$(PATH)
+WACCLIB := $(PWD)/../wacclib.s
 
 OBJDIR := _build
 VPATH = src
@@ -13,16 +14,16 @@ endif
 
 OCB = ocamlbuild $(OCB_FLAGS)
 
-%.byte: wacclib.o
+%.byte: %.ml
 	$(OCB) $@
 
-%.native: wacclib.o
+%.native: %.ml
 	$(OCB) $@
-
-wacclib.o: wacclib.c
-	$(OCB) wacclib.o
 
 clean:
-	$(OCB) -clean;
+	$(OCB) -clean
 
-.PHONY: clean test
+wacclib.s:
+	$(PWD)/../tools/arm-gcc -S src/wacclib.c -o wacclib.s
+
+.PHONY: clean wacclib

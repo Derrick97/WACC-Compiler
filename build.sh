@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
-if [ -e "menhir-20170712/build/bin/menhir" ];
-then
-    echo "Menhir exists"
+
+if ! [ -x "$(command -v opam)" ]; then
+  echo 'Install OPAM now ' >&2
+  # Download OPAM, install with system compiler
+  wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s ./ system
+  export OPAMROOT=`pwd`/opamroot
+  eval `./opam config env`
+  export PATH=`pwd`:$PATH
 else
-wget http://gallium.inria.fr/~fpottier/menhir/menhir-20170712.tar.gz
-tar -xzf menhir-20170712.tar.gz
-cd menhir-20170712/
-mkdir -p `pwd`/build
-make PREFIX=`pwd`/build USE_OCAMLFIND=false all > menhir_build.out
-make PREFIX=`pwd`/build USE_OCAMLFIND=false install >> menhir_build.out
+  echo "OPAM exists locally"
 fi

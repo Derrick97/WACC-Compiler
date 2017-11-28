@@ -1,2 +1,2 @@
 type label = string
-type temp = int
+type temp = string

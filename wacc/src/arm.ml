@@ -27,7 +27,7 @@ and inst =
           (*http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0041c/Babbfdih.html*)
 and inst' = inst * cond option
 and cond = GT | GE | LT | LE | EQ | NE | VS
-and reg  = Temp.temp
+and reg  = string
 and addr =
   | AddrLabel of string
   | AddrIndirect of reg * int
@@ -38,15 +38,13 @@ and shift =
   | ROR of int
   (* TODO support other shifts *)
 
-let caller_saved_regs = [0;1;2;3]
-let callee_saved_regs = [
-  4;5;6;7;8;9;10;11;12
-]
+let reg_SP = "sp"
+let reg_LR = "lr"
+let reg_PC = "pc"
+let reg_RV = "r0"                  (* R0 *)
 
-let reg_SP = 13
-let reg_LR = 14
-let reg_PC = 15
-let reg_RV = 0                  (* R0 *)
+let caller_saved_regs = [reg_RV;"r1";"r2";"r3"]
+let callee_saved_regs = ["r4";"r5";"r6";"r7";"r8";"r9";"r10";"r11"]
 
 let counter = ref 4
 
@@ -54,20 +52,15 @@ let new_temp () =
   let i = !counter in
   counter := i + 1; i
 
-let rec string_of_reg = function
-  | 13 -> "sp"
-  | 14 -> "lr"
-  | 15 -> "pc"
-  | i when (i >= 0 && i < 13) -> "r" ^ (string_of_int i)
-  | i -> "$r" ^ (string_of_int i)
+let rec string_of_reg r = r
 
 and string_of_addr = function
   | AddrLabel label -> "=" ^ label
   | AddrIndirect (base, offset) -> begin
       if offset = 0 then
-        "[" ^ (string_of_reg base) ^ "]"
+        "[" ^ base ^ "]"
       else
-        "[" ^ (string_of_reg base) ^ ", #" ^ (string_of_int offset) ^ "]"
+        "[" ^ base ^ ", #" ^ (string_of_int offset) ^ "]"
     end
 
 and string_of_shift sh = match sh with
@@ -79,7 +72,7 @@ and string_of_shift sh = match sh with
 and string_of_operand (op:operand) = match op with
   | OperImm i -> "#" ^ (string_of_int i)
   | OperReg (r, shift) -> begin
-      string_of_reg r ^ (
+      r ^ (
       match shift with
       | None -> ""
       | Some sh -> ", " ^ (string_of_shift sh))
@@ -118,24 +111,24 @@ let string_of_inst (inst: inst) =
   | EOR (dst, op1, op2)
     | SUB (dst, op1, op2)
     | AND (dst, op1, op2)
-    | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_reg dst) ^ ", " ^
-                            (string_of_reg op1) ^ ", " ^
+    | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ dst ^ ", " ^
+                            op1 ^ ", " ^
                             (string_of_operand op2))
   | POP ops | PUSH ops -> (opcode_str) ^
                               " {" ^
                               (String.concat ", " (List.map (string_of_reg) ops)) ^
                               "}"
-  | MOV (op1, op2) -> "\tmov " ^ (string_of_reg op1) ^ " " ^ (string_of_operand op2)
+  | MOV (op1, op2) -> "\tmov " ^ op1 ^ " " ^ (string_of_operand op2)
   | LDR (op1, op2) | STR (op1, op2) | STRB (op1, op2) | LDRB (op1, op2) -> opcode_str ^ " "
-                                                        ^ (string_of_reg op1) ^
+                                                        ^ op1 ^
                                                         ", " ^
                                                         (string_of_addr op2)
   | BL s -> opcode_str ^ " " ^ s
   | MUL  (r0,r1,r2) -> "\tmul " ^ (String.concat ", " (List.map (string_of_reg) [r0;r1;r2]))
-  | CMP  (reg, op) -> "\tcmp " ^ (string_of_reg reg) ^ " " ^ (string_of_operand op)
+  | CMP  (reg, op) -> "\tcmp " ^ (reg) ^ " " ^ (string_of_operand op)
   | LABEL label -> label ^ ":"
   | B label -> "\tb " ^ label
-  | SMULL (r0, r1, r2, r3) -> "\tsmull " ^ (String.concat ", " (List.map string_of_reg [r0;r1;r2;r3]))
+  | SMULL (r0, r1, r2, r3) -> "\tsmull " ^ (String.concat ", " (List.map (string_of_reg) [r0;r1;r2;r3]))
 
 let string_of_cond = function
   | GT -> "gt"
@@ -158,8 +151,8 @@ let string_of_inst' (inst: inst') =
   | EOR (dst, op1, op2)
   | SUB (dst, op1, op2)
   | AND (dst, op1, op2)
-  | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (string_of_reg dst) ^ ", " ^
-                           (string_of_reg op1) ^ ", " ^
+  | ORR (dst, op1, op2) -> (opcode_str ^ " " ^ (dst) ^ ", " ^
+                           (op1) ^ ", " ^
                            (string_of_operand op2))
   | PUSH ops | POP ops -> opcode_str ^
                               " {" ^

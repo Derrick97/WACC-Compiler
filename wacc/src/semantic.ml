@@ -1,6 +1,5 @@
 module A = Ast_v2;;
 module S = Symbol;;
-module T = Translate;;
 open Ast_v2;;
 open Env;;
 open Printf;;
@@ -296,9 +295,9 @@ let rec check_prog (decs, stmt) =
       let (lnum, cnum) = pos_lnum_cnum pos in
       let open Prettyprint in
       fprintf stderr "Near %d:%d\n" lnum cnum;
-      fprintf stderr "TypeMismatch; expected %s, but got %s\n"
-        (prettyprint_type expected)
-        (prettyprint_type actual);
+      fprintf stderr "TypeMismatch; expected %s, but got %s\n";
+        (* (prettyprint_type expected)
+         * (prettyprint_type actual); *)
       exit(semantic_error_code);
     end
   | UnknownIdentifier (ident, pos) -> begin
@@ -335,8 +334,8 @@ and add_function_declarations env ff =
     end
 
 let translate_prog (decs, stmt) =
-  let frame = Translate.new_frame "main" in
-  let table = baseenv in
-  let table' = Symbol.new_scope (add_function_declarations table decs) in
+  (* let frame = Translate.new_frame "main" in
+   * let table = baseenv in
+   * let table' = Symbol.new_scope (add_function_declarations table decs) in *)
   (* ignore(translate table' frame stmt) *)
   ()
