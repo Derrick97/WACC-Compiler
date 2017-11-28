@@ -192,12 +192,10 @@ let rec translate_exp
                             (* TODO intmultoverflow handle correctly *)
                             (* https://community.arm.com/processors/b/blog/posts/detecting-overflow-from-mul *)
                             check_overflow_inst]
-            | A.DivideOp -> trans_call ~result:dst "wacc_div" [dst;next]
+            | A.DivideOp -> failwith "already handled in simplification."
             | A.AndOp -> [annd dst dst oper]
             | A.OrOp  -> [orr dst dst oper]
-            | A.ModOp -> begin
-                trans_call "wacc_mod" ~result:dst  [dst;next]
-              end
+            | A.ModOp -> failwith "already handled in simplification."
             | A.GeOp -> begin  (* FIXME we can use table driven methods here *)
                 [cmp dst oper;
                  mov ~cond:GE dst (OperImm 1);
@@ -239,9 +237,8 @@ let rec translate_exp
                     sub dst fst_rest (OperReg (dst, None));
                     check_overflow_inst]
                  end
-               | A.LenOp -> trans_call ~result:dst "wacc_len" [dst]
-               | A.OrdOp -> trans_call "wacc_ord" [dst]
-               | A.ChrOp -> trans_call "wacc_chr" [dst])
+               | _ -> failwith "already handled"
+            )
          end
        | A.ArrayIndexExp (name, [exp]) -> begin
        let open Arm in
@@ -265,18 +262,6 @@ let rec translate_exp
           @ [add addr addr (OperReg (index, None));
              load dst (AddrIndirect (addr, 0)) ]
               in insts
-        (*   let open Arm in
-           let E.VarEntry (t, Some acc) = Symbol.lookup name env in
-           let size = 4 in
-           let index::addr::o::rest = rest in
-           tr exp (index::rest)
-           @ trans_var acc addr
-           @ trans_call "wacc_check_array_bounds" [addr; index]
-           @ [mov o (OperImm size);
-              mul index index o;
-              add index index (OperImm 4);
-              add addr addr (OperReg (index, None));
-              load dst (AddrIndirect (addr, 0)) ]*)
          end
        | A.ArrayIndexExp (name, explist) -> begin
            let open Arm in
@@ -309,11 +294,17 @@ let rec translate_exp
             load dst (AddrIndirect(next, 0))] (* now we load it *)
          end
        | A.CallExp (fname, exp_list) -> begin
+           let buildin_func =
+           ["wacc_len"; "wacc_ord"; "wacc_mod"; "wacc_chr"; "wacc_div"; "wacc_exit"] in
            let args, _, inst = List.fold_left
                (fun (used, r::rs, ins) e -> (used @ [r], rs, ins @ (tr e (r::rs))))
                ([], regs, []) exp_list in
-           inst @ trans_call ~result:dst ("f_" ^ fname) args
+           let call_inst = if (List.length (List.filter (fun x -> x = fname) buildin_func) = 0) then
+           trans_call ~result:dst ("f_" ^ fname) args
+           else trans_call ~result:dst (fname) args
+           in inst @ call_inst
         end
+
        | A.NullExp -> begin
            [mov dst (OperImm 0)]
          end
@@ -391,7 +382,8 @@ and translate (env: E.env)
         AddrIndirect (next, 0), insts @ [load next (AddrIndirect (dst, 4))]
       end
     | _ -> invalid_arg "Not an lvalue" in
-  let (stmt', pos) = stmt in
+  let simple_stmt = Simplify.simplify_stmt stmt in
+  let (stmt', pos) = simple_stmt in
   match stmt' with
   | SeqStmt (stmt, stmtlist) -> begin
       let exp,  env' = translate env frame regs stmt in
@@ -454,11 +446,12 @@ and translate (env: E.env)
       [Arm.B(while_cond_l), None;
        Arm.LABEL(while_end_l), None], env
     end
-  | ExitStmt     (exp) -> begin
+  | ExitStmt     (exp) -> failwith "Exit has been deprecated, using CallStmt"
+   (*begin
       let expi = tr exp in
       let ci = trans_call "wacc_exit" [dst] in
       expi @ ci , env
-    end
+    end*)
   | VarDeclStmt  (ArrayTy ty, name, (LiteralExp(LitArray elements),_)) -> begin
       let open Arm in
       let array_length = List.length elements in
@@ -513,6 +506,7 @@ and translate (env: E.env)
       expi @ assigni, env'
     end
   | SkipStmt      _ -> trans_noop, env
+  | CallStmt (exp) -> translate_exp env exp regs, env
   | PrintStmt    (newline, exp) -> begin
       let expi = tr exp in
       let expt = S.check_exp env exp in

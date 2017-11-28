@@ -44,6 +44,7 @@ and exp' =
 and exp = exp' identified
 and stmt' =
   | SkipStmt
+  | CallStmt of exp
   | SideEffectStmt of exp * side_effect_op
   | TwoArgsSideEffectStmt of exp * side_effect_two_args_op * exp
   | VarDeclStmt of ty * ident * exp
