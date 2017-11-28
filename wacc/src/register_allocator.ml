@@ -9,7 +9,7 @@ module ColoredIGraph = struct
 
   module Mark = struct
     let get (v:V.t): color = Hashtbl.find colorMap v
-    let set (v:V.t) (color: int): unit = begin
+    let set (v:V.t) (color: color): unit = begin
       (* print_string v; print_string " ";
        * print_int color; print_newline(); *)
       Hashtbl.add colorMap v color
@@ -28,8 +28,20 @@ module C = Graph.Coloring.Mark(ColoredIGraph)
 
 let allocate
     (insts: IL.il list)
-    (igraph: Liveness.IGraph.t): ColoredIGraph.t =
+    (igraph: Liveness.IGraph.t): (string, string) Hashtbl.t =
   let igraph = ColoredIGraph.from_igraph igraph in
-  ColoredIGraph.iter_vertex (fun v -> ColoredIGraph.Mark.set v 0) igraph;
-  C.coloring igraph 32;
-  igraph
+  let open Arm in
+  let module G = ColoredIGraph in
+  let builtin_regs = List.concat ([caller_saved_regs; callee_saved_regs; [reg_SP; reg_LR; reg_PC]]) in
+  G.iter_vertex (fun n -> ColoredIGraph.Mark.set n 0) igraph;
+  List.iteri (fun i r -> ColoredIGraph.Mark.set r (i + 1)) builtin_regs;
+  C.coloring igraph (List.length builtin_regs);
+  let colormap = Hashtbl.create 0 in
+  ColoredIGraph.iter_vertex (fun n -> begin
+        let c = ColoredIGraph.Mark.get n in
+        if (List.mem n builtin_regs) then
+          Hashtbl.add colormap n n
+        else
+          Hashtbl.add colormap n (List.nth builtin_regs (c-1))
+  end) igraph;
+  colormap

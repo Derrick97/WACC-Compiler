@@ -33,7 +33,8 @@ let def (i:IL.il) =
       | CMP   (_, dst, _, _) -> [dst]
       | LOAD  (_, dst, _) -> [dst]
       | STORE _ -> []
-      | JUMP _ | COMP _ | CBR _ | RET _ | LABEL _ | NOOP -> [])
+      | MOV (t, _) -> [t]
+      | PUSH _ | POP _ | JUMP _ | COMP _ | CBR _ | RET _ | LABEL _ | NOOP -> [])
   in
   InOutSet.of_list defs
 
@@ -59,7 +60,10 @@ let use (i:il):tempset =
       | STORE (_, t, _) -> [t]
       | CBR   (t, _ , _) -> [t]
       | RET   t -> [t]
-      | JUMP _ | LABEL _ | NOOP -> [])
+      | JUMP _ | LABEL _ | NOOP -> []
+      | MOV (_, op1) -> [get_temp op1]
+      | PUSH ts | POP ts -> ts
+    )
 
 (** build a livenes graph *)
 let build (instrs: il list) = begin
@@ -137,7 +141,7 @@ let build (instrs: il list) = begin
     if not !terminate then loop () else ()
   end in
   loop ();
-  {live_cfg=cfg; live_uses=uses; live_defs=defs}, in_, out
+  out
 end
 
 
@@ -155,8 +159,11 @@ type igraph = IGraph.t
 let build_interference (insts: il list) (liveMap: (il, tempset) Hashtbl.t) =
   let igraph = IGraph.create () in
   let iter_inst inst = begin  (* TODO handle move specially *)
+    InOutSet.iter (IGraph.add_vertex igraph) (def inst);
+    InOutSet.iter (IGraph.add_vertex igraph) (use inst);
     InOutSet.iter (fun d -> begin
           let ts = Hashtbl.find liveMap inst in
+          (* Add the vertices *)
           InOutSet.iter (fun t -> if (String.compare d t != 0) (* No edges to self *)
                           then IGraph.add_edge igraph d t else ()) ts
         end) (def (inst))

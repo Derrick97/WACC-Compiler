@@ -24,9 +24,11 @@ and cond =  GT | GE | LT | LE | EQ | NE | VS [@@deriving show]
 and addr =
   | ADDR_LABEL of label
   | ADDR_INDIRECT of temp * int
-  | ADDR_IMM of int
 and il =
   | NOOP
+  | PUSH  of temp list
+  | POP   of temp list
+  | MOV   of temp * operand
   | ADD   of temp * operand * operand
   | SUB   of temp * operand * operand
   | DIV   of temp * operand * operand
