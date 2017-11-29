@@ -2,7 +2,7 @@ module A = Ast_v2;;
 
 type access =
   | InFrame of int * int
-  | InReg of Arm.reg
+  | InReg of Temp.temp
 
 type enventry =
   | VarEntry of  A.ty * access option      (* variable *)

@@ -43,3 +43,21 @@ and il =
   | CBR   of temp * label * label
   | RET   of temp
   | LABEL of label  [@@deriving show]
+
+let push dsts = PUSH (dsts)
+let pop dsts = POP (dsts)
+let mov dst op = MOV (dst, op)
+let add dst op1 op2 = ADD (dst, op1, op2)
+let sub dst op1 op2 = SUB (dst, op1, op2)
+let div dst op1 op2 = DIV (dst, op1, op2)
+let mul dst op1 op2 = MUL (dst, op1, op2)
+let and_ dst op1 op2 = AND (dst, op1, op2)
+let or_ dst op1 op2 = ORR (dst, op1, op2)
+let cmp cond dst op1 op2 = CMP (cond, dst, op1, op2)
+let load sz dst addr = LOAD (sz, dst, addr)
+let store sz dst addr = STORE (sz, dst, addr)
+let jump l = JUMP l
+let comp t0 t1 = COMP (t0, t1)
+let cbr t th el = CBR (t, th, el)
+let ret t = RET t
+let label l = (LABEL l)

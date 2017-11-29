@@ -1,5 +1,5 @@
 open Char
-type label = string
+type label = Temp.label
 type operand =
   | OperReg of reg * (shift option)
   | OperImm of int
@@ -27,7 +27,7 @@ and inst =
           (*http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.dui0041c/Babbfdih.html*)
 and inst' = inst * cond option
 and cond = GT | GE | LT | LE | EQ | NE | VS
-and reg  = string
+and reg  = Temp.temp
 and addr =
   | AddrLabel of string
   | AddrIndirect of reg * int
