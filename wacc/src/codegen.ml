@@ -70,7 +70,7 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
       | WORD -> [str  (!t) (arm_addr addr)]
       | BYTE -> [strb (!t) (arm_addr addr)]
     end
-  | JUMP   label -> [A.bl label]
+  | JUMP   label -> [A.jump label]
   | CMP   (cond, t, op, op2) -> begin
       let cond' = arm_cond cond in
       let complement_cond = match cond' with

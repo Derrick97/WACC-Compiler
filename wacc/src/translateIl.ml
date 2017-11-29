@@ -424,8 +424,7 @@ and frame_prologue (frame: frame): il list = begin
   let allocate_insts = if (local_size > 0) then
       [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
     else [] in
-   allocate_insts @
-   [push [F.reg_LR]]
+   [push [F.reg_LR]] @ allocate_insts
 end
 
 and frame_epilogue (frame: frame): il list = begin
