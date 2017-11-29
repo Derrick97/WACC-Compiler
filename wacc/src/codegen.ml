@@ -17,13 +17,6 @@ let arm_cond (cond: IL.cond): A.cond =
   | NE -> A.NE
   | VS -> A.VS
 
-
-  let counter = ref 0
-  let cond_label ?(prefix="L") (): string =
-    let i = !counter in
-    counter := !counter + 1;
-    prefix ^ (string_of_int i)
-
 let arm_arith il =
 let open IL in
 match il with
@@ -49,47 +42,61 @@ let get_reg = function
 
 let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
     (il: IL.il): A.inst' list =
-  let arm_reg x = x in
+  let (!) x = Hashtbl.find colormap x in
+  let (!!) = function
+    | IL.OperImm i -> IL.OperImm i
+    | IL.OperReg r -> IL.OperReg !r in
   let open IL in
   let open Arm in
   match il with
   | ADD   (t, op, op2) | SUB (t, op, op2)
   | DIV   (t, op, op2)
-  | MUL (t, op, op2)
+  | MUL   (t, op, op2)
   | AND   (t, op, op2) | ORR (t, op, op2) -> begin
       if is_reg op then begin
-      let op2' = arm_op op2 in
-      let r = get_reg op in
+      let op2' = arm_op  !!op2 in
       let f = arm_arith il in
-      [f (arm_reg t) (arm_reg r) op2']
+      [f (!t) (get_reg !!op) op2']
       end
       else failwith "should not have imm operand"
     end
   | LOAD  (size, t, addr) -> begin
       match size with
-      | WORD -> [load  (arm_reg t) (arm_addr addr)]
-      | BYTE -> [loadb (arm_reg t) (arm_addr addr)]
+      | WORD -> [load  (!t) (arm_addr addr)]
+      | BYTE -> [loadb (!t) (arm_addr addr)]
     end
   | STORE (size, t, addr) -> begin
       match size with
-      | WORD -> [str  (arm_reg t) (arm_addr addr)]
-      | BYTE -> [strb (arm_reg t) (arm_addr addr)]
+      | WORD -> [str  (!t) (arm_addr addr)]
+      | BYTE -> [strb (!t) (arm_addr addr)]
     end
   | JUMP   label -> [A.bl label]
-  | CMP   (cond, t, op, op2) -> (*[cmp (arm_reg op) (arm_reg op2); ]*) failwith "TODO CMP"
+  | CMP   (cond, t, op, op2) -> begin
+      let cond' = arm_cond cond in
+      let complement_cond = match cond' with
+        | EQ -> NE
+        | LT -> GE
+        | LE -> GT
+        | GT -> LE
+        | GE -> LT
+        | NE -> EQ
+        | VS -> VS
+      in
+      [cmp (get_reg !!op) (arm_op !!op2);
+       mov ~cond:cond' !t (Arm.OperImm 1);
+       mov ~cond:complement_cond !t (Arm.OperImm 0)]
+    end
   | COMP  (t0, t1) -> begin
-      let op2 = A.OperReg (t1, None) in
-      [A.cmp (arm_reg t0) op2]
+      let op2 = A.OperReg (!t1, None) in
+      [A.cmp (!t0) op2]
     end
   | CBR   (t, br_then , br_else) -> begin
-      let br_end = cond_label ~prefix: "if_end" () in
-      [cmp (arm_reg t) (A.OperImm(1)); jump ~cond:NE br_else; A.labels (cond_label ~prefix: "if_then" ());
-      jump br_end; labels (cond_label ~prefix: "if_else" ()); labels br_end]
+      [cmp (!t) (A.OperImm(1)); jump ~cond:NE br_else]
     end
-  | RET    t  -> [mov (arm_reg reg_RV) (A.OperReg(t,None))]
+  | RET    t  -> [mov (!reg_RV) (A.OperReg(!t,None))]
   | LABEL  label -> [A.labels label]
   | NOOP -> [A.labels ""]
-  | MOV (t, op) -> [mov (arm_reg t) (arm_op op)]
-  | PUSH temp_list -> [push temp_list]
-  | POP temp_list -> [pop temp_list]
+  | MOV (t, op) -> [mov (!t) (arm_op !!op)]
+  | PUSH temp_list -> [push (List.map (!) temp_list)]
+  | POP temp_list ->  [pop  (List.map (!) temp_list)]
   | _ -> failwith "TODO"

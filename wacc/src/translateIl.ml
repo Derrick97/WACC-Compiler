@@ -123,7 +123,7 @@ let trans_noop: il list = []
 
 let get_access env name = match Symbol.lookup name env with
   | E.VarEntry (t, Some acc) -> (t, acc)
-  | _ -> failwith "not an access"
+  | _ -> invalid_arg "not an access"
 
 let rec trans_exp ctx exp =
   let open Il in
@@ -390,7 +390,7 @@ let rec trans_stmt env frame stmt = begin
       let theni,_ = trans_stmt env' frame then_exp in
       let elsei,_ = trans_stmt env' frame else_exp in
       let stmti = trans_ifelse condt theni elsei in
-      stmti, env
+      condi @ stmti, env
     end
   | A.WhileStmt    (cond, body_stmt) -> begin
       let env' = Symbol.new_scope env in
@@ -432,7 +432,7 @@ and frame_epilogue (frame: frame): il list = begin
   let open IL in
   let local_size = frame_size frame in
   let deallocate_insts = if (local_size > 0) then
-      [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
+      [add F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
     else [] in
   deallocate_insts @
   [pop [F.reg_PC]]
@@ -466,13 +466,14 @@ and trans_function_declaration (env: ctx) (dec) = begin
   (* translate function body *)
   let insts, _ = trans_stmt !env' frame body in
   let insts = (frame_prologue frame) @ insts @ (frame_epilogue frame) in
+  (* view shift of local variables *)
   (fixup_allocation frame insts);
 end
 
 and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
-  let out = stdout in
   let frame = new_frame() in
   let insts, _ = trans_stmt ctx frame stmt in
+  List.iter (fun i -> print_endline (IL.show_il i)) insts;
   let insts = (frame_prologue frame) @ insts @ (frame_epilogue frame) in
   (* build CFG *)
   let liveout = Liveness.build insts in
@@ -480,20 +481,21 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   (* Liveness.show_interference igraph; *)
   let colormap = RA.allocate insts igraph in
   let open Printf in
-  (* print_endline "Allocation";
-   * Hashtbl.iter (fun k v -> begin
-   *       print_endline (Printf.sprintf "%s: %s" k v)
-   *     end) colormap; *)
+  print_endline "Allocation";
+  Hashtbl.iter (fun k v -> begin
+        print_endline (Printf.sprintf "%s: %s" k v)
+      end) colormap;
+  print_endline "End of allocation";
   let instsgen = List.(insts
                       |> map (Codegen.codegen colormap)
                       |> concat) in
   (* print out the generated code *)
   fprintf out ".data\n";
-  fprintf out ".text\n";
   List.(iter (function
       | STRING (label, string) -> pp_string out (label, string)
       | _ -> failwith "TODO"
   ) !frags;
+     fprintf out ".text\n";
      fprintf out ".global main\n";
      fprintf out "main:\n";
     iter (pp_inst out) (instsgen);
