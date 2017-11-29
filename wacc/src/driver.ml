@@ -28,7 +28,6 @@ let () =
     let lexbuf = Lexing.from_channel (open_in filename) in
     try
       let (decs, stmt) = parse lexbuf in
-      let (stmt', _) = stmt in
       Semantic.check_prog (decs, stmt);
       let table = Semantic.baseenv in
       let table' = Symbol.new_scope (Semantic.add_function_declarations table decs) in

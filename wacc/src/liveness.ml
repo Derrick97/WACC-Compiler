@@ -21,8 +21,9 @@ module Temp = struct
 end
 
 (** compute definitions of variables in instruction *)
-let def (i:IL.il) =
+let def (i:(IL.il*int)) =
   let open IL in
+  let i = fst i in
   let defs = (match i with
       | ADD   (dst, _, _)
       | SUB   (dst, _, _)
@@ -39,8 +40,9 @@ let def (i:IL.il) =
   InOutSet.of_list defs
 
 (** compute uses of variables in instruction *)
-let use (i:il):tempset =
+let use (i:(il*int)):tempset =
   let open IL in
+  let i = fst i in
   let is_reg = function
     | OperReg _ -> true
     | OperImm _ -> false in
@@ -68,7 +70,7 @@ let use (i:il):tempset =
     )
 
 (** build a livenes graph *)
-let build (instrs: il list) = begin
+let build (instrs: (il*int) list) = begin
   (* solve the dataflow equations
      See modern compiler implementation in ML, page 214 Algo 10.4 for pseudo-code.
   *)
@@ -158,7 +160,7 @@ module IGraph = Graph.Imperative.Graph.Concrete(Temp)
 type igraph = IGraph.t
 
 (** Build an interference graph *)
-let build_interference (insts: il list) (liveMap: (il, tempset) Hashtbl.t) =
+let build_interference (insts: (il*int) list) (liveMap: ((il*int), tempset) Hashtbl.t) =
   let igraph = IGraph.create () in
   let iter_inst inst = begin  (* TODO handle move specially *)
     InOutSet.iter (IGraph.add_vertex igraph) (def inst);

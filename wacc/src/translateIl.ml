@@ -473,11 +473,12 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   let insts, _ = trans_stmt ctx frame stmt in
   (* List.iter (fun i -> print_endline (IL.show_il i)) insts; *)
   let insts = (frame_prologue frame) @ insts @ (frame_epilogue frame) in
+  let instsi = List.mapi (fun i x -> (x, i)) insts in
   (* build CFG *)
-  let liveout = Liveness.build insts in
-  let igraph = Liveness.build_interference insts liveout in
+  let liveout = Liveness.build instsi in
+  let igraph = Liveness.build_interference instsi liveout in
   (* Liveness.show_interference igraph; *)
-  let colormap = RA.allocate insts igraph in
+  let colormap = RA.allocate instsi igraph in
   let open Printf in
   (* print_endline "Allocation";
    * Hashtbl.iter (fun k v -> begin

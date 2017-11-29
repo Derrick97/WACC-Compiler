@@ -27,7 +27,7 @@ end
 module C = Graph.Coloring.Mark(ColoredIGraph)
 
 let allocate
-    (insts: IL.il list)
+    (insts: (IL.il*int) list)
     (igraph: Liveness.IGraph.t): (string, string) Hashtbl.t =
   let igraph = ColoredIGraph.from_igraph igraph in
   let open Arm in
