@@ -35,9 +35,10 @@ let () =
       (* TODO backend code generation *)
       let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
       let out = open_out out_filename in
-      let wacclib = "wacclib.s" in
       let stmt = Simplify.simplify_stmt stmt in
       ignore(TranslateIl.trans_prog table' (decs, stmt) out);
+      close_out out;
+      ignore(Sys.command (Printf.sprintf "cat wacclib.s >> %s" out_filename));
       ()
     with
     | A.SyntaxError _ | Parser.Error -> handle_syntax_error lexbuf

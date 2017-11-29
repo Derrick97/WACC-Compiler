@@ -233,7 +233,7 @@ and trans_call (ctx: ctx)
   List.iter (fun (d, s) -> emit(mov d (Il.OperReg s))) (zip F.caller_saved_regs reg_passed);
   (* The other registers are pushed to stack *)
   List.iter (fun x -> emit (push [x])) (List.rev stack_passed);
-  !ilist @ [jump fname_label] @
+  !ilist @ [call fname_label] @
   [(pop F.caller_saved_regs)] @
   (List.map (fun x -> (Il.POP [x])) (stack_passed));
 end

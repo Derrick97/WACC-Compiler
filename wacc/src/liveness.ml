@@ -34,7 +34,7 @@ let def (i:IL.il) =
       | LOAD  (_, dst, _) -> [dst]
       | STORE _ -> []
       | MOV (t, _) -> [t]
-      | PUSH _ | POP _ | JUMP _ | COMP _ | CBR _ | RET _ | LABEL _ | NOOP -> [])
+      | PUSH _ | POP _ | JUMP _ | COMP _ | CBR _ | RET _ | LABEL _ | NOOP | CALL _ -> [])
   in
   InOutSet.of_list defs
 
@@ -47,6 +47,7 @@ let use (i:il):tempset =
   let get_temp = function
     | OperReg r -> r
     | _ -> invalid_arg "not OperReg" in
+
   InOutSet.of_list (match i with
       | ADD   (_, op1, op2) | SUB (_, op1, op2)
       | DIV   (_, op1, op2) | MUL   (_, op1, op2)
@@ -61,8 +62,9 @@ let use (i:il):tempset =
       | CBR   (t, _ , _) -> [t]
       | RET   t -> [t]
       | JUMP _ | LABEL _ | NOOP -> []
-      | MOV (_, op1) -> [get_temp op1]
+      | MOV (_, op1) -> if is_reg op1 then [get_temp op1] else []
       | PUSH ts | POP ts -> ts
+      | CALL _ -> []
     )
 
 (** build a livenes graph *)
