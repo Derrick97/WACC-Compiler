@@ -47,7 +47,8 @@ let get_reg = function
   | IL.OperReg r -> r
   | _ -> failwith "not a reg"
 
-let codegen (il: IL.il): A.inst' list =
+let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
+    (il: IL.il): A.inst' list =
   let arm_reg x = x in
   let open IL in
   let open Arm in

@@ -399,5 +399,8 @@ and trans_prog (ctx:ctx) (decs, stmt) = begin
   Hashtbl.iter (fun k v -> begin
         print_endline (Printf.sprintf "%s: %s" k v)
       end) colormap;
-  insts
+  insts;
+  let instsgen = List.map (Codegen.codegen colormap) insts in
+  List.iter (fun i -> print_endline (Arm.string_of_inst' i )) (List.concat (instsgen));
+  insts;
 end
