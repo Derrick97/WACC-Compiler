@@ -33,14 +33,11 @@ let () =
       let table = Semantic.baseenv in
       let table' = Symbol.new_scope (Semantic.add_function_declarations table decs) in
       (* TODO backend code generation *)
-      (* let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
-       * let out = open_out out_filename in *)
+      let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
+      let out = open_out out_filename in
       let wacclib = "wacclib.s" in
-      let simple_stmt = Simplify.simplify_stmt stmt in
-      TranslateIl.trans_prog table' (decs, stmt);
-      let (stmt' ,pos) = simple_stmt in
-    (*  let printer = Prettyprint.prettyprint_stmt stmt' in
-      print_string printer;*)
+      let stmt = Simplify.simplify_stmt stmt in
+      ignore(TranslateIl.trans_prog table' (decs, stmt) out);
       ()
     with
     | A.SyntaxError _ | Parser.Error -> handle_syntax_error lexbuf

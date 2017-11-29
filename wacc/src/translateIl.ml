@@ -6,7 +6,6 @@ module F = Arm;;
 module RA = Register_allocator;;
 open Env;;
 
-type frag = string list
 type size = int
 type il = IL.il
 type temp = Temp.temp
@@ -19,6 +18,14 @@ type frame = {
   mutable frame_locals: access array;
 }
 
+type frag =
+  | STRING of Temp.label * string
+  | PROG of il list
+
+let frame_size (frame:frame): int = (Array.fold_left (+) 0 (Array.map (fun x -> match x with
+    | InFrame (t, sz) -> sz) frame.frame_locals))
+
+let (frags: frag list ref) = ref []
 let counter = ref 0
 let strings = ref []
 
@@ -34,6 +41,17 @@ let is_char_array ty = match ty with
   | A.ArrayTy(A.CharTy) -> true
   | _ -> false
 
+let string_of_ty =
+  let open A in
+  function
+  | StringTy -> "string"
+  | BoolTy -> "bool"
+  | CharTy -> "char"
+  | ArrayTy CharTy -> "char_array"
+  | ArrayTy _ -> "array"
+  | PairTy _ | PairTyy -> "pair"
+  | IntTy -> "int"
+  | _ -> assert false
 
 let rec zip a b = match (a, b) with
   | ([], _) -> []
@@ -124,7 +142,7 @@ let rec trans_exp ctx exp =
             | A.LitInt i -> [(load WORD dst (ADDR_LABEL (string_of_int i)))]
             | A.LitString s -> begin
                 let label = new_label() in
-                strings := (label, s)::!strings;
+                frags := (STRING (label, s))::!frags;
                 [(load WORD dst (ADDR_LABEL label))]
               end
             | A.LitBool b -> if b then
@@ -146,6 +164,11 @@ let rec trans_exp ctx exp =
             | A.DivideOp -> [div dst opl opr]
             | A.AndOp ->    [and_ dst opl opr]
             | A.OrOp  ->    [or_ dst opl opr]
+            | A.EqOp -> [sub dst opl opr; cmp Il.EQ dst (oper_reg dst) (oper_imm 0)]
+            | A.GeOp -> [sub dst opl opr; cmp Il.GE dst (oper_reg dst) (oper_imm 0)]
+            | A.GtOp -> [sub dst opl opr; cmp Il.GT dst (oper_reg dst) (oper_imm 0)]
+            | A.LeOp -> [sub dst opl opr; cmp Il.LE dst (oper_reg dst) (oper_imm 0)]
+            | A.LtOp -> [sub dst opl opr; cmp Il.LT dst (oper_reg dst) (oper_imm 0)]
             | A.ModOp -> failwith "mod should be handled in frontend"
             | _ -> failwith "TODO")
         in
@@ -284,7 +307,9 @@ let rec trans_stmt env frame stmt = begin
     end
   | A.PrintStmt (newline, exp) -> begin
       let (v, insts) = trans_exp env exp in
-      let callinsts = trans_call env "wacc_print" [v] in (* TODO add type for print *)
+      let expt = Semantic.check_exp env exp in
+      let callinsts = trans_call env ("wacc_print_" ^ (string_of_ty expt)) [v] in (* TODO add type for print *)
+      let callinsts = callinsts @ (if newline then (trans_call env "wacc_println" []) else []) in
       insts @ callinsts, env
     end
   | A.AssignStmt   ((A.IdentExp (name), _), rhs) -> begin
@@ -386,21 +411,91 @@ let rec trans_stmt env frame stmt = begin
   | _ -> failwith "TODO other statements"
 end
 
-and trans_prog (ctx:ctx) (decs, stmt) = begin
+and pp_string out (l, s): unit =
+  let open Printf in
+  fprintf out "%s" (sprintf "%s:\n\t.ascii \"%s\0\"\n" l (String.escaped s))
+
+and pp_inst out (i: Arm.inst') =
+  Printf.fprintf out "%s\n" (Arm.string_of_inst' i)
+
+and frame_prologue (frame: frame): il list = begin
+  let open IL in
+  let local_size = frame_size frame in
+  let allocate_insts = if (local_size > 0) then
+      [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
+    else [] in
+   allocate_insts @
+   [push [F.reg_LR]]
+end
+
+and frame_epilogue (frame: frame): il list = begin
+  let open IL in
+  let local_size = frame_size frame in
+  let deallocate_insts = if (local_size > 0) then
+      [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
+    else [] in
+  deallocate_insts @
+  [pop [F.reg_PC]]
+end
+
+and fixup_allocation frame insts =
+  let open Il in
+  let localsize = frame_size frame in
+  List.map (fun i -> match i with
+      | (ADD (o1, OperReg o2, OperImm n)) when o1 = F.reg_SP && o2 = F.reg_SP ->
+        (ADD (o1, OperReg o2, OperImm localsize))
+      | _ -> i) insts
+
+and trans_function_declaration (env: ctx) (dec) = begin
+  let ((A.FuncDec(retty, fname, arglist, body), _)) = dec in
+  let frame = new_frame ("func_" ^ fname) in
+  let env' = ref (Symbol.new_scope env) in
+  let add_binding name ty acc = env' := Symbol.insert name (VarEntry (ty, Some acc)) !env' in
+  let offset = ref 0 in
+  (* add arguments to new environment *)
+  List.iteri (fun i (ty, name) -> begin
+        if (i <= 3) then
+          let acc = InReg (List.nth F.caller_saved_regs i) in
+          add_binding name ty acc;
+        else
+          let sz = size_of_type ty in
+          let acc = InFrame (!offset, sz) in
+          offset := !offset - sz;
+          add_binding name ty acc;
+        end) arglist;
+  (* translate function body *)
+  let insts, _ = trans_stmt !env' frame body in
+  let insts = (frame_prologue frame) @ insts @ (frame_epilogue frame) in
+  (fixup_allocation frame insts);
+end
+
+and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
+  let out = stdout in
   let frame = new_frame() in
   let insts, _ = trans_stmt ctx frame stmt in
-  List.iter (fun i -> print_endline (Il.show_il i)) insts;
+  let insts = (frame_prologue frame) @ insts @ (frame_epilogue frame) in
   (* build CFG *)
   let liveout = Liveness.build insts in
   let igraph = Liveness.build_interference insts liveout in
   (* Liveness.show_interference igraph; *)
   let colormap = RA.allocate insts igraph in
-  print_endline "Allocation";
-  Hashtbl.iter (fun k v -> begin
-        print_endline (Printf.sprintf "%s: %s" k v)
-      end) colormap;
-  insts;
-  let instsgen = List.map (Codegen.codegen colormap) insts in
-  List.iter (fun i -> print_endline (Arm.string_of_inst' i )) (List.concat (instsgen));
-  insts;
+  let open Printf in
+  (* print_endline "Allocation";
+   * Hashtbl.iter (fun k v -> begin
+   *       print_endline (Printf.sprintf "%s: %s" k v)
+   *     end) colormap; *)
+  let instsgen = List.(insts
+                      |> map (Codegen.codegen colormap)
+                      |> concat) in
+  (* print out the generated code *)
+  fprintf out ".data\n";
+  fprintf out ".text\n";
+  List.(iter (function
+      | STRING (label, string) -> pp_string out (label, string)
+      | _ -> failwith "TODO"
+  ) !frags;
+     fprintf out ".global main\n";
+     fprintf out "main:\n";
+    iter (pp_inst out) (instsgen);
+  ); insts
 end
