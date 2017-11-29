@@ -20,7 +20,7 @@ OCB = ocamlbuild $(OCB_FLAGS)
 driver.byte:
 	$(OCB) $@
 
-%.native: %.ml
+driver.native:
 	$(OCB) $@
 
 clean:
@@ -29,4 +29,4 @@ clean:
 wacclib.s:
 	$(PWD)/../tools/arm-gcc -S src/wacclib.c -o wacclib.s
 
-.PHONY: clean wacclib driver.byte
+.PHONY: clean wacclib driver.byte driver.native
