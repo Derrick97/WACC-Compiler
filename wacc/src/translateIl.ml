@@ -401,8 +401,7 @@ let rec trans_stmt env frame stmt = begin
       let while_end_l =  new_label ~prefix:"while_done" () in
       [label (while_cond_l)] @ condi @
       [cbr condt while_body_l while_end_l] @
-      [jump while_end_l;
-       label (while_body_l)] @ bodyi @
+      [label (while_body_l)] @ bodyi @
       [jump (while_cond_l);
        label while_end_l], env
     end
@@ -472,7 +471,7 @@ end
 and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   let frame = new_frame() in
   let insts, _ = trans_stmt ctx frame stmt in
-  List.iter (fun i -> print_endline (IL.show_il i)) insts;
+  (* List.iter (fun i -> print_endline (IL.show_il i)) insts; *)
   let insts = (frame_prologue frame) @ insts @ (frame_epilogue frame) in
   (* build CFG *)
   let liveout = Liveness.build insts in
@@ -480,11 +479,11 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   (* Liveness.show_interference igraph; *)
   let colormap = RA.allocate insts igraph in
   let open Printf in
-  print_endline "Allocation";
-  Hashtbl.iter (fun k v -> begin
-        print_endline (Printf.sprintf "%s: %s" k v)
-      end) colormap;
-  print_endline "End of allocation";
+  (* print_endline "Allocation";
+   * Hashtbl.iter (fun k v -> begin
+   *       print_endline (Printf.sprintf "%s: %s" k v)
+   *     end) colormap;
+   * print_endline "End of allocation"; *)
   let instsgen = List.(insts
                       |> map (Codegen.codegen colormap)
                       |> concat) in

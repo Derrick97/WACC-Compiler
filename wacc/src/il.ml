@@ -40,6 +40,7 @@ and il =
   | LOAD  of size * temp * addr
   | STORE of size * temp * addr
   | JUMP  of label
+  | CALL  of label
   | COMP  of temp * temp
   | CBR   of temp * label * label
   | RET   of temp
@@ -58,6 +59,7 @@ let cmp cond dst op1 op2 = CMP (cond, dst, op1, op2)
 let load sz dst addr = LOAD (sz, dst, addr)
 let store sz dst addr = STORE (sz, dst, addr)
 let jump l = JUMP l
+let call l = CALL l
 let comp t0 t1 = COMP (t0, t1)
 let cbr t th el = CBR (t, th, el)
 let ret t = RET t
