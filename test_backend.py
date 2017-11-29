@@ -4,11 +4,14 @@ import sys
 import subprocess
 
 def compile(f):
-    subprocess.run(['./compile', f])
-    subprocess.run(['./tools/arm-gcc', os.path.basename(f).replace('.wacc', '.s')])
-    out = subprocess.run(['./tools/arm-run', 'a.out'], stdout=subprocess.PIPE)
-    output = '' if not out.stdout else out.stdout.decode('utf-8')
-    return (output, out.returncode)
+    try:
+        subprocess.run(['./compile', f], timeout=5)
+        subprocess.run(['./tools/arm-gcc', os.path.basename(f).replace('.wacc', '.s')])
+        out = subprocess.run(['./tools/arm-run', 'a.out'], stdout=subprocess.PIPE, timeout=5)
+        output = '' if not out.stdout else out.stdout.decode('utf-8')
+        return (output, out.returncode)
+    except subprocess.TimeoutExpired:
+        return ("timeout", -1)
 
 def test_run(filename):
     expected = {}
@@ -42,6 +45,20 @@ def test_run(filename):
         expected_ret = int(''.join(expected['Exit:']).strip())
         assert expected_ret == retcode
 
+with open("excluded", 'r') as excluded:
+    excluded = excluded.read().split("\n")
+
+excluded = [os.path.abspath(e) for e in excluded if e]
+
+
+def iter_tests():
+    for (root, dirs, files) in os.walk("./testsuite/valid"):
+        for name in files:
+            p = os.path.abspath(os.path.join(root, name))
+            if p.endswith(".wacc") and p not in excluded:
+                print(p)
+                test_run(p)
 
 if __name__ == '__main__':
-    test_run(sys.argv[1])
+    # test_run(sys.argv[1])
+    iter_tests()
