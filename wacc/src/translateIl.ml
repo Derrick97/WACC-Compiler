@@ -165,12 +165,12 @@ let rec trans_exp ctx exp =
             | A.AndOp ->    [and_ dst opl opr]
             | A.OrOp  ->    [or_ dst opl opr]
             | A.EqOp -> [sub dst opl opr; cmp Il.EQ dst (oper_reg dst) (oper_imm 0)]
+            | A.NeOp -> [sub dst opl opr; cmp Il.NE dst (oper_reg dst) (oper_imm 0)]
             | A.GeOp -> [sub dst opl opr; cmp Il.GE dst (oper_reg dst) (oper_imm 0)]
             | A.GtOp -> [sub dst opl opr; cmp Il.GT dst (oper_reg dst) (oper_imm 0)]
             | A.LeOp -> [sub dst opl opr; cmp Il.LE dst (oper_reg dst) (oper_imm 0)]
             | A.LtOp -> [sub dst opl opr; cmp Il.LT dst (oper_reg dst) (oper_imm 0)]
-            | A.ModOp -> failwith "mod should be handled in frontend"
-            | _ -> failwith "TODO")
+            | A.ModOp -> invalid_arg "mod should be handled in frontend")
         in
         dst, (lhsi @ rhsi @ inst)
       end
