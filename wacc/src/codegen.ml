@@ -41,41 +41,69 @@ let get_reg = function
   | IL.OperReg r -> r
   | _ -> failwith "not a reg"
 
-let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
-    (il: IL.il): A.inst' list =
+let relocate (colormap) (i:A.inst'): A.inst' =
+  let open Arm in
+  let (ii, cond) = i in
   let (!) x = Hashtbl.find colormap x in
   let (!!) = function
-    | IL.OperImm i -> IL.OperImm i
-    | IL.OperReg r -> IL.OperReg !r in
+    | OperImm i -> OperImm i
+    | OperReg (r, s) -> OperReg (!r, s)
+    | OperChar c -> OperChar c
+  in
+  let (!!!) a = match a with
+    | AddrLabel l -> a
+    | AddrIndirect (base, offset) -> AddrIndirect (!base, offset)  in
+  let ir = match ii with
+  | ADD  (dst, op1, op2) -> ADD (!dst, !op1, !!op2)
+  | SUB  (dst, op1, op2) -> SUB (!dst, !op1, !!op2)
+  | AND  (dst, op1, op2) -> AND (!dst, !op1, !!op2)
+  | ORR  (dst, op1, op2) -> ORR (!dst, !op1, !!op2)
+  | MUL  (dst, op1, op2) -> MUL (!dst, !op1, !op2)
+  | SMULL (r0, r1, r2, r3) -> SMULL (!r0, !r1, !r2, !r1)
+  | MOV  (r, op) -> MOV (!r, !!op)
+  | CMP  (r, op) -> CMP (!r, !!op)
+  | POP  rs -> POP (List.map (!) rs)
+  | PUSH rs -> PUSH (List.map (!) rs)
+  | LDR  (r, addr) -> LDR (!r, !!!addr)
+  | LDRB (r, addr) -> LDR (!r, !!!addr)
+  | STR  (r, addr) -> LDR (!r, !!!addr)
+  | STRB (r, addr) -> LDR (!r, !!!addr)
+  | EOR  (r0, r1, op) -> EOR (!r0, !r1, !!op)
+  | _ -> ii in
+  (ir, cond)
+
+
+let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
+    (il: IL.il): A.inst' list =
   let open IL in
   let open Arm in
-  match il with
+  let arm_inst = match il with
   | ADD   (t, op, op2) | SUB (t, op, op2)
   | DIV   (t, op, op2)
   | AND   (t, op, op2) | ORR (t, op, op2) | EOR (t, op, op2) -> begin
       if is_reg op then begin
-      let op2' = arm_op  !!op2 in
+      let op2' = arm_op  op2 in
       let f = arm_arith il in
-      [f (!t) (get_reg !!op) op2']
+      [f (t) (get_reg op) op2']
       end
       else failwith "should not have imm operand"
     end
   | MUL   (t, op, op2) -> begin
       if is_reg op then begin
-        let op2' = get_reg !!op2 in
-        [Arm.mul (!t) (get_reg !!op) (op2')]
+        let op2' = get_reg op2 in
+        [Arm.mul (t) (get_reg op) (op2')]
       end
       else failwith "should not have imm operand"
     end
   | LOAD  (size, t, addr) -> begin
       match size with
-      | WORD -> [load  (!t) (arm_addr addr)]
-      | BYTE -> [loadb (!t) (arm_addr addr)]
+      | WORD -> [load  (t) (arm_addr addr)]
+      | BYTE -> [loadb (t) (arm_addr addr)]
     end
   | STORE (size, t, addr) -> begin
       match size with
-      | WORD -> [str  (!t) (arm_addr addr)]
-      | BYTE -> [strb (!t) (arm_addr addr)]
+      | WORD -> [str  (t) (arm_addr addr)]
+      | BYTE -> [strb (t) (arm_addr addr)]
     end
   | JUMP   label -> [A.jump label]
   | CALL   label -> [A.bl label]
@@ -90,21 +118,22 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
         | NE -> EQ
         | VS -> VS
       in
-      [cmp (get_reg !!op) (arm_op !!op2);
-       mov ~cond:cond' !t (Arm.OperImm 1);
-       mov ~cond:complement_cond !t (Arm.OperImm 0)]
+      [cmp (get_reg op) (arm_op op2);
+       mov ~cond:cond' t (Arm.OperImm 1);
+       mov ~cond:complement_cond t (Arm.OperImm 0)]
     end
   | COMP  (t0, t1) -> begin
-      let op2 = A.OperReg (!t1, None) in
-      [A.cmp (!t0) op2]
+      let op2 = A.OperReg (t1, None) in
+      [A.cmp (t0) op2]
     end
   | CBR   (t, br_then , br_else) -> begin
-      [cmp (!t) (A.OperImm(1)); jump ~cond:NE br_else]
+      [cmp (t) (A.OperImm(1)); jump ~cond:NE br_else]
     end
-  | RET    t  -> [mov (!reg_RV) (A.OperReg(!t,None))]
+  | RET    t  -> [mov (reg_RV) (A.OperReg(t,None))]
   | LABEL  label -> [A.labels label]
   | NOOP -> [A.labels ""]
-  | MOV (t, op) -> [mov (!t) (arm_op !!op)]
-  | PUSH temp_list -> [push (List.map (!) temp_list)]
-  | POP temp_list ->  [pop  (List.map (!) temp_list)]
-  | _ -> failwith "TODO"
+  | MOV (t, op) -> [mov (t) (arm_op op)]
+  | PUSH temp_list -> [push temp_list]
+  | POP temp_list ->  [pop  temp_list]
+  in
+  List.map (relocate colormap) arm_inst

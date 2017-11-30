@@ -432,7 +432,7 @@ and frame_epilogue (frame: frame): il list = begin
       [add F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
     else [] in
   deallocate_insts @
-  [pop [F.reg_PC]]
+  [(mov (F.reg_RV) (oper_imm 0)) ; pop [F.reg_PC]]
 end
 
 and fixup_allocation frame insts =
