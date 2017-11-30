@@ -32,8 +32,13 @@ let rec peephole_optimize (insts: Il.il list) =
         if diff_operand (OperReg(temp)) op3 then
           MUL (temp2, op2, op) :: peephole_optimize others
         else fst::peephole_optimize (snd::others)
+      | MOV (temp', op') ->
+        if diff_operand (OperReg(temp)) op' && diff_operand (OperReg(temp')) op 
+        then fst::peephole_optimize others
+        else fst::peephole_optimize (snd::others)
       | _ -> fst::peephole_optimize (snd::others)
       end
+
     | _ -> fst::peephole_optimize (snd::others)
   end
 
@@ -46,4 +51,4 @@ let rec peephole_optimize (insts: Il.il list) =
   | [] -> print_string ""; print_newline ()
   | fst::others -> inst_to_print fst; print_newline (); print_insts others
 
-  let () = print_insts optm_inst
+  (*let () = print_insts optm_inst*)

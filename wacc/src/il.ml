@@ -56,6 +56,7 @@ let inst_to_print il =
   | POP [temp] -> print_string ("pop" ^ temp)
   | ADD (temp, op1, op2) -> print_string ("add " ^ temp ^ " "); print_operand op1; print_operand op2
   | SUB (temp, op1, op2) -> print_string ("sub " ^ temp ^ " "); print_operand op1; print_operand op2
+  | MUL (temp, op1, op2) -> print_string ("mul " ^ temp ^ " "); print_operand op1; print_operand op2
   | MOV _ -> print_string "mov"
   | _ -> print_string "TODO"
 
