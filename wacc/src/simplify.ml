@@ -13,7 +13,7 @@ let rec simplify (exp: A.exp): A.exp =
         | PlusOp -> LiteralExp (LitInt(a+b))
         | MinusOp -> LiteralExp (LitInt(a-b))
         | TimesOp -> LiteralExp (LitInt(a*b))
-        | DivideOp -> exp'
+        | DivideOp -> LiteralExp (LitInt(a/b))
         | ModOp -> LiteralExp (LitInt(a mod b))
         | GeOp -> LiteralExp (LitBool(a>=b))
         | GtOp -> LiteralExp (LitBool(a>b))
@@ -48,7 +48,7 @@ let rec simplify (exp: A.exp): A.exp =
       end
     | LiteralExp (LitBool(b)) -> begin
       match op with
-      | NotOp -> LiteralExp (LitBool(not b))
+      | NotOp ->  LiteralExp (LitBool(not b))
       | _ -> assert false
       end
     | _ ->
@@ -70,13 +70,23 @@ let rec simplify_stmt (ast: A.stmt): A.stmt =
     let (cond', pos) = cond in
     match cond' with
     | LiteralExp(LitBool(b)) -> if b then simplify_stmt then_stmt else simplify_stmt else_stmt
-    | _ -> ast
+    | _ -> (IfStmt (cond, simplify_stmt then_stmt, simplify_stmt else_stmt), pos)
     end
   | A.WhileStmt (cond, body_stmt) -> begin
     let (cond', pos) = cond in
     match cond' with
     | LiteralExp(LitBool(b)) -> if b then ast else (SkipStmt, pos)
-    | _ -> ast
+    | _ -> (WhileStmt (cond, simplify_stmt body_stmt), pos)
     end
   | A.ExitStmt (exit_code) -> (CallStmt (CallExp("wacc_exit", [exit_code]),pos),pos)
+  | A.SkipStmt -> ast
+  | A.CallStmt (exp) -> (CallStmt (simplify exp), pos)
+  | A.VarDeclStmt (ty, ident, exp) -> (VarDeclStmt (ty, ident, simplify exp), pos)
+  | A.AssignStmt (exp1, exp2) -> (AssignStmt (simplify exp1, simplify exp2), pos)
+(*  | A.ReadStmt of exp
+  | A.FreeStmt of exp
+  | A.BlockStmt of stmt
+  | A.RetStmt of exp*)
+  | A.PrintStmt (newline, exp) -> (PrintStmt (newline, simplify exp), pos)
+  | A.SeqStmt (stmt, stmtlist) -> (SeqStmt (simplify_stmt stmt, simplify_stmt stmtlist),pos)
   | _ -> ast

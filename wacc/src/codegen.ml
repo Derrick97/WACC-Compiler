@@ -41,6 +41,7 @@ let get_reg = function
   | IL.OperReg r -> r
   | _ -> failwith "not a reg"
 
+
 let relocate (colormap) (i:A.inst'): A.inst' =
   let open Arm in
   let (ii, cond) = i in
@@ -79,14 +80,14 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
   let open Arm in
   let arm_inst = match il with
   | ADD   (t, op, op2) | SUB (t, op, op2)
-  | DIV   (t, op, op2)
   | AND   (t, op, op2) | ORR (t, op, op2) | EOR (t, op, op2) -> begin
       if is_reg op then begin
       let op2' = arm_op  op2 in
       let f = arm_arith il in
       [f (t) (get_reg op) op2']
       end
-      else failwith "should not have imm operand"
+      else
+      failwith "should not have imm operand"
     end
   | MUL   (t, op, op2) -> begin
       if is_reg op then begin
@@ -105,6 +106,7 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
       | WORD -> [str  (t) (arm_addr addr)]
       | BYTE -> [strb (t) (arm_addr addr)]
     end
+
   | JUMP   label -> [A.jump label]
   | CALL   label -> [A.bl label]
   | CMP   (cond, t, op, op2) -> begin
