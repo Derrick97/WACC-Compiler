@@ -6,14 +6,13 @@
 FIND	:= find
 RM	:= rm -rf
 MKDIR	:= mkdir -p
+OPAMROOT := $(PWD)/opamroot
+PATH    := $(PWD)/$(PATH)
 
 # the make rules
 
-all: build_deps
-	make -C wacc driver.native
-
-build_deps:
-	chmod u+x build.sh && ./build.sh
+all:
+	./build.sh
 
 # runs the antlr build script then attempts to compile all .java files within src
 
