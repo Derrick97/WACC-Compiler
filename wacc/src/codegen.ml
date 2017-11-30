@@ -84,15 +84,18 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
       if is_reg op then begin
       let op2' = arm_op  op2 in
       let f = arm_arith il in
-      [f (t) (get_reg op) op2']
+      [f (t) (get_reg op) op2'; bl ~cond:Arm.VS "wacc_throw_overflow_error"]
       end
       else
       failwith "should not have imm operand"
     end
   | MUL   (t, op, op2) -> begin
       if is_reg op then begin
+        let op' = get_reg op in
         let op2' = get_reg op2 in
-        [Arm.mul (t) (get_reg op) (op2')]
+        [Arm.smull op' op2' op' op2';
+         Arm.cmp op2' (Arm.OperReg (op', Some (ASR 31)));
+         Arm.bl ~cond:NE "wacc_throw_overflow_error"]
       end
       else failwith "should not have imm operand"
     end

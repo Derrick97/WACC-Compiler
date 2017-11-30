@@ -333,6 +333,15 @@ and addr_of_exp (env) (e: A.exp): (Il.addr * il list) =
     end
   | _ -> invalid_arg "Not an lvalue"
 
+let exp_type env exp =
+   match exp with
+  | A.CallExp ("wacc_len", args),_ -> A.IntTy
+  | A.CallExp ("wacc_div", args),_ -> A.IntTy
+  | A.CallExp ("wacc_mod", args),_ -> A.IntTy
+  | A.CallExp ("wacc_chr", args),_ -> A.CharTy
+  | A.CallExp ("wacc_ord", args),_ -> A.IntTy
+  | _ -> Semantic.check_exp env exp
+
 let rec trans_stmt env frame stmt = begin
   let open Il in
   let tr = trans_exp env in
@@ -346,7 +355,7 @@ let rec trans_stmt env frame stmt = begin
     end
   | A.PrintStmt (newline, exp) -> begin
       let (v, insts) = trans_exp env exp in
-      let expt = Semantic.check_exp env exp in
+      let expt = exp_type env exp in
       let _, callinsts = trans_call env ("wacc_print_" ^ (string_of_ty expt)) [v] in (* TODO add type for print *)
       let callinsts' =(if newline then (snd (trans_call env "wacc_println" [])) else []) in
       insts @ callinsts @ callinsts', env
