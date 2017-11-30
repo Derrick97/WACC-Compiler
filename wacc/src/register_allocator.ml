@@ -16,6 +16,8 @@ module ColoredIGraph = struct
     end
   end
 
+  let reset unit: unit = Hashtbl.reset colorMap
+
   let from_igraph (g: Liveness.IGraph.t):t = begin
     let g' = create() in
     iter_vertex (fun v -> add_vertex g' v) g;
@@ -29,10 +31,12 @@ module C = Graph.Coloring.Mark(ColoredIGraph)
 let allocate
     (insts: (IL.il*int) list)
     (igraph: Liveness.IGraph.t): (string, string) Hashtbl.t =
+  ColoredIGraph.reset();
   let igraph = ColoredIGraph.from_igraph igraph in
   let open Arm in
   let module G = ColoredIGraph in
   let builtin_regs = List.concat ([caller_saved_regs; callee_saved_regs; [reg_SP; reg_LR; reg_PC]]) in
+  List.iter (G.add_vertex igraph) builtin_regs;
   G.iter_vertex (fun n -> ColoredIGraph.Mark.set n 0) igraph;
   List.iteri (fun i r -> ColoredIGraph.Mark.set r (i + 1)) builtin_regs;
   C.coloring igraph (List.length builtin_regs);

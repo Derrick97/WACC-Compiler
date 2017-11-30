@@ -36,7 +36,8 @@ let def (i:(IL.il*int)) =
       | LOAD  (_, dst, _) -> [dst]
       | STORE _ -> []
       | MOV (t, _) -> [t]
-      | PUSH _ | POP _ | JUMP _ | COMP _ | CBR _ | RET _ | LABEL _ | NOOP | CALL _ -> [])
+      | POP ts -> ts
+      | PUSH _ | JUMP _ | COMP _ | CBR _ | RET _ | LABEL _ | NOOP | CALL _ -> [])
   in
   InOutSet.of_list defs
 
