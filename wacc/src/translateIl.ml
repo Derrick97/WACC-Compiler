@@ -139,25 +139,28 @@ let rec trans_exp ctx exp =
         let (t, acc) = get_access ctx ident in
         let size = if is_string t then 1 else 4 in
         let buffer = ref [] in
+        let emit xs = buffer := !buffer @ xs in
         let index = allocate_temp() in
+        emit([mov index (oper_imm 0)]); (* initializing index register *)
         let o = allocate_temp() in
-        let skip_length_inst = if is_string t then [] else [add index (oper_reg index) (oper_imm 4)] in
+        let sz = if not (is_string t) then 4 else 0 in (* for char arrays we do not store length *)
         let addr, insts = trans_var acc in
-        buffer := !buffer @ insts;
+        emit(insts);
         let rec emit_addressing = (function
             | exp::other -> begin
                 let index, insts = trans_exp ctx exp in
-                buffer := !buffer @ insts;
-                buffer := !buffer @ [mov o (oper_imm size);
-                                     mul index (oper_reg index) (oper_reg o)]
-                          @ skip_length_inst
-                          @ [add addr (oper_reg addr) (oper_reg index);
-                             load WORD addr (addr_indirect addr 0)];
+                emit(insts);
+                emit([mov o (oper_imm size);
+                      mul index (oper_reg index) (oper_reg o); (* compute offset *)
+                      add addr  (oper_reg addr)  (oper_reg index);
+                      add addr (oper_reg addr) (oper_imm sz);
+                      load WORD addr (addr_indirect addr 0)]);
                 emit_addressing other
               end
             | [] -> ()) in
         emit_addressing exps;
-        dst, !buffer @ [mov dst (oper_reg addr)]
+        emit([mov dst (oper_reg addr)]);
+        dst, !buffer
         end
     | A.LiteralExp    (lit) -> begin
         let open Il in
@@ -173,7 +176,7 @@ let rec trans_exp ctx exp =
                 else
                   [(mov dst (OperImm 0))]
             | A.LitChar c -> [(mov dst (OperImm (Char.code c)))] (* TODO imm char? *)
-            |  _ -> assert false) in
+            | _ -> assert false) in
         dst, insts
       end
     | A.BinOpExp      ((lhs), binop, (rhs)) -> begin
@@ -358,25 +361,29 @@ let rec trans_stmt env frame stmt = begin
           [store WORD rhst laddr] else [store BYTE rhst laddr]) in (* TODO need to handle storeb *)
       (insts, env)
     end
-  (* | A.VarDeclStmt  (A.ArrayTy ty, name, (A.LiteralExp(A.LitArray elements),_)) -> begin
-   *     let array_length = List.length elements in
-   *     let dst = allocate_temp() in
-   *     let addr_reg = dst in
-   *     let next = allocate_temp() in
-   *     let element_size = 4 in
-   *     let local_var = allocate_local frame 4 in
-   *     let env' = Symbol.insert name (VarEntry (A.ArrayTy ty, Some local_var)) env in
-   *     let insts = [(mov dst (oper_imm (element_size * array_length + 4)))] @
-   *                  trans_call env (\*~result:dst*\) "malloc" [dst] @
-   *                 (trans_assign local_var dst) (\* holds address to the heap allocated array *\) in
-   *     (\* FIXME *\)
-   *                 (\* @ List.concat (List.mapi (fun i e -> (translate_exp env e rest)
-   *                  *                                      @ [STR (next, AddrIndirect (addr_reg, size_offset + element_size * i)), None]) elements) in *\)
-   *     let insts = insts @ [mov next (oper_imm array_length);
-   *                          store WORD next (addr_indirect addr_reg 0)] in
-   *     insts, env'
-   *   end
-   * | A.VarDeclStmt (ty, name, (A.NewPairExp (exp, exp'),_)) -> begin
+  | A.VarDeclStmt  (A.ArrayTy ty, name, (A.LiteralExp(A.LitArray elements),pos)) -> begin
+      let insts_list = ref [] in
+      let emit x = insts_list := !insts_list @ x in
+      let local_var = allocate_local frame 4 in
+      let env' = Symbol.insert name (VarEntry (A.ArrayTy ty, Some local_var)) env in
+      let array_length = List.length elements in
+      let element_size = 4 in
+      let dst = allocate_temp() in
+      let next = allocate_temp() in
+      emit([mov dst (oper_imm (array_length * element_size + 4))]);
+      let addr_reg, alloc_insts = trans_call env "malloc" [dst] in
+      emit(alloc_insts);
+      List.iteri (fun i item -> begin
+            let t, is = tr (item) in
+            emit(is);
+            emit([store WORD t (addr_indirect addr_reg (element_size * i + 4))]);
+          end) elements;
+      emit([mov next (oper_imm array_length);
+            (store WORD next (addr_indirect addr_reg 0))]);
+      emit(trans_assign local_var addr_reg);
+      !insts_list, env'
+    end
+  (* | A.VarDeclStmt (ty, name, (A.NewPairExp (exp, exp'),_)) -> begin
    *     let local_var = allocate_local frame 4 in
    *     let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
    *     let pair_addrt = allocate_temp() in
@@ -434,7 +441,9 @@ let rec trans_stmt env frame stmt = begin
       [jump (while_cond_l);
        label while_end_l], env
     end
-  | A.ExitStmt (exp) -> failwith "exit should be desugared"
+  | A.ExitStmt (exp) -> begin
+      failwith "TODO should be desugared"
+    end
   | A.RetStmt (exp) -> begin
       let expt, expi = tr exp in
       expi @ [ret expt], env

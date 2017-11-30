@@ -65,18 +65,25 @@ let rec simplify (exp: A.exp): A.exp =
 let rec simplify_stmt (ast: A.stmt): A.stmt =
   let open Ast_v2 in
   let (stmt', pos) = ast in
-  match stmt' with
+  (match stmt' with
   | A.IfStmt (cond, then_stmt, else_stmt) -> begin
     let (cond', pos) = cond in
     match cond' with
-    | LiteralExp(LitBool(b)) -> if b then simplify_stmt then_stmt else simplify_stmt else_stmt
+    | LiteralExp (LitBool(b)) -> if b then simplify_stmt then_stmt else simplify_stmt else_stmt
     | _ -> ast
     end
   | A.WhileStmt (cond, body_stmt) -> begin
-    let (cond', pos) = cond in
-    match cond' with
-    | LiteralExp(LitBool(b)) -> if b then ast else (SkipStmt, pos)
-    | _ -> ast
+      let (cond', pos) = cond in
+      match cond' with
+      | LiteralExp(LitBool(b)) -> if b then ast else SkipStmt, pos
+      | _ -> ast
     end
   | A.ExitStmt (exit_code) -> (CallStmt (CallExp("wacc_exit", [exit_code]),pos),pos)
-  | _ -> ast
+  | A.VarDeclStmt (ty, ident, exp) ->  A.VarDeclStmt (ty, ident, simplify exp), pos
+  | A.AssignStmt (exp, exp') -> A.AssignStmt (exp, simplify exp'), pos
+  | A.ReadStmt _ | SkipStmt | A.FreeStmt _ -> ast
+  | A.PrintStmt (newline, exp) -> A.PrintStmt (newline, simplify exp), pos
+  | A.BlockStmt stmt -> (A.BlockStmt (simplify_stmt stmt), pos)
+  | A.RetStmt exp -> (A.RetStmt (simplify exp), pos)
+  | A.SeqStmt (stmt, stmtlist) -> (A.SeqStmt (simplify_stmt stmt, simplify_stmt stmtlist), pos)
+  | _ -> ast)
