@@ -6,6 +6,7 @@ if ! [ -x "$(command -v opam)" ]; then
   # Download OPAM, install with system compiler
   export OPAMROOT=`pwd`/opamroot
   wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s ./ system
+  ./opam init --comp system
   eval `./opam config env`
   export PATH=`pwd`:$PATH
 else
