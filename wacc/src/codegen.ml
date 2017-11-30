@@ -65,9 +65,9 @@ let relocate (colormap) (i:A.inst'): A.inst' =
   | POP  rs -> POP (List.map (!) rs)
   | PUSH rs -> PUSH (List.map (!) rs)
   | LDR  (r, addr) -> LDR (!r, !!!addr)
-  | LDRB (r, addr) -> LDR (!r, !!!addr)
-  | STR  (r, addr) -> LDR (!r, !!!addr)
-  | STRB (r, addr) -> LDR (!r, !!!addr)
+  | LDRB (r, addr) -> LDRB (!r, !!!addr)
+  | STR  (r, addr) -> STR (!r, !!!addr)
+  | STRB (r, addr) -> STRB (!r, !!!addr)
   | EOR  (r0, r1, op) -> EOR (!r0, !r1, !!op)
   | _ -> ii in
   (ir, cond)
