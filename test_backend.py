@@ -2,6 +2,7 @@
 import os
 import sys
 import subprocess
+import argparse
 
 def compile(f):
     try:
@@ -12,6 +13,8 @@ def compile(f):
         return (output, out.returncode)
     except subprocess.TimeoutExpired:
         return ("timeout", -1)
+    except UnicodeDecodeError:
+        return ("failed", -1)
 
 def test_run(filename):
     expected = {}
@@ -43,16 +46,20 @@ def test_run(filename):
 
     if "Exit:" in expected:
         expected_ret = int(''.join(expected['Exit:']).strip())
-        assert expected_ret == retcode
+        if not expected_ret == retcode:
+            print("FAILED")
+    else:
+        if not retcode == 0:
+            print("FAILED non zero return")
 
 with open("excluded", 'r') as excluded:
     excluded = excluded.read().split("\n")
 
-excluded = [os.path.abspath(e) for e in excluded if e]
+excluded = [os.path.abspath(e) for e in excluded if len(e) > 0]
 
 
-def iter_tests():
-    for (root, dirs, files) in os.walk("./testsuite/valid"):
+def iter_tests(path="./testsuite/valid"):
+    for (root, dirs, files) in os.walk(path):
         for name in files:
             p = os.path.abspath(os.path.join(root, name))
             if p.endswith(".wacc") and p not in excluded:
@@ -60,5 +67,7 @@ def iter_tests():
                 test_run(p)
 
 if __name__ == '__main__':
-    # test_run(sys.argv[1])
-    iter_tests()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", "--dir", default="./testsuite/valid")
+    args = parser.parse_args()
+    iter_tests(args.dir)
