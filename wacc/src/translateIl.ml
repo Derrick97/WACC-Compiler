@@ -178,8 +178,8 @@ let rec trans_exp ctx exp =
         let (t, expi) = trans_exp ctx exp in
         let opt = oper_reg t in
         let insts = (match unop with
-            | A.NotOp -> failwith "TODO"
-            | A.NegOp -> [SUB(dst, OperImm 0, opt)]
+            | A.NotOp -> [eor dst (oper_reg dst) (oper_imm 1)]
+            | A.NegOp -> [sub dst (oper_imm 0) opt]
             | A.LenOp | A.OrdOp | A.ChrOp | A.IncOp
               -> failwith "should be desugared" ) in
         (dst, insts)
@@ -406,7 +406,6 @@ let rec trans_stmt env frame stmt = begin
        label while_end_l], env
     end
   | A.ExitStmt (exp) -> failwith "exit should be desugared"
-  | A.SideEffectStmt _ | A.TwoArgsSideEffectStmt _ -> failwith "Not supported"
   | _ -> failwith "TODO other statements"
 end
 

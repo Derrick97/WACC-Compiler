@@ -30,6 +30,7 @@ let def (i:(IL.il*int)) =
       | DIV   (dst, _, _)
       | MUL   (dst, _, _)
       | AND   (dst, _, _)
+      | EOR   (dst, _, _)
       | ORR   (dst, _, _)
       | CMP   (_, dst, _, _) -> [dst]
       | LOAD  (_, dst, _) -> [dst]
@@ -53,7 +54,7 @@ let use (i:(il*int)):tempset =
   InOutSet.of_list (match i with
       | ADD   (_, op1, op2) | SUB (_, op1, op2)
       | DIV   (_, op1, op2) | MUL   (_, op1, op2)
-      | AND   (_, op1, op2) | ORR   (_, op1, op2)
+      | AND   (_, op1, op2) | ORR   (_, op1, op2) | EOR (_, op1, op2)
       | CMP   (_, _, op1, op2) -> List.map get_temp
                                     (List.filter is_reg [op1; op2])
       | COMP  (op1, op2) -> [op1; op2]

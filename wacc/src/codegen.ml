@@ -25,6 +25,7 @@ match il with
   | EOR _ -> A.eor
   | AND _ -> A.annd
   | ORR _ -> A.orr
+  | EOR _ -> A.eor
   (*| MUL _ -> A.mul*)
   | _ -> failwith "not a valid instruction"
 
@@ -51,7 +52,7 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
   match il with
   | ADD   (t, op, op2) | SUB (t, op, op2)
   | DIV   (t, op, op2)
-  | AND   (t, op, op2) | ORR (t, op, op2) -> begin
+  | AND   (t, op, op2) | ORR (t, op, op2) | EOR (t, op, op2) -> begin
       if is_reg op then begin
       let op2' = arm_op  !!op2 in
       let f = arm_arith il in
