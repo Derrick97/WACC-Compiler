@@ -211,10 +211,18 @@ let rec trans_exp ctx exp =
         (dst, insts)
       end
     | A.CallExp       (fname, args) -> begin
+        let buildin_func =
+          ["wacc_len"; "wacc_ord"; "wacc_mod"; "wacc_chr"; "wacc_div"; "wacc_exit"] in
         let argsi = List.map (fun arge -> trans_exp ctx arge) args in
         let insts = List.concat (List.map snd argsi) in
         let argtemps = List.map fst argsi in
-        let resultt, calli = trans_call ctx ("f_" ^ fname) argtemps in
+        let resultt, calli =
+          if (List.length (List.filter (fun x -> x = fname) buildin_func) = 0)
+          then
+            trans_call ctx ("f_" ^ fname) argtemps
+          else
+            trans_call ctx (fname) argtemps
+          in
         resultt, (insts @ calli)
       end
     | A.NewPairExp    (lval, exp) -> failwith "TODO"
