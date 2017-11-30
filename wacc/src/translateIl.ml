@@ -444,6 +444,16 @@ and fixup_allocation frame insts =
         (ADD (o1, OperReg o2, OperImm localsize))
       | _ -> i) insts
 
+and add_function_decs decs env =
+  let env = ref env in
+  let add_function_def f = begin
+    let (A.FuncDec (retty, ident, fields, stmt), _) = f in
+    let argtys = List.map fst fields in
+     env := Symbol.insert ident (FuncEntry (retty, argtys)) !env
+  end in
+  List.iter add_function_def decs;
+  !env
+
 and trans_function_declaration (env: ctx) (dec) = begin
   let ((A.FuncDec(retty, fname, arglist, body), _)) = dec in
   let frame = new_frame ("func_" ^ fname) in
@@ -469,6 +479,7 @@ and trans_function_declaration (env: ctx) (dec) = begin
 end
 
 and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
+  let ctx = add_function_decs decs ctx in
   let frame = new_frame() in
   let insts, _ = trans_stmt ctx frame stmt in
   (* List.iter (fun i -> print_endline (IL.show_il i)) insts; *)
