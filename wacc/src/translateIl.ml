@@ -482,7 +482,11 @@ let rec trans_stmt env frame stmt = begin
       let expt, expi = tr exp in
       expi @ [ret expt], env
     end
-  | _ -> failwith "TODO other statements"
+  | A.BlockStmt (body) -> begin
+      let env' = Symbol.new_scope env in
+      let insts, _ = trans_stmt env' frame body in
+      insts, env
+    end
 end
 
 and pp_string out (l, s): unit =
