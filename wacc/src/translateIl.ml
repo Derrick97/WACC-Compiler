@@ -225,25 +225,24 @@ let rec trans_exp ctx exp =
           in
         resultt, (insts @ calli)
       end
-    | A.NewPairExp    (lval, exp) -> failwith "TODO"
-    (* | A.FstExp         exp  -> begin
-     *     let expt, expinsts = tr exp in
-     *     let next = allocate_temp() in
-     *     let _, insts =  (trans_call ctx "wacc_check_pair_null" [dst]) @
-     *                  [load WORD next (addr_indirect dst  0);
-     *                   load WORD dst  (addr_indirect next 0)] in
-     *     dst, expinsts @ insts
-     *   end
-     * | A.SndExp         exp  -> begin
-     *     let expt, expinsts = tr exp in
-     *     let next = allocate_temp() in
-     *     let _, insts =  (trans_call ctx "wacc_check_pair_null" [dst]) @
-     *                  [load WORD next (addr_indirect dst  4);
-     *                   load WORD dst  (addr_indirect next 0)] in
-     *     dst, expinsts @ insts
-     *   end *)
+    | A.NewPairExp    (lval, exp) -> failwith "newpair should not happen"
+    | A.FstExp         exp  -> begin
+        let expt, expinsts = tr exp in
+        let next = allocate_temp() in
+        let _, insts = (trans_call ctx "wacc_check_pair_null" [expt]) in
+        let insts = insts @ [load WORD next (addr_indirect expt  0);
+                             load WORD dst  (addr_indirect next 0)] in
+        dst, expinsts @ insts
+      end
+    | A.SndExp         exp  -> begin
+        let expt, expinsts = tr exp in
+        let next = allocate_temp() in
+        let _, insts =  (trans_call ctx "wacc_check_pair_null" [expt]) in
+        let insts = insts @ [load WORD next (addr_indirect expt 4);
+                             load WORD dst  (addr_indirect next 0)] in
+        dst, expinsts @ insts
+      end
     | A.NullExp -> dst, [mov dst (oper_imm 0)]
-    | _ -> failwith "TODO"
   end
 
 and trans_call (ctx: ctx)
@@ -378,7 +377,7 @@ let rec trans_stmt env frame stmt = begin
           [store WORD rhst laddr] else [store BYTE rhst laddr]) in (* TODO need to handle storeb *)
       (insts, env)
     end
-  | A.VarDeclStmt  (A.ArrayTy ty, name, (A.LiteralExp(A.LitArray elements),pos)) -> begin
+  | A.VarDeclStmt  (A.ArrayTy ty, name, (A.LiteralExp(A.LitArray elements), _)) -> begin
       let insts_list = ref [] in
       let emit x = insts_list := !insts_list @ x in
       let local_var = allocate_local frame 4 in
@@ -400,33 +399,37 @@ let rec trans_stmt env frame stmt = begin
       emit(trans_assign local_var addr_reg);
       !insts_list, env'
     end
-  (* | A.VarDeclStmt (ty, name, (A.NewPairExp (exp, exp'),_)) -> begin
-   *     let local_var = allocate_local frame 4 in
-   *     let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
-   *     let pair_addrt = allocate_temp() in
-   *     let fstt, fstinsts = tr exp in
-   *     let sndt, sndinsts = tr exp in
-   *     let exp_ty = Semantic.check_exp env exp in
-   *     let exp'_ty = Semantic.check_exp env exp in
-   *     let r0, r1, tmp = allocate_temp(), allocate_temp(), allocate_temp() in
-   *     fstinsts @ sndinsts @
-   *     (\* allocate for pair, each pair is represented with 4 * 2
-   *        bytes of addresses on the heap *\)
-   *     (\* TODO: fix passing return valies back *\)
-   *     [mov pair_addrt (oper_imm (4 * 2))] @
-   *      trans_call (\* ~result:pair_addr *\) env "malloc" [pair_addrt] @
-   *     (\* fst allocation *\)
-   *     [mov r0 (oper_imm (size_of_type exp_ty))] @
-   *      trans_call (\* ~result:tmp *\) env "malloc" [r0] @
-   *     [store WORD tmp  (addr_indirect pair_addrt 0);
-   *      store WORD fstt (addr_indirect tmp 0)] (\* fixme handle byte store *\) @
-   *     (\* snd allocation *\)
-   *     [mov r1 (oper_imm (size_of_type exp'_ty))] @
-   *      trans_call (\* ~result:tmp *\) env "malloc" [r1] @
-   *     [store WORD tmp  (addr_indirect pair_addrt 4);
-   *      store WORD sndt (addr_indirect tmp 0)]
-   *     @ trans_assign local_var pair_addrt, env'
-   *   end *)
+  | A.VarDeclStmt (ty, name, (A.NewPairExp (exp, exp'),_)) -> begin
+      let local_var = allocate_local frame 4 in
+      let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
+      let sizet = allocate_temp() in
+      let fstt, fstinsts = tr exp in
+      let sndt, sndinsts = tr exp' in
+      let exp_ty = exp_type env exp in
+      let exp'_ty = exp_type env exp' in
+      let r0, r1 = allocate_temp(), allocate_temp() in
+      let pair_addrt, pair_addr_alloc_insts = trans_call  env "malloc" [sizet] in
+      let fst_addrt, fst_alloc_insts = trans_call env "malloc" [r0] in
+      let snd_addrt, snd_alloc_insts = trans_call env "malloc" [r1] in
+      fstinsts @ sndinsts @
+      (* allocate for pair, each pair is represented with 4 * 2
+         bytes of addresses on the heap *)
+      (* TODO: fix passing return valies back *)
+      [mov sizet (oper_imm (4 * 2))] @
+       pair_addr_alloc_insts @
+      [store WORD pair_addrt (addr_indirect (F.reg_SP) 0)] @
+      (* fst allocation *)
+      [mov r0 (oper_imm (size_of_type exp_ty))] @
+       fst_alloc_insts @
+      [store WORD fst_addrt (addr_indirect pair_addrt 0);
+       store WORD fstt (addr_indirect fst_addrt 0)] (* fixme handle byte store *) @
+      (* snd allocation *)
+      [mov r1 (oper_imm (size_of_type exp'_ty))] @
+       snd_alloc_insts @
+      [store WORD snd_addrt  (addr_indirect pair_addrt 4);
+       store WORD sndt (addr_indirect snd_addrt 0)]
+      @ trans_assign local_var pair_addrt, env'
+    end
   | A.VarDeclStmt  (ty, name, exp) -> begin
       let size = size_of_type ty in
       let local_var = allocate_local frame size in
@@ -437,6 +440,20 @@ let rec trans_stmt env frame stmt = begin
     end
   | A.SkipStmt       -> trans_noop, env
   | A.CallStmt (exp) -> snd (trans_exp env exp), env
+  | A.ReadStmt (exp) -> begin
+      let addr, insts = addr_of_exp env exp in
+      let ty = exp_type env exp in
+      let readt, readinsts = trans_call env ("wacc_read_" ^ (string_of_ty ty)) [] in
+      let readinsts = readinsts @ (if ty = A.CharTy then
+                                     [store BYTE readt addr]
+                                   else [store WORD readt addr]) in
+      insts @ readinsts, env
+    end
+  | A.FreeStmt     (exp) -> begin
+      let expt, expi = tr exp in
+      let _, ci = trans_call env "wacc_free" [expt] in
+      expi @ ci, env
+    end
   | A.IfStmt       (cond, then_exp, else_exp) -> begin
       let env' = Symbol.new_scope env in
       let condt, condi = trans_exp env' cond in
