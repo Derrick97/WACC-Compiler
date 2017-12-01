@@ -63,6 +63,7 @@ inline void mark(node* n) {
 }
 
 void markAll(node* root) {
+  if (root->marked) return;        /* avoid cyclic references */
   mark(root);
   switch (root->t) {
   case TY_INT:
