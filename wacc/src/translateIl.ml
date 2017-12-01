@@ -29,6 +29,17 @@ let (frags: frag list ref) = ref []
 let counter = ref 0
 let strings = ref []
 
+let split_offset offset =
+  if offset = 0 then (0,0)
+  else
+    let tempNum = ref 1 in
+    let () = if offset < 256 then tempNum := offset * 2 in
+    let () =
+      while !tempNum <= offset do
+        tempNum := !tempNum * 2
+      done in
+    (!tempNum / 2, offset - (!tempNum / 2))
+
 let is_pair = function
   | A.PairTy _ | A.PairTyy -> true
   | _ -> false
@@ -499,19 +510,29 @@ and pp_inst out (i: Arm.inst') =
 and frame_prologue (frame: frame): il list = begin
   let open IL in
   let local_size = frame_size frame in
+  let (valid_size1, valid_size2) = split_offset local_size in
   let allocate_insts = if (local_size > 0) then
-      [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
+      [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size1)]
     else [] in
-   [push [F.reg_LR]] @ allocate_insts
+  let handle_big_local_size_inst =
+  if (valid_size2 != 0) then
+      [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size2)] else []
+  in
+   [push [F.reg_LR]] @ allocate_insts @ handle_big_local_size_inst
 end
 
 and frame_epilogue (frame: frame): il list = begin
   let open IL in
   let local_size = frame_size frame in
+  let (valid_size1, valid_size2) = split_offset local_size in
   let deallocate_insts = if (local_size > 0) then
-      [add F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
+      [add F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size1)]
     else [] in
-  deallocate_insts @
+  let handle_big_local_size_inst =
+  if (valid_size2 !=0) then
+      [add F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size2)] else []
+  in
+  deallocate_insts @ handle_big_local_size_inst @
   [pop [F.reg_PC]]
 end
 
