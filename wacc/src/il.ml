@@ -46,6 +46,22 @@ and il =
   | RET   of temp
   | LABEL of label  [@@deriving show]
 
+let print_operand operand =
+  match operand with
+  | OperImm(num) -> print_int num; print_string " "
+  | OperReg(reg) -> print_string reg; print_string " "
+
+let inst_to_print il =
+  match il with
+  | PUSH [temp] -> print_string ("push" ^ temp)
+  | POP [temp] -> print_string ("pop" ^ temp)
+  | ADD (temp, op1, op2) -> print_string ("add " ^ temp ^ " "); print_operand op1; print_operand op2
+  | SUB (temp, op1, op2) -> print_string ("sub " ^ temp ^ " "); print_operand op1; print_operand op2
+  | MUL (temp, op1, op2) -> print_string ("mul " ^ temp ^ " "); print_operand op1; print_operand op2
+  | MOV _ -> print_string "mov"
+  | _ -> print_string "TODO"
+
+
 let push dsts = PUSH (dsts)
 let pop dsts = POP (dsts)
 let mov dst op = MOV (dst, op)

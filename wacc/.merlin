@@ -1,5 +1,7 @@
 S src
+S tests
 B _build/src
+B _build/tests
 PKG ocamlgraph
 PKG ppx_deriving.std
 PKG oUnit
