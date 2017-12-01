@@ -26,4 +26,7 @@ clean:
 wacclib.s:
 	$(PWD)/../tools/arm-gcc -S src/wacclib.c -o wacclib.s
 
-.PHONY: clean wacclib
+test:
+	ocamlbuild -I src -use-ocamlfind tests/test_main.byte && ./test_main.byte
+
+.PHONY: clean wacclib test

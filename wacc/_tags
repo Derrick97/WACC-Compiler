@@ -1,4 +1,4 @@
 true : bin_annot,debug
 <lib>: -traverse
 <src/*>: package(ocamlgraph), package(ppx_deriving.std), package(unix), package(oUnit)
-<test/*>: package(oUnit), package(ocamlgraph), package(ppx_deriving.std), package(unix)
+<tests/*>: package(oUnit), package(ocamlgraph), package(ppx_deriving.std), package(unix)
