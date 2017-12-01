@@ -87,7 +87,9 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
       [f (t) (get_reg op) op2'; bl ~cond:Arm.VS "wacc_throw_overflow_error"]
       end
       else
-      failwith "should not have imm operand"
+        let f = arm_arith il in
+        [mov t (arm_op op);
+         f (t) t (arm_op op2); bl ~cond:Arm.VS "wacc_throw_overflow_error"]
     end
   | MUL   (t, op, op2) -> begin
       if is_reg op then begin
@@ -97,7 +99,14 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
          Arm.cmp op2' (Arm.OperReg (op', Some (ASR 31)));
          Arm.bl ~cond:NE "wacc_throw_overflow_error"]
       end
-      else failwith "should not have imm operand"
+      else begin
+        let op' = get_reg op in
+        let op2' = get_reg op2 in
+        [Arm.mov t (arm_op op);
+         Arm.smull op' op2' op' op2';
+         Arm.cmp op2' (Arm.OperReg (op', Some (ASR 31)));
+         Arm.bl ~cond:NE "wacc_throw_overflow_error"]
+      end
     end
   | LOAD  (size, t, addr) -> begin
       match size with
@@ -109,7 +118,7 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
       | WORD -> [str  (t) (arm_addr addr)]
       | BYTE -> [strb (t) (arm_addr addr)]
     end
-
+  | DIV _ -> assert false
   | JUMP   label -> [A.jump label]
   | CALL   label -> [A.bl label]
   | CMP   (cond, t, op, op2) -> begin

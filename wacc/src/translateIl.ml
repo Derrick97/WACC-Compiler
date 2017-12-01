@@ -127,7 +127,7 @@ let get_access env name = match Symbol.lookup name env with
 
 let rec trans_exp ctx exp =
   let open Il in
-  let (exp, _) = exp in
+  let (exp, pos) = exp in
   let tr = trans_exp ctx in
   let dst = allocate_temp() in
   begin match exp with
@@ -201,13 +201,16 @@ let rec trans_exp ctx exp =
         in
         dst, (lhsi @ rhsi @ inst)
       end
+    | A.UnOpExp       (A.NegOp, exp) -> begin
+        (* FIXME a problem with the limitation of ARM architecture *)
+        trans_exp ctx ((A.BinOpExp ((A.LiteralExp (A.LitInt 0), pos), A.MinusOp, exp), pos))
+      end
     | A.UnOpExp       (unop, exp) -> begin
         let (t, expi) = trans_exp ctx exp in
-        let opt = oper_reg t in
         let insts = (match unop with
             | A.NotOp -> [eor dst (oper_reg dst) (oper_imm 1)]
-            | A.NegOp -> [sub dst (oper_imm 0) opt]
-            | A.LenOp | A.OrdOp | A.ChrOp | A.IncOp
+            | A.NegOp -> [sub dst (oper_imm 0) (oper_reg t)]
+            | A.LenOp | A.OrdOp | A.ChrOp
               -> failwith "should be desugared" ) in
         (dst, insts)
       end
@@ -539,6 +542,7 @@ and add_function_decs decs env =
 
 and trans_function_declaration (env: ctx) (dec) = begin
   let ((A.FuncDec(retty, fname, arglist, body), _)) = dec in
+  let body = Simplify.simplify_stmt body in
   let frame = new_frame ("func_" ^ fname) in
   let env' = ref (Symbol.new_scope env) in
   let add_binding name ty acc = env' := Symbol.insert name (VarEntry (ty, Some acc)) !env' in

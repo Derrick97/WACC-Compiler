@@ -13,7 +13,7 @@ let rec simplify (exp: A.exp): A.exp =
         | PlusOp -> LiteralExp (LitInt(a+b))
         | MinusOp -> LiteralExp (LitInt(a-b))
         | TimesOp -> LiteralExp (LitInt(a*b))
-        | DivideOp -> if b != 0 then LiteralExp (LitInt(a/b)) else exp'
+        | DivideOp -> if b != 0 then LiteralExp (LitInt(a/b)) else CallExp("wacc_div", [lhs; rhs])
         | ModOp -> LiteralExp (LitInt(a mod b))
         | GeOp -> LiteralExp (LitBool(a>=b))
         | GtOp -> LiteralExp (LitBool(a>b))
@@ -39,26 +39,14 @@ let rec simplify (exp: A.exp): A.exp =
     end
   | A.UnOpExp (op, rhs) -> begin
     let (rhs', pos) = simplify rhs in
-    let exp' = match rhs' with
-    | LiteralExp (LitInt(a)) -> begin
-      match op with
-      | NegOp -> LiteralExp (LitInt(-a))
-      | ChrOp -> LiteralExp (LitChar(Char.chr a))
-      | _ -> assert false
-      end
-    | LiteralExp (LitBool(b)) -> begin
-      match op with
-      | NotOp ->  LiteralExp (LitBool(not b))
-      | _ -> assert false
-      end
-    | _ ->
-      match op with
-      | LenOp -> CallExp ("wacc_len", [rhs])
-      | ChrOp -> CallExp ("wacc_chr", [rhs])
-      | OrdOp -> CallExp ("wacc_ord", [rhs])
+    let exp' =  match op with
+      | LenOp -> CallExp ("wacc_len", [rhs', pos])
+      | ChrOp -> print_endline "chr"; CallExp ("wacc_chr", [rhs', pos])
+      | OrdOp -> print_endline "ord"; CallExp ("wacc_ord", [rhs', pos])
       | _ -> exp'
     in (exp', pos)
-    end
+  end
+  | A.CallExp (fname, args) -> A.CallExp (fname, (List.map simplify args)), pos
   | _ -> exp
 
 
@@ -80,7 +68,7 @@ let rec simplify_stmt (ast: A.stmt): A.stmt =
     end
   | A.ExitStmt (exit_code) -> (CallStmt (CallExp("wacc_exit", [exit_code]),pos),pos)
   | A.VarDeclStmt (ty, ident, exp) ->  A.VarDeclStmt (ty, ident, simplify exp), pos
-  | A.AssignStmt (exp, exp') -> A.AssignStmt (exp, simplify exp'), pos
+  | A.AssignStmt (exp, exp') -> A.AssignStmt (simplify exp, simplify exp'), pos
   | A.ReadStmt _ | SkipStmt | A.FreeStmt _ -> ast
   | A.PrintStmt (newline, exp) -> A.PrintStmt (newline, simplify exp), pos
   | A.BlockStmt stmt -> (A.BlockStmt (simplify_stmt stmt), pos)
