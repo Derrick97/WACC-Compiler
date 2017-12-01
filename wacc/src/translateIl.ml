@@ -215,11 +215,11 @@ let rec trans_exp ctx exp =
         let (t, expi) = trans_exp ctx exp in
         let opt = oper_reg t in
         let insts = (match unop with
-            | A.NotOp -> [eor dst (oper_reg dst) (oper_imm 1)]
-            | A.NegOp -> [sub dst (oper_imm 0) opt]
+            | A.NotOp -> [eor t (oper_reg t) (oper_imm 1)]
+            | A.NegOp -> [sub t (oper_imm 0) opt]
             | A.LenOp | A.OrdOp | A.ChrOp | A.IncOp
               -> failwith "should be desugared" ) in
-        (dst, insts)
+        (t, expi @ insts)
       end
     | A.CallExp       (fname, args) -> begin
         let buildin_func =

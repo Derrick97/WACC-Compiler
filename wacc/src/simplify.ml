@@ -31,8 +31,9 @@ let rec simplify (exp: A.exp): A.exp =
         end
       | _ -> begin
         match op with
-        | ModOp -> CallExp ("wacc_mod", [lhs; rhs])
-        | DivideOp -> CallExp ("wacc_div", [lhs; rhs])
+        | ModOp ->  CallExp ("wacc_mod", [(lhs',pos); (rhs',pos)])
+        | DivideOp -> CallExp ("wacc_div", [(lhs',pos); (rhs',pos)])
+        | PlusOp -> BinOpExp (simplify lhs, PlusOp,  simplify rhs)
         | _ -> exp'
       end
       in (simple_exp', pos)
@@ -79,7 +80,7 @@ let rec simplify_stmt (ast: A.stmt): A.stmt =
     | _ -> (WhileStmt (cond, simplify_stmt body_stmt), pos)
     end
   | A.ExitStmt (exit_code) -> (CallStmt (CallExp("wacc_exit", [exit_code]),pos),pos)
-  | A.VarDeclStmt (ty, ident, exp) ->  A.VarDeclStmt (ty, ident, simplify exp), pos
+  | A.VarDeclStmt (ty, ident, exp) -> A.VarDeclStmt (ty, ident, simplify exp), pos
   | A.AssignStmt (exp, exp') -> A.AssignStmt (exp, simplify exp'), pos
   | A.ReadStmt _ | SkipStmt | A.FreeStmt _ -> ast
   | A.PrintStmt (newline, exp) -> A.PrintStmt (newline, simplify exp), pos
