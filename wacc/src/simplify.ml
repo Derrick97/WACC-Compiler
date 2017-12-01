@@ -4,16 +4,19 @@ let rec simplify (exp: A.exp): A.exp =
   let open Ast_v2 in
   let (exp', pos) = exp in
   match exp' with
+  | A.BinOpExp (lhs, A.DivideOp, rhs) -> begin
+      A.CallExp ("wacc_div", [simplify lhs; simplify rhs]), pos
+    end
   | A.BinOpExp (lhs, op, rhs) -> begin
       let (lhs', pos) = simplify lhs in
       let (rhs', pos) = simplify rhs in
-      let simple_exp' = match (lhs', rhs') with
+      let simple_exp' = (match (lhs', rhs') with
       | (LiteralExp (LitInt(a)), LiteralExp (LitInt(b))) -> begin
         match op with
         | PlusOp -> LiteralExp (LitInt(a+b))
         | MinusOp -> LiteralExp (LitInt(a-b))
         | TimesOp -> LiteralExp (LitInt(a*b))
-        | DivideOp -> if b != 0 then LiteralExp (LitInt(a/b)) else CallExp("wacc_div", [lhs; rhs])
+        | DivideOp -> if b != 0 then LiteralExp (LitInt(a/b)) else CallExp("wacc_div", [simplify lhs; simplify rhs])
         | ModOp -> LiteralExp (LitInt(a mod b))
         | GeOp -> LiteralExp (LitBool(a>=b))
         | GtOp -> LiteralExp (LitBool(a>b))
@@ -24,30 +27,34 @@ let rec simplify (exp: A.exp): A.exp =
         | _ -> assert false
         end
       | (LiteralExp (LitBool(a)), LiteralExp (LitBool(b))) -> begin
-        match op with
-        | AndOp -> LiteralExp (LitBool(a&&b))
-        | OrOp  -> LiteralExp (LitBool(a||b))
-        | _ -> assert false
+          match op with
+          | AndOp -> LiteralExp (LitBool(a&&b))
+          | OrOp  -> LiteralExp (LitBool(a||b))
+          | _ -> assert false
         end
       | _ -> begin
-        match op with
-        | ModOp -> CallExp ("wacc_mod", [lhs; rhs])
-        | DivideOp -> CallExp ("wacc_div", [lhs; rhs])
-        | _ -> exp'
-      end
+          match op with
+          | ModOp -> CallExp ("wacc_mod", [simplify lhs; simplify rhs])
+          | DivideOp -> CallExp ("wacc_div", [simplify lhs; simplify rhs])
+          | _ -> A.BinOpExp (simplify lhs, op, simplify rhs)
+      end)
       in (simple_exp', pos)
     end
   | A.UnOpExp (op, rhs) -> begin
     let (rhs', pos) = simplify rhs in
     let exp' =  match op with
       | LenOp -> CallExp ("wacc_len", [rhs', pos])
-      | ChrOp -> print_endline "chr"; CallExp ("wacc_chr", [rhs', pos])
-      | OrdOp -> print_endline "ord"; CallExp ("wacc_ord", [rhs', pos])
+      | ChrOp -> CallExp ("wacc_chr", [rhs', pos])
+      | OrdOp -> CallExp ("wacc_ord", [rhs', pos])
       | _ -> exp'
     in (exp', pos)
   end
   | A.CallExp (fname, args) -> A.CallExp (fname, (List.map simplify args)), pos
-  | _ -> exp
+  | A.FstExp e -> A.FstExp (simplify e), pos
+  | A.SndExp e -> A.SndExp (simplify e), pos
+  | A.NewPairExp (e,e') -> A.NewPairExp (simplify e, simplify e'), pos
+  | A.ArrayIndexExp (name, args) -> A.ArrayIndexExp (name, List.map simplify args), pos
+  | A.LiteralExp _  | A.IdentExp _ | NullExp -> exp
 
 
 let rec simplify_stmt (ast: A.stmt): A.stmt =
@@ -66,7 +73,7 @@ let rec simplify_stmt (ast: A.stmt): A.stmt =
     | LiteralExp(LitBool(b)) -> if b then ast else (SkipStmt, pos)
     | _ -> (WhileStmt (cond, simplify_stmt body_stmt), pos)
     end
-  | A.ExitStmt (exit_code) -> (CallStmt (CallExp("wacc_exit", [exit_code]),pos),pos)
+  | A.ExitStmt (exit_code) -> (CallStmt (CallExp("wacc_exit", [simplify exit_code]),pos),pos)
   | A.VarDeclStmt (ty, ident, exp) ->  A.VarDeclStmt (ty, ident, simplify exp), pos
   | A.AssignStmt (exp, exp') -> A.AssignStmt (simplify exp, simplify exp'), pos
   | A.ReadStmt _ | SkipStmt | A.FreeStmt _ -> ast

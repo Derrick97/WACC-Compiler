@@ -180,7 +180,7 @@ let rec trans_exp ctx exp =
             | _ -> assert false) in
         dst, insts
       end
-    | A.BinOpExp      ((lhs), binop, (rhs)) -> begin
+    | A.BinOpExp      (lhs, binop, rhs) -> begin
         let (l, lhsi) = (trans_exp ctx lhs) in
         let (r, rhsi) = (trans_exp ctx rhs) in
         let (opl, opr) = (oper_reg l), (oper_reg r) in
@@ -188,7 +188,7 @@ let rec trans_exp ctx exp =
             | A.PlusOp   -> [add dst opl opr]
             | A.MinusOp  -> [sub dst opl opr]
             | A.TimesOp  -> [mul dst opl opr]
-            | A.DivideOp -> [div dst opl opr]
+            | A.DivideOp -> assert false
             | A.AndOp ->    [and_ dst opl opr]
             | A.OrOp  ->    [or_ dst opl opr]
             | A.EqOp -> [sub dst opl opr; cmp Il.EQ dst (oper_reg dst) (oper_imm 0)]

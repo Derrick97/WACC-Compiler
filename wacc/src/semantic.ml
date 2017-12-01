@@ -160,6 +160,7 @@ and check_exp (table: env) (exp: A.exp): ty = begin
       let snd_ty = check_exp table exp' in
       PairTy (fst_ty, snd_ty)
     end
+  | CallExp     ("wacc_div", _) -> A.IntTy
   | CallExp     (fname, exps) -> begin
       try
         let (retty, argtys) = function_type table fname in
