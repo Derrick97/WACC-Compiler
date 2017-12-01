@@ -150,6 +150,7 @@ let rec trans_exp ctx exp =
             | exp::other -> begin
                 let index, insts = trans_exp ctx exp in
                 emit(insts);
+                emit(snd (trans_call ctx "wacc_check_array_bounds" [addr; index]));
                 emit([mov o (oper_imm size);
                       mul index (oper_reg index) (oper_reg o); (* compute offset *)
                       add addr  (oper_reg addr)  (oper_reg index);
@@ -317,18 +318,16 @@ and addr_of_exp (env) (e: A.exp): (Il.addr * il list) =
       (addr_indirect Arm.reg_SP offset), insts
     end
   | FstExp (exp) -> begin
-      let dst = allocate_temp() in
-      let next, insts = trans_exp env exp in
+      let dst, insts = trans_exp env exp in
       let _, insts' = trans_call env "wacc_check_pair_null" [dst] in
       let insts = insts @ insts' in
-       (addr_indirect next 0), insts @ [load WORD next (addr_indirect dst 0)]
+       (addr_indirect dst 0), insts @ [load WORD dst (addr_indirect dst 0)]
     end
   | SndExp (exp) -> begin
-      let dst = allocate_temp() in
-      let next, insts = trans_exp env exp  in
+      let dst, insts = trans_exp env exp  in
       let _, insts' = trans_call env "wacc_check_pair_null" [dst] in
       let insts = insts @ insts' in
-      (addr_indirect next 0), insts @ [load WORD next (addr_indirect dst 4)]
+      (addr_indirect dst 0), insts @ [load WORD dst (addr_indirect dst 4)]
     end
   | _ -> invalid_arg "Not an lvalue"
 
@@ -479,8 +478,13 @@ let rec trans_stmt env frame stmt = begin
       failwith "TODO should be desugared"
     end
   | A.RetStmt (exp) -> begin
+      let open F in
+      let open Il in
       let expt, expi = tr exp in
-      expi @ [ret expt], env
+      let retinsts =  [mov (reg_RV) (oper_reg expt);
+                       add reg_SP (oper_reg reg_SP) (oper_imm (frame_size frame));
+                       pop [reg_PC]] in
+      expi @ retinsts, env
     end
   | A.BlockStmt (body) -> begin
       let env' = Symbol.new_scope env in
