@@ -5,3 +5,5 @@ B _build/tests
 PKG ocamlgraph
 PKG ppx_deriving.std
 PKG oUnit
+PKG llvm
+PKG llvm.analysis
