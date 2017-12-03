@@ -608,6 +608,7 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   let insts, _ = trans_stmt ctx frame stmt in
   (* List.iter (fun i -> print_endline (IL.show_il i)) insts; *)
   let insts = (frame_prologue frame) @ insts @ [IL.mov (F.reg_RV) (oper_imm 0)] @ (frame_epilogue frame) in
+  let insts = Optimize.peephole_optimize insts in
   let instsi = List.mapi (fun i x -> (x, i)) insts in
   (* build CFG *)
   let liveout = Liveness.build instsi in

@@ -14,6 +14,9 @@ let expect_inst3 = [PUSH ["r1"]; MOV ("r0", (OperReg("r5"))); POP ["r1"]]
 let inst_list4 = [LOAD (BYTE, "r3",ADDR_INDIRECT("r7",3)); MOV ("r4", OperReg("r3")); MOV ("r3", OperReg("r4")); STORE(WORD, "r7",ADDR_INDIRECT("r3",3))]
 let expect_inst4 = [LOAD (BYTE, "r3",ADDR_INDIRECT("r7",3)); MOV ("r4", OperReg("r3")); STORE(WORD, "r7",ADDR_INDIRECT("r3",3))]
 
+let inst_list5 = [LOAD (BYTE, "r3",ADDR_INDIRECT("r7",3)); MOV ("r4", OperReg("r4")); MOV ("r3", OperReg("r4")); STORE(WORD, "r7",ADDR_INDIRECT("r3",3))]
+let expect_inst5 = [LOAD (BYTE, "r3",ADDR_INDIRECT("r7",3)); MOV ("r3", OperReg("r4")); STORE(WORD, "r7",ADDR_INDIRECT("r3",3))]
+
 
 
 let test1 test_ctxt = assert_equal expect_inst1 (Optimize.peephole_optimize inst_list1)

@@ -6,7 +6,7 @@ module O = OUnit2;;
 open OUnit2;;
 open Il;;
 
-
+show
 let string_of_insts is = String.concat "\n" (List.map Il.show_il is)
 
 let assert_insts_equal expect actual = assert_equal
@@ -49,7 +49,15 @@ let expect_inst4 = [LOAD (BYTE, "r3",ADDR_INDIRECT("r7",3));
                     MOV ("r4", OperReg("r3"));
                     STORE(WORD, "r7",ADDR_INDIRECT("r3",3))]
 
-let testsuite = "MOV then ADD/SUB/MUL/DIV:">:::
+let inst_list5 = [LOAD (BYTE, "r3",ADDR_INDIRECT("r7",3));
+                  MOV ("r4", OperReg("r4"));
+                  MOV ("r3", OperReg("r4"));
+                  STORE(WORD, "r7",ADDR_INDIRECT("r3",3))]
+let expect_inst5 = [LOAD (BYTE, "r3",ADDR_INDIRECT("r7",3));
+                   MOV ("r3", OperReg("r4"));
+                   STORE(WORD, "r7",ADDR_INDIRECT("r3",3))]
+
+let testsuite1 = "MOV then ADD/SUB/MUL/DIV:">:::
     List.mapi (fun i (expected, actual) -> begin
         let title = (string_of_int i) in
         title >:: (fun _ ->
@@ -57,5 +65,20 @@ let testsuite = "MOV then ADD/SUB/MUL/DIV:">:::
       end) [(expect_inst1, inst_list1);
             (expect_inst2, inst_list2);]
 
+let testsuite2 = "MOV a b then MOV b a:">:::
+    List.mapi (fun i (expected, actual) -> begin
+        let title = (string_of_int i) in
+        title >:: (fun _ ->
+          assert_insts_equal expected (Optimize.peephole_optimize actual))
+        end) [(expect_inst3, inst_list3);
+              (expect_inst4, inst_list4);]
+
+let testsuite3 = "MOV a a">:::
+    List.mapi (fun i (expected, actual) -> begin
+        let title = (string_of_int i) in
+        title >:: (fun _ ->
+          assert_insts_equal expected (Optimize.peephole_optimize actual))
+        end) [(expect_inst5, inst_list5)]
+
 let suite = "Peephole Optimization">:::
-            [testsuite]
+            [testsuite1; testsuite2; testsuite3]
