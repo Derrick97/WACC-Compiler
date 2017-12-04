@@ -81,3 +81,29 @@ let comp t0 t1 = COMP (t0, t1)
 let cbr t th el = CBR (t, th, el)
 let ret t = RET t
 let label l = (LABEL l)
+
+
+type emitter = {
+  mutable emit_counter: int;
+  mutable emit_code: il array;
+}
+
+let new_emitter () =
+  {
+    emit_counter = 0;
+    emit_code = Array.make 4 NOOP;
+  }
+
+let append (emitter: emitter) (i:il): unit = begin
+  let size = Array.length emitter.emit_code in
+  (if (emitter.emit_counter >= size)
+  then
+    let old = emitter.emit_code in
+    let n = Array.make (2*size) NOOP in
+    Array.blit old 0 n 0 size;
+    ignore (emitter.emit_code <- n)
+  else
+    ());
+  emitter.emit_code.(emitter.emit_counter) <- i;
+  emitter.emit_counter <- emitter.emit_counter + 1;
+end

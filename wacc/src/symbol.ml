@@ -59,3 +59,6 @@ let lookup' symbol table =
 let insert symbol entry table =
   let Table (table', parent) = table in
   Table ((ST.add symbol entry table'), parent)
+
+let iter_local ((Table (tab, _)): 'a table) (f: 'a -> unit) = ST.iter (fun k v -> (f v)) tab
+(* let map_local ((Table (tab, parent)): 'a table) (f: 'a -> 'b): 'b table =  Table (ST.map (fun v -> (f v)) tab, parent) *)

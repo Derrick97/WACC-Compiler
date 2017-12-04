@@ -25,3 +25,5 @@ val lookup_opt' : symbol -> 'a table -> 'a option
 (* lookup a particular symbol from the table IN CURRENT SCOPE
    will raise Not_found if the symbol is not found in all scope *)
 val lookup' : symbol -> 'a table -> 'a
+val iter_local: 'a table -> ('a -> unit) -> unit
+(* val map_local: 'a table -> ('a -> 'b) ->  'b table *)
