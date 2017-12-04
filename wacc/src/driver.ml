@@ -37,7 +37,7 @@ let () =
       let stmt = Simplify.simplify_stmt stmt in
       ignore(TranslateIl.trans_prog table' (decs, stmt) out);
       close_out out;
-      ignore(Sys.command (Printf.sprintf "cat wacclib.s >> %s" out_filename));
+      (* ignore(Sys.command (Printf.sprintf "cat wacclib.s >> %s" out_filename)); *)
       ()
     with
     | A.SyntaxError _ | Parser.Error -> handle_syntax_error lexbuf

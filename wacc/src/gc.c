@@ -66,6 +66,7 @@ void mark(node* n) {
 }
 
 void mark_all(node* root) {
+  printf("Marked\n");
   if (root->marked) return;        /* avoid cyclic references */
   root->marked = MARKED;
   switch (root->t) {
@@ -109,6 +110,8 @@ void deallocate(node* node) {
 }
 
 void sweep_all(void) {
+  printf("Sweeped\n");
+  return;
   node* ptr = global_ctx->first_node;
   while (ptr != NULL) {
     node* next = ptr->next;
@@ -128,14 +131,14 @@ void gc(node* root) {
   printf("[GC] garbage collection occurred\n");
 }
 
-int main() {
-  init_gc_ctx();
-  node* n_int0 = allocate(TY_INT);
-  node* n_int1 = allocate(TY_INT);
-  allocate(TY_INT); // Allocate garbage
-  node* n_pair = allocate(TY_PAIR);
-  n_pair->node_pair.fst = n_int0;
-  n_pair->node_pair.snd = n_int1;
-  gc(n_pair);
-  destroy_gc_ctx();
-}
+/* int main() { */
+/*   init_gc_ctx(); */
+/*   node* n_int0 = allocate(TY_INT); */
+/*   node* n_int1 = allocate(TY_INT); */
+/*   allocate(TY_INT); // Allocate garbage */
+/*   node* n_pair = allocate(TY_PAIR); */
+/*   n_pair->node_pair.fst = n_int0; */
+/*   n_pair->node_pair.snd = n_int1; */
+/*   gc(n_pair); */
+/*   destroy_gc_ctx(); */
+/* } */

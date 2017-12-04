@@ -29,6 +29,12 @@ let (frags: frag list ref) = ref []
 let counter = ref 0
 let strings = ref []
 
+let iter_locals (env) f =
+  let f = function
+    | VarEntry (A.PairTy _, Some acc) -> f acc
+    | _ -> () in
+  Symbol.iter_local env f
+
 let is_pair = function
   | A.PairTy _ | A.PairTyy -> true
   | _ -> false
@@ -95,7 +101,7 @@ let size_of_type = function
   | A.IntTy -> 4
   | A.StringTy | A.PairTy _ | A.NullTy | A.PairTyy | A.ArrayTy _ -> 4
 
-let trans_var (var: access): (temp * Il.il list) =
+let rec trans_var (var: access): (temp * Il.il list) =
   let open Il in
   let t = allocate_temp() in
   match var with
@@ -106,7 +112,7 @@ let trans_var (var: access): (temp * Il.il list) =
        | _ -> assert false)
   | InReg r -> t, [Il.MOV (t, Il.OperReg r)]
 
-let trans_assign
+and trans_assign
     (lv: access)
     (rv: temp): (il list) = begin
   let open IL in
@@ -119,13 +125,36 @@ let trans_assign
   | InReg (dst) -> [(mov dst (OperReg rv))]
 end
 
-let trans_noop: il list = []
+and trans_mark (ctx) (frame: frame): (il list) = begin
+  let code = ref [] in
+  let emit = function x -> code := !code @ x in
+  iter_locals ctx (fun acc -> begin
+        match acc with
+        | InFrame (offset, sz) -> begin
+            let t = allocate_temp() in
+            emit([Il.load WORD t (addr_indirect F.reg_SP offset)]
+                 @ snd (trans_call ctx "mark_all" [t]));
+          end
+        | _ -> invalid_arg "not stack local variable"
+      end);
+  !code
+end
 
-let get_access env name = match Symbol.lookup name env with
+and trans_sweep (ctx) (frame: frame): (il list) = begin
+  let code = ref [] in
+  let emit = function x -> code := !code @ x in
+  let t = allocate_temp() in
+  emit(snd (trans_call ctx "sweep_all" [t]));
+  !code
+end
+
+and trans_noop: il list = []
+
+and get_access env name = match Symbol.lookup name env with
   | E.VarEntry (t, Some acc) -> (t, acc)
   | _ -> invalid_arg "not an access"
 
-let rec trans_exp ctx exp =
+and trans_exp ctx exp =
   let open Il in
   let (exp, _) = exp in
   let tr = trans_exp ctx in
@@ -496,21 +525,23 @@ and pp_string out (l, s): unit =
 and pp_inst out (i: Arm.inst') =
   Printf.fprintf out "%s\n" (Arm.string_of_inst' i)
 
-and frame_prologue (frame: frame): il list = begin
+and frame_prologue env (frame: frame): il list = begin
   let open IL in
   let local_size = frame_size frame in
   let allocate_insts = if (local_size > 0) then
       [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
     else [] in
-   [push [F.reg_LR]] @ allocate_insts
+  [push [F.reg_LR]] @ allocate_insts
 end
 
-and frame_epilogue (frame: frame): il list = begin
+and frame_epilogue env (frame: frame): il list = begin
   let open IL in
   let local_size = frame_size frame in
   let deallocate_insts = if (local_size > 0) then
       [add F.reg_SP (oper_reg F.reg_SP) (oper_imm local_size)]
     else [] in
+  trans_mark  env frame @
+  trans_sweep env frame @
   deallocate_insts @
   [pop [F.reg_PC]]
 end
@@ -551,8 +582,8 @@ and trans_function_declaration (env: ctx) (dec) = begin
           add_binding name ty acc;
         end) arglist;
   (* translate function body *)
-  let insts, _ = trans_stmt !env' frame body in
-  let insts = (frame_prologue frame) @ insts @ (frame_epilogue frame) in
+  let insts, env'' = trans_stmt !env' frame body in
+  let insts = (frame_prologue env'' frame) @ insts @ (frame_epilogue env'' frame) in
   (* view shift of local variables *)
   let insts = (fixup_allocation frame insts) in
   [Il.label ("f_"^fname)] @ insts
@@ -574,11 +605,15 @@ end
 and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   let ctx = add_function_decs decs ctx in
   let function_insts = decs |> List.map (trans_function_declaration ctx) in
+  let _, gc_init_insts = trans_call ctx "init_gc_ctx" [] in
   let functiongen = List.map (trans_frag) (function_insts) |> List.concat in
   let frame = new_frame() in
-  let insts, _ = trans_stmt ctx frame stmt in
+  let insts, endenv = trans_stmt ctx frame stmt in
   (* List.iter (fun i -> print_endline (IL.show_il i)) insts; *)
-  let insts = (frame_prologue frame) @ insts @ [IL.mov (F.reg_RV) (oper_imm 0)] @ (frame_epilogue frame) in
+  let insts =
+    (frame_prologue ctx frame) @ gc_init_insts @
+    insts @ [IL.mov (F.reg_RV) (oper_imm 0)]
+    @ (frame_epilogue endenv frame) in
   let instsi = List.mapi (fun i x -> (x, i)) insts in
   (* build CFG *)
   let liveout = Liveness.build instsi in
