@@ -149,5 +149,6 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
   | MOV (t, op) -> [mov (t) (arm_op op)]
   | PUSH temp_list -> [push temp_list]
   | POP temp_list ->  [pop  temp_list]
+  | LTORG -> [(A.LTORG, None)]
   in
   List.map (relocate colormap) arm_inst

@@ -430,7 +430,7 @@ let rec trans_stmt env frame stmt = begin
       (* TODO: fix passing return valies back *)
       [mov sizet (oper_imm (4 * 2))] @
        pair_addr_alloc_insts @
-      [store WORD pair_addrt (addr_indirect (F.reg_SP) 0)] @
+       trans_assign local_var pair_addrt @
       (* fst allocation *)
       [mov r0 (oper_imm (size_of_type exp_ty))] @
        fst_alloc_insts @
@@ -540,7 +540,7 @@ and frame_epilogue (frame: frame): il list = begin
       [add F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size2)] else []
   in
   deallocate_insts @ handle_big_local_size_inst @
-  [pop [F.reg_PC]]
+  [pop [F.reg_PC]] @ [ltorg]
 end
 
 and fixup_allocation frame insts =
