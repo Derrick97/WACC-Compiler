@@ -4,11 +4,16 @@ import sys
 import subprocess
 import argparse
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+compile_cmd = os.path.join(script_dir, './compile')
+arm_gcc = os.path.join(script_dir, './tools/arm-gcc')
+arm_run = os.path.join(script_dir, './tools/arm-run')
+
 def compile(f):
     try:
-        subprocess.run(['./compile', f], timeout=5)
-        subprocess.run(['./tools/arm-gcc', os.path.basename(f).replace('.wacc', '.s')])
-        out = subprocess.run(['./tools/arm-run', 'a.out'], stdout=subprocess.PIPE, timeout=5)
+        subprocess.run([compile_cmd, f], timeout=5)
+        subprocess.run([arm_gcc, os.path.basename(f).replace('.wacc', '.s')])
+        out = subprocess.run([arm_run, 'a.out'], stdout=subprocess.PIPE, timeout=5)
         output = '' if not out.stdout else out.stdout.decode('utf-8')
         return (output, out.returncode)
     except subprocess.TimeoutExpired:
@@ -52,13 +57,13 @@ def test_run(filename):
         if not retcode == 0:
             print("FAILED non zero return")
 
-with open("excluded", 'r') as excluded:
+with open(os.path.join(script_dir, "testsuite/excluded"), 'r') as excluded:
     excluded = excluded.read().split("\n")
 
-excluded = [os.path.abspath(e) for e in excluded if len(e) > 0]
+excluded = [os.path.abspath(os.path.join("./testsuite", e)) for e in excluded if len(e) > 0]
 
 
-def iter_tests(path="./testsuite/valid"):
+def iter_tests(path=os.path.join(script_dir, "./testsuite/valid")):
     for (root, dirs, files) in os.walk(path):
         for name in files:
             p = os.path.abspath(os.path.join(root, name))
@@ -68,6 +73,6 @@ def iter_tests(path="./testsuite/valid"):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--dir", default="./testsuite/valid")
+    parser.add_argument("-d", "--dir", default=os.path.join(script_dir, "./testsuite/valid"))
     args = parser.parse_args()
     iter_tests(args.dir)
