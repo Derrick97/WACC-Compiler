@@ -22,8 +22,12 @@ type frag =
   | STRING of Temp.label * string
   | PROG of string * il list
 
-let frame_size (frame:frame): int = (Array.fold_left (+) 0 (Array.map (fun x -> match x with
-    | InFrame (t, sz) -> sz) frame.frame_locals))
+let frame_size (frame:frame): int
+  = Array.(frame.frame_locals
+    |> (map (fun x -> match x with
+        | InFrame (t, sz) -> sz
+        | _ -> invalid_arg "not in frame"))
+    |> (fold_left (+) 0))
 
 let (frags: frag list ref) = ref []
 let counter = ref 0
@@ -32,13 +36,13 @@ let strings = ref []
 let split_offset offset =
   if offset = 0 then (0,0)
   else
-    let tempNum = ref 1 in
-    let () = if offset < 256 then tempNum := offset * 2 in
+    let temp_num = ref 1 in
+    let () = if offset < 256 then temp_num := offset * 2 in
     let () =
-      while !tempNum <= offset do
-        tempNum := !tempNum * 2
+      while !temp_num <= offset do
+        temp_num := !temp_num * 2
       done in
-    (!tempNum / 2, offset - (!tempNum / 2))
+    (!temp_num / 2, offset - (!temp_num / 2))
 
 let iter_locals (env) f =
   let f = function
@@ -73,6 +77,11 @@ let string_of_ty =
   | PairTy _ | PairTyy -> "pair"
   | IntTy -> "int"
   | _ -> assert false
+
+let builtin_func =
+  ["wacc_len"; "wacc_ord"; "wacc_mod"; "wacc_chr"; "wacc_div"; "wacc_exit"]
+
+let mk_fname fname = "f_"^fname
 
 let rec zip a b = match (a, b) with
   | ([], _) -> []
@@ -136,6 +145,36 @@ let emit i = Il.append (emitter()) i;;
 
 push_new_emitter();;
 
+
+
+let add o1 o2 =
+  let t = allocate_temp() in
+  emit(IL.add t o1 o2); t
+and sub o1 o2 =
+  let t = allocate_temp() in
+  emit(IL.sub t o1 o2); t
+and loadq addr =
+  let t = allocate_temp() in
+  emit(IL.load IL.WORD t addr); t
+and loadb addr =
+  let t = allocate_temp() in
+  emit(IL.load IL.BYTE t addr); t
+and storeq t addr =
+  emit(IL.store IL.WORD t addr)
+and storeb t addr =
+  let t = allocate_temp() in
+  emit(IL.store IL.BYTE t addr)
+and and_ o1 o2 =
+  let t = allocate_temp() in
+  emit(IL.and_ t o1 o2)
+and or_ o1 o2 =
+  let t = allocate_temp() in
+  emit(IL.or_ t o1 o2)
+and mov o1 o2 =
+  emit(IL.mov o1 o2)
+
+
+
 let rec trans_var (var: access): temp =
   let open Il in
   let t = allocate_temp() in
@@ -165,28 +204,36 @@ and trans_mark (ctx) (frame: frame) = begin
         match acc with
         | InFrame (offset, sz) -> begin
             let t = allocate_temp() in
-            emit(Il.load WORD t (addr_indirect F.reg_SP offset));
-            ignore( trans_call ctx "mark_all" [t]);
+            emit(Il.load Il.WORD t (addr_indirect F.reg_SP offset));
+            ignore( trans_call ctx frame "mark_all" [t]);
           end
         | _ -> invalid_arg "not stack local variable"
       end);
 end
 
-and trans_sweep (ctx) (frame: frame): unit = begin
-  let t = allocate_temp() in
-  ignore ((trans_call ctx "sweep_all" [t]));
-end
-
-and trans_noop: il list = []
+and trans_sweep (ctx) (frame: frame): unit =
+  ignore ((trans_call ctx frame "sweep_all" []));
 
 and get_access env name = match Symbol.lookup name env with
   | E.VarEntry (t, Some acc) -> (t, acc)
   | _ -> invalid_arg "not an access"
 
-and trans_exp ctx exp =
+and allocate_heap env frame ty =
+  let open IL in
+  let t = allocate_temp() in
+  match ty with
+  | A.IntTy ->
+    (emit(mov t (oper_imm (0)));
+    trans_call env frame "allocate" [t])
+  | A.PairTy _ | A.PairTyy -> (emit(mov t (oper_imm (1)));
+                               trans_call env frame "allocate" [t])
+  | _ -> (
+      emit(mov t (oper_imm (size_of_type ty)));
+      trans_call env frame "malloc" [t])
+and trans_exp ctx frame exp =
   let open Il in
   let (exp, pos) = exp in
-  let tr = trans_exp ctx in
+  let tr = trans_exp ctx frame in
   let dst = allocate_temp() in
   begin match exp with
     | A.IdentExp       name -> begin
@@ -199,12 +246,13 @@ and trans_exp ctx exp =
         let index = allocate_temp() in
         emit(mov index (oper_imm 0)); (* initializing index register *)
         let o = allocate_temp() in
-        let sz = if not (is_string t) then 4 else 0 in (* for char arrays we do not store length *)
+        let sz = if not (is_string t)
+          then 4 else 0 in (* for char arrays we do not store length *)
         let addr = trans_var acc in
         let rec emit_addressing = (function
             | exp::other -> begin
-                let index = trans_exp ctx exp in
-                trans_call ctx "wacc_check_array_bounds" [addr; index];
+                let index = tr exp in
+                ignore(trans_call ctx frame "wacc_check_array_bounds" [addr; index]);
                 List.iter (emit) ([mov o (oper_imm size);
                       mul index (oper_reg index) (oper_reg o); (* compute offset *)
                       add addr  (oper_reg addr)  (oper_reg index);
@@ -230,13 +278,13 @@ and trans_exp ctx exp =
                   emit(mov dst (OperImm 1))
                 else
                   emit(mov dst (OperImm 0))
-            | A.LitChar c -> emit(mov dst (OperImm (Char.code c))) (* TODO imm char? *)
+            | A.LitChar c -> emit(mov dst (OperImm (Char.code c)))
             | _ -> assert false);
         dst
       end
     | A.BinOpExp      ((lhs), binop, (rhs)) -> begin
-        let (l) = (trans_exp ctx lhs) in
-        let (r) = (trans_exp ctx rhs) in
+        let (l) = (tr lhs) in
+        let (r) = (tr rhs) in
         let (opl, opr) = (oper_reg l), (oper_reg r) in
         (match binop with
             | A.PlusOp   -> emit (add dst opl opr)
@@ -245,7 +293,7 @@ and trans_exp ctx exp =
             | A.DivideOp -> assert false
             | A.AndOp ->    emit (and_ dst opl opr)
             | A.OrOp  ->    emit (or_ dst opl opr)
-            | A.EqOp -> emit (sub dst opl opr); emit( cmp Il.EQ dst (oper_reg dst) (oper_imm 0))
+            | A.EqOp -> emit (sub dst opl opr); emit(cmp Il.EQ dst (oper_reg dst) (oper_imm 0))
             | A.NeOp -> emit (sub dst opl opr); emit(cmp Il.NE dst (oper_reg dst) (oper_imm 0))
             | A.GeOp -> emit (sub dst opl opr); emit(cmp Il.GE dst (oper_reg dst) (oper_imm 0))
             | A.GtOp -> emit (sub dst opl opr); emit(cmp Il.GT dst (oper_reg dst) (oper_imm 0))
@@ -256,10 +304,10 @@ and trans_exp ctx exp =
       end
     | A.UnOpExp       (A.NegOp, exp) -> begin
         (* FIXME a problem with the limitation of ARM architecture *)
-        trans_exp ctx ((A.BinOpExp ((A.LiteralExp (A.LitInt 0), pos), A.MinusOp, exp), pos))
+        trans_exp ctx frame ((A.BinOpExp ((A.LiteralExp (A.LitInt 0), pos), A.MinusOp, exp), pos))
       end
     | A.UnOpExp       (unop, exp) -> begin
-        let (t) = trans_exp ctx exp in
+        let (t) = trans_exp ctx frame exp in
         (match unop with
             | A.NotOp -> emit(eor t (oper_reg t) (oper_imm 1))
             | A.NegOp -> emit(sub t (oper_imm 0) (oper_reg t))
@@ -268,48 +316,47 @@ and trans_exp ctx exp =
         t
       end
     | A.CallExp       (fname, args) -> begin
-        let buildin_func =
-          ["wacc_len"; "wacc_ord"; "wacc_mod"; "wacc_chr"; "wacc_div"; "wacc_exit"] in
-        let argtemps = List.map (fun arge -> trans_exp ctx arge) args in
+        ignore(trans_mark ctx frame);
+        let argtemps = List.map (fun arge -> tr arge) args in
         let resultt =
-          if (List.length (List.filter (fun x -> x = fname) buildin_func) = 0)
+          if (List.length (List.filter (fun x -> x = fname) builtin_func) = 0)
           then
-            trans_call ctx ("f_" ^ fname) argtemps
+            trans_call ctx frame (mk_fname fname) argtemps
           else
-            trans_call ctx (fname) argtemps
-          in
+            trans_call ctx frame (fname) argtemps
+        in
+        ignore(trans_sweep ctx frame);
         resultt
       end
-    | A.NewPairExp    (lval, exp) -> failwith "newpair should not happen"
+    | A.NewPairExp    (lval, exp) -> failwith "newpair only on rhs"
     | A.FstExp         exp  -> begin
-        let expt = tr exp in
-        let next = allocate_temp() in
-        let _ = (trans_call ctx "wacc_check_pair_null" [expt]) in
-        emit (load WORD next (addr_indirect expt  0));
-        emit (load WORD dst  (addr_indirect next 0));
-        dst
+        let expt = tr exp in    (* this obtains a node *)
+        let _ = (trans_call ctx frame "wacc_check_pair_null" [expt]) in
+        let fstaddr = trans_call ctx frame "pair_fst_get" [expt] in
+        let out = trans_call ctx frame "node_get_data" [fstaddr] in
+        out
       end
     | A.SndExp         exp  -> begin
         let expt = tr exp in
-        let next = allocate_temp() in
-        let _ =  (trans_call ctx "wacc_check_pair_null" [expt]) in
-        emit(load WORD next (addr_indirect expt 4));
-        emit(load WORD dst  (addr_indirect next 0));
-        dst
+        let _ =  (trans_call ctx frame "wacc_check_pair_null" [expt]) in
+        let sndaddr = trans_call ctx frame "pair_snd_get" [expt] in
+        let out = trans_call ctx frame "node_get_data" [sndaddr] in
+        out
       end
     | A.NullExp -> emit(mov dst (oper_imm 0)); dst
   end
 
 and trans_call (ctx: ctx)
+    (fr: frame)
     (fname: string)
-    (args: temp list): temp = begin
+    (args: temp list) = begin
   let open Il in
   let fname_label = new_namedlabel fname in
   let result = allocate_temp() in
   let split_reg_stack_passed regs =
     let reg_passed = ref [] in
     let stack_passed = ref [] in
-    List.iteri (fun i x -> if i <= 3
+    List.iteri (fun i x -> if i <= List.length Arm.caller_saved_regs
                  then reg_passed := !reg_passed @ [x]
                  else stack_passed := !stack_passed @ [x]) regs;
     !reg_passed, !stack_passed
@@ -327,7 +374,7 @@ and trans_call (ctx: ctx)
   result
 end
 
-and addr_of_exp (env) (e: A.exp): (Il.addr) =
+and addr_of_exp (env) frame (e: A.exp): (Il.addr) =
   let open A in
   let open Il in
   let (exp', pos) = e in
@@ -336,11 +383,9 @@ and addr_of_exp (env) (e: A.exp): (Il.addr) =
       let t, acc = get_access env name in
       let size = if is_string t || is_char_array t then 1 else size_of_type t in
       let o = allocate_temp() in
-      let index = trans_exp env exp in
-      let skip_length_inst = if is_string t then [] else
-          [add index (oper_reg index) (oper_imm 4)] in
+      let index = trans_exp env frame exp in
       let addr = trans_var acc in
-      let _ = trans_call env "wacc_check_array_bounds" [addr; index] in
+      let _ = trans_call env frame "wacc_check_array_bounds" [addr; index] in
       emit(mov o (oper_imm size));
       emit(mul index (oper_reg index) (oper_reg o));
       if is_string t then () else
@@ -350,20 +395,21 @@ and addr_of_exp (env) (e: A.exp): (Il.addr) =
     end
   | ArrayIndexExp _ -> assert false
   | IdentExp (name) -> begin
-      let VarEntry (ty, Some (InFrame (offset, sz) as acc)) (* FIXME *)
-        = (Symbol.lookup name env) in
-      let dst = trans_var acc in
+      let offset = match Symbol.lookup name env with
+      | VarEntry (ty, Some (InFrame (offset, sz))) -> offset
+      | _ -> failwith "not a variable" in
       (addr_indirect Arm.reg_SP offset)
     end
   | FstExp (exp) -> begin
-      let dst = trans_exp env exp in
-      let _ = trans_call env "wacc_check_pair_null" [dst] in
-      emit (load WORD dst (addr_indirect dst 0));
-      (addr_indirect dst 0)
+      let dst = trans_exp env frame exp in
+      let _ = trans_call env frame "wacc_check_pair_null" [dst] in
+      let fstaddr = trans_call env frame "pair_fst_get" [dst] in
+      (* emit (load WORD dst (addr_indirect fstaddr 0)); *)
+      (addr_indirect fstaddr 0)
     end
   | SndExp (exp) -> begin
-      let dst = trans_exp env exp  in
-      let _ = trans_call env "wacc_check_pair_null" [dst] in
+      let dst = trans_exp env frame exp  in
+      let _ = trans_call env frame "wacc_check_pair_null" [dst] in
       emit(load WORD dst (addr_indirect dst 4));
       (addr_indirect dst 0)
     end
@@ -380,7 +426,8 @@ let exp_type env exp =
 
 let rec trans_stmt env frame stmt: ctx = begin
   let open Il in
-  let tr = trans_exp env in
+
+  let tr = trans_exp env frame in
   let (stmt, _) = stmt in
   let get_access = get_access env in
   match stmt with
@@ -390,11 +437,11 @@ let rec trans_stmt env frame stmt: ctx = begin
       (env'')
     end
   | A.PrintStmt (newline, exp) -> begin
-      let v = trans_exp env exp in
+      let v = trans_exp env frame exp in
       let expt = exp_type env exp in
-      let _ = trans_call env ("wacc_print_" ^ (string_of_ty expt)) [v]; in (* TODO add type for print *)
+      let _ = trans_call env frame ("wacc_print_" ^ (string_of_ty expt)) [v]; in
       if newline then
-        (ignore (trans_call env "wacc_println" []))
+        (ignore (trans_call env frame "wacc_println" []))
       else ();
       env
     end
@@ -405,14 +452,14 @@ let rec trans_stmt env frame stmt: ctx = begin
       env
     end
   | A.AssignStmt   (lhs, rhs) -> begin
-      let rhst = trans_exp env rhs in
-      let laddr = addr_of_exp env lhs in
+      let rhst = trans_exp env frame rhs in
+      let laddr = addr_of_exp env frame lhs in
       (if size_of_type (Semantic.check_exp env rhs) = 4 then
          emit (store WORD rhst laddr) else
          emit (store BYTE rhst laddr));
       env
     end
-  | A.VarDeclStmt  (A.ArrayTy ty, name, (A.LiteralExp(A.LitArray elements), _)) -> begin
+  | A.VarDeclStmt  (A.ArrayTy ty, name, (A.LiteralExp (A.LitArray elements), _)) -> begin
       let local_var = allocate_local frame 4 in
       let env' = Symbol.insert name (VarEntry (A.ArrayTy ty, Some local_var)) env in
       let array_length = List.length elements in
@@ -420,7 +467,7 @@ let rec trans_stmt env frame stmt: ctx = begin
       let dst = allocate_temp() in
       let next = allocate_temp() in
       emit(mov dst (oper_imm (array_length * element_size + 4)));
-      let addr_reg = trans_call env "malloc" [dst] in
+      let addr_reg = trans_call env frame "malloc" [dst] in
       List.iteri (fun i item -> begin
             let t = tr (item) in
             emit(store WORD t (addr_indirect addr_reg (element_size * i + 4)));
@@ -442,20 +489,24 @@ let rec trans_stmt env frame stmt: ctx = begin
       let exp'_ty = exp_type env exp' in
       let r0, r1 = allocate_temp(), allocate_temp() in
       (* malloc for pair address space *)
-      emit(mov sizet (oper_imm (4 * 2)));
-      let pair_addrt = trans_call  env "malloc" [sizet] in
+      (* emit(mov sizet (oper_imm (4 * 2))); *)
+      let pair_addrt = allocate_heap env frame A.PairTyy in
       (* emit(store WORD pair_addrt (addr_indirect (F.reg_SP) 0)); *)
       trans_assign local_var pair_addrt;
       (* fst allocation *)
-      emit(mov r0 (oper_imm (size_of_type exp_ty)));
-      let fst_addrt = trans_call env "malloc" [r0] in
-      emit(store WORD fst_addrt (addr_indirect pair_addrt 0));
-      emit(store WORD fstt (addr_indirect fst_addrt 0));
+      (* emit(mov r0 (oper_imm (size_of_type exp_ty))); *)
+      let fst_addrt = allocate_heap env frame exp_ty in
+      (* emit(store WORD fst_addrt (addr_indirect pair_addrt 0));
+       * emit(store WORD fstt (addr_indirect fst_addrt 0)); *)
+      ignore(trans_call env frame "node_set_data" [fst_addrt; fstt]);
+      ignore(trans_call env frame "pair_fst_set" [pair_addrt; fst_addrt]);
       (* snd allocation *)
-      emit(mov r1 (oper_imm (size_of_type exp'_ty)));
-      let snd_addrt = trans_call env "malloc" [r1] in
-      emit(store WORD snd_addrt  (addr_indirect pair_addrt 4));
-      emit(store WORD sndt (addr_indirect snd_addrt 0));
+      (* emit(mov r1 (oper_imm (size_of_type exp'_ty))); *)
+      let snd_addrt = allocate_heap env frame exp'_ty in
+      (* emit(store WORD snd_addrt  (addr_indirect pair_addrt 4));
+       * emit(store WORD sndt (addr_indirect snd_addrt 0)); *)
+      ignore(trans_call env frame "node_set_data" [snd_addrt; sndt]);
+      ignore(trans_call env frame "pair_snd_set" [pair_addrt; snd_addrt]);
       env'
     end
   | A.VarDeclStmt  (ty, name, exp) -> begin
@@ -467,11 +518,11 @@ let rec trans_stmt env frame stmt: ctx = begin
       env'
     end
   | A.SkipStmt       -> env
-  | A.CallStmt (exp) -> ignore (trans_exp env exp); env
+  | A.CallStmt (exp) -> ignore (tr exp); env
   | A.ReadStmt (exp) -> begin
-      let addr = addr_of_exp env exp in
+      let addr = addr_of_exp env frame exp in
       let ty = exp_type env exp in
-      let readt = trans_call env ("wacc_read_" ^ (string_of_ty ty)) [] in
+      let readt = trans_call env frame ("wacc_read_" ^ (string_of_ty ty)) [] in
       (if ty = A.CharTy then
          emit(store BYTE readt addr)
        else
@@ -480,7 +531,7 @@ let rec trans_stmt env frame stmt: ctx = begin
     end
   | A.FreeStmt     (exp) -> begin
       let expt = tr exp in
-      let _ = trans_call env "wacc_free" [expt] in
+      let _ = trans_call env frame "wacc_free" [expt] in
       env
     end
   | A.IfStmt       (cond, then_exp, else_exp) -> begin
@@ -513,7 +564,6 @@ let rec trans_stmt env frame stmt: ctx = begin
       emit(label while_end_l);
       env
     end
-  | A.ExitStmt (exp) -> failwith "TODO should be desugared"
   | A.RetStmt (exp) -> begin
       let open F in
       let open Il in
@@ -528,6 +578,7 @@ let rec trans_stmt env frame stmt: ctx = begin
       let _ = trans_stmt env' frame body in
       env
     end
+  | A.ExitStmt (exp) -> failwith "exit should be desugared"
 end
 
 and pp_string out (l, s): unit =
@@ -545,10 +596,11 @@ and frame_prologue env (frame: frame): il list = begin
       [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size1)]
     else [] in
   let handle_big_local_size_inst =
-  if (valid_size2 != 0) then
-      [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size2)] else []
+  (if (valid_size2 != 0) then
+      [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size2)] else [])
   in
-   [push [F.reg_LR]] @ allocate_insts @ handle_big_local_size_inst
+  let insts = [push [F.reg_LR]] @ allocate_insts @ handle_big_local_size_inst in
+  insts
 end
 
 and frame_epilogue env (frame: frame): il list = begin
@@ -610,7 +662,7 @@ and trans_function_declaration (env: ctx) (dec) = begin
   let epilogue =(frame_epilogue env'' frame) in
   (* view shift of local variables *)
   let code = ((emitter()).IL.emit_code) in
-  let insts = Array.concat [[| Il.label ("f_"^fname) |];
+  let insts = Array.concat [[| Il.label (mk_fname fname) |];
                             Array.of_list prologue;
                             code;
                             Array.of_list epilogue] in
@@ -641,7 +693,9 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   let functiongen = List.map (trans_frag) (function_insts) |> List.concat in
   (* List.iter (fun i -> print_endline (Arm.string_of_inst' i)) functiongen; *)
   let frame = new_frame() in
+  ignore (trans_call ctx frame "init_gc_ctx" []);
   let endenv = trans_stmt ctx frame stmt in
+  ignore (trans_call ctx frame "destroy_gc_ctx" []);
   let prologue = (frame_prologue ctx frame) in
   let epilogue = (frame_epilogue endenv frame) in
   emit(IL.mov (F.reg_RV) (oper_imm 0));

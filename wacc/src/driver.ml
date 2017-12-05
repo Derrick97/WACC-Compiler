@@ -38,7 +38,7 @@ let () =
       (* (Prettyprint.prettyprint_stmt Format.std_formatter (fst stmt)); *)
       ignore(TranslateIl.trans_prog table' (decs, stmt) out);
       close_out out;
-      ignore(Sys.command (Printf.sprintf "cat wacclib.s >> %s" out_filename));
+      (* ignore(Sys.command (Printf.sprintf "cat wacclib.s >> %s" out_filename)); *)
       ()
     with
     | A.SyntaxError _ | Parser.Error -> handle_syntax_error lexbuf
