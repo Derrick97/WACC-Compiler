@@ -32,12 +32,6 @@ rule main = parse
   | '\n'          { new_line lexbuf; main lexbuf }
   | '!'           { BANG }
   | '+'           { PLUS }
-  (*
-  | "++"          { INC }
-  | "--"          { DEC }
-  | "+="          { PLUS_EQ}
-  | "-="          { MINUS_EQ}
-  | "*="          { TIMES_EQ}*)
   | '-'           { MINUS }
   | '*'           { TIMES }
   | '/'           { DIV }

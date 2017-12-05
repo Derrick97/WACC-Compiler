@@ -87,6 +87,8 @@ let check_int_overflow num =
 %token BEGIN
 %token END
 
+%token IMPORT
+
 %start prog
 
 %type <Ast_v2.t> prog
