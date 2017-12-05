@@ -144,5 +144,4 @@ void wacc_free(void* ptr) {
   }
 }
 
-
 #endif

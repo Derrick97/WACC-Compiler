@@ -214,6 +214,10 @@ end
 and trans_sweep (ctx) (frame: frame): unit =
   ignore ((trans_call ctx frame "sweep_all" []));
 
+and gc (ctx) (frame): unit =
+  ignore(trans_mark ctx frame);
+  ignore(trans_sweep ctx frame)
+
 and get_access env name = match Symbol.lookup name env with
   | E.VarEntry (t, Some acc) -> (t, acc)
   | _ -> invalid_arg "not an access"
@@ -302,6 +306,7 @@ and trans_exp ctx frame exp =
             | A.ModOp -> invalid_arg "mod should be handled in frontend");
         dst
       end
+
     | A.UnOpExp       (A.NegOp, exp) -> begin
         (* FIXME a problem with the limitation of ARM architecture *)
         trans_exp ctx frame ((A.BinOpExp ((A.LiteralExp (A.LitInt 0), pos), A.MinusOp, exp), pos))
@@ -316,7 +321,6 @@ and trans_exp ctx frame exp =
         t
       end
     | A.CallExp       (fname, args) -> begin
-        ignore(trans_mark ctx frame);
         let argtemps = List.map (fun arge -> tr arge) args in
         let resultt =
           if (List.length (List.filter (fun x -> x = fname) builtin_func) = 0)
@@ -325,7 +329,6 @@ and trans_exp ctx frame exp =
           else
             trans_call ctx frame (fname) argtemps
         in
-        ignore(trans_sweep ctx frame);
         resultt
       end
     | A.NewPairExp    (lval, exp) -> failwith "newpair only on rhs"
@@ -507,6 +510,8 @@ let rec trans_stmt env frame stmt: ctx = begin
        * emit(store WORD sndt (addr_indirect snd_addrt 0)); *)
       ignore(trans_call env frame "node_set_data" [snd_addrt; sndt]);
       ignore(trans_call env frame "pair_snd_set" [pair_addrt; snd_addrt]);
+      (* Trigger gc *)
+      gc env' frame;
       env'
     end
   | A.VarDeclStmt  (ty, name, exp) -> begin
@@ -515,6 +520,7 @@ let rec trans_stmt env frame stmt: ctx = begin
       let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
       let expt = tr exp in
       let () = trans_assign (local_var) expt in
+      gc env' frame;
       env'
     end
   | A.SkipStmt       -> env

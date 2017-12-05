@@ -1,22 +1,25 @@
 /* A Mark-and-Sweep garbage collector.
-   This cannot be even more textbookish.
+ *  This cannot be even more textbookish.
+ *
+ *  author: Yicheng Luo (yicheng.luo16@imperial.ac.uk)
+ *  created: 1 Dec, 2017
+ */
 
-   author: Yicheng Luo (yicheng.luo16@imperial.ac.uk)
-   created: 1 Dec, 2017
-*/
 #include "stdlib.h"
 #include "stdint.h"
 #include "stdio.h"
 #include "assert.h"
 #include "stdarg.h"
+#include "string.h"
 
-#define UNMARKED 0
-#define MARKED   1
-#define MAX_CAPACITY 2
-
-#define DEBUG 1
+#ifdef DEBUG
 #define log(...) \
   do { if (DEBUG) fprintf(stderr, __VA_ARGS__); } while (0)
+#else
+#define log(...) \
+  do { } while (0)
+#endif
+
 
 typedef struct {
   struct node* first_node;
@@ -36,44 +39,32 @@ struct pair {
   struct node* snd;
 };
 
-struct array {
-  struct data* arr;
-};
-
+/** node represents an allocated
+    block on heap. node is typed (as represented by the t field),
+    which means that our GC knows the strategy to collect a block (rather than
+    trying to be conservative).
+ */
 struct node {
   unsigned char marked;
   enum ty t;
   struct node* next; /* to form a linked list, we keep track of the next object */
-  union {            /* keeps the payload of the node */
-    int node_int;
-    struct pair* node_pair;
+  /* keeps the payload of the node */
+  union {
+    int node_int;               /* a int allocated on heap */
+    struct pair* node_pair;     /* a pair */
   };
 };
 
 typedef struct node node;
 
-void unmark(node* n) {
-  n->marked = UNMARKED;
-}
 
-void mark(node* n) {
-  n->marked = MARKED;
-}
+#define UNMARKED 0
+#define MARKED   1
+#define MAX_CAPACITY 2
 
-void mark_all(node* root) {
-  log("[GC] Marked node at 0x%x\n", (uintptr_t)root);
-  if (root->marked) return;        /* avoid cyclic references */
-  root->marked = MARKED;
-  switch (root->t) {
-  case TY_INT:
-    return;
-  case TY_PAIR:
-    mark_all(root->node_pair->fst); /* TODO no recursion */
-    mark_all(root->node_pair->snd);
-    break;
-  }
-}
-
+/* setters and getters for the codegen to invoke in order
+   to trigger the automatic memory management process
+ */
 node* pair_fst_get(node* p) {
   assert(p->t == TY_PAIR);
   return p->node_pair->fst;
@@ -112,8 +103,32 @@ void node_set_data(node* p, void* d) {
   }
 }
 
+void unmark(node* n) {
+  n->marked = UNMARKED;
+}
+
+void mark(node* n) {
+  n->marked = MARKED;
+}
+
+
+/* start from [root], recursively mark all objects from this root */
+void mark_all(node* root) {
+  log("[GC] marked node at 0x%x\n", (uintptr_t)root);
+  if (root->marked) return; // avoid cyclic references
+  root->marked = MARKED;
+  switch (root->t) {
+  case TY_INT:
+    return;
+  case TY_PAIR:
+    mark_all(root->node_pair->fst);
+    mark_all(root->node_pair->snd);
+    break;
+  }
+}
+
 node* allocate(enum ty t) {
-  log("[GC] Allocate ");
+  log("[GC] allocate ");
   node* ptr = malloc(sizeof(node));
   switch (t) {
   case TY_INT:
@@ -139,7 +154,7 @@ void deallocate(node* node) {
   }
   switch (node->t) {
   case TY_INT:
-    log("[GC] Deallocate int at 0x%x\n", (uintptr_t)node);
+    log("[GC] collect int at 0x%x\n", (uintptr_t)node);
     break;
   case TY_PAIR:
     deallocate(node->node_pair->fst);
@@ -147,7 +162,7 @@ void deallocate(node* node) {
     free(node->node_pair->fst);
     free(node->node_pair->snd);
     free(node->node_pair);
-    log("[GC] Deallocate pair at 0x%x\n", (uintptr_t)node);
+    log("[GC] collect pair at 0x%x\n", (uintptr_t)node);
     break;
   }
   mark(node);
@@ -160,13 +175,19 @@ void sweep_all(void) {
 
   while (ptr != NULL) {
     node* next = ptr->next;
-    if (ptr->marked) {         /* not marked, hence unreachable */
+    int collected = 0;
+    if (ptr->marked) {
       ptr->marked = UNMARKED;
     } else {
       deallocate(ptr);
       prev->next = next;
+      collected = 1;
     }
     ptr = next;
+
+    if (collected && global_ctx->first_node == prev)
+      global_ctx->first_node = ptr;
+
     prev = ptr;
   }
 
@@ -180,8 +201,17 @@ void init_gc_ctx(void) {
   global_ctx->max_capacity = MAX_CAPACITY;
 }
 
+extern void finalize(void) {
+  node* ptr = global_ctx->first_node;
+  while (ptr != NULL) {
+    ptr->marked = UNMARKED;
+    deallocate(ptr);
+    ptr = ptr->next;
+  }
+}
+
 void destroy_gc_ctx(void) {
-  log(("[GC] destroying GC context\n"));
-  sweep_all();
+  finalize();
   free(global_ctx);
+  log(("[GC] destroyed GC context\n"));
 }
