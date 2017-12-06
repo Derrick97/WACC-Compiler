@@ -1,6 +1,8 @@
 open Ast_v2
 module A = Ast_v2
 
+exception Divide_By_Zero
+
 type wrapType =
   | Int of int
   | Char of char
@@ -8,12 +10,26 @@ type wrapType =
   | String of string
   | NullType
   | ListOfElem of int * A.exp list
-  | PairsTy of A.exp * A.exp
+  | PairsTy of A.exp * A.exp * bool
   | DefaultTy
   | ErrorTy
 
+let func_table: 'a Symbol.table ref = ref (Symbol.empty)
+
+let function_return: wrapType ref = ref (DefaultTy)
+
 let stack: wrapType Stack.t = (Stack.create ())
 (*let table = ref (Symbol.empty)*)
+
+let rec add_func_dec decs =
+   match decs with
+   | [] -> ()
+   | h::r -> begin
+      let (A.FuncDec(ty, ident, field_list, stmt),pos) = h in
+      func_table := Symbol.insert ident (ty, field_list, stmt) !func_table;
+      add_func_dec r
+   end
+
 
 let replaceList index elems newItem = (
   let finalList = [] in
@@ -35,17 +51,27 @@ let rec eq_wrapTy ty1 ty2 =
   | DefaultTy, _ -> true
   | _ -> false
 
-let printWrap wrapTy =
+
+let rec print_char_array elems =
+  match elems with
+  | [LiteralExp(LitChar(chr)),pos] -> print_char chr
+  | (LiteralExp(LitChar(chr)),pos)::r -> print_char chr; print_char_array r
+  | _ -> assert false
+
+let printWrap wrapTy = (
   match wrapTy with
   | Int(num) -> print_int num
   | Char(letter) -> print_char letter
   | Bool(tf) -> if tf then print_string "true" else print_string "false"
   | String(str) -> print_string str
   | NullType -> print_string "(nil)"
-  | ListOfElem(_,_) -> print_string "0x12008"
-  | PairsTy(_,_) -> print_string "0x22008"
+  | ListOfElem(length,elems) ->(
+    match List.hd elems with
+    | LiteralExp(LitChar(chr)), pos -> print_char_array elems
+    | _ ->  print_string "0x12008")
+  | PairsTy(_,_,_) -> print_string "0x22008"
   | DefaultTy -> print_string "Will Fix"
-  | ErrorTy -> print_string "ERROR CODE"
+  | ErrorTy -> print_string "ERROR CODE")
 
 let arithmetic_convert wrapTy =
   match wrapTy with
@@ -74,7 +100,7 @@ match exp' with
     let length = List.length expList in
     ListOfElem(length, expList);
     )
-  | A.LitPair(fst, snd) -> PairsTy(fst,snd)
+  | A.LitPair(fst, snd) -> PairsTy(fst,snd,true)
   | A.LitNull -> NullType)
 | A.BinOpExp (ex1, binop, ex2) -> (
   let lhs = arithmetic_convert (compute ex1 table) in
@@ -83,7 +109,11 @@ match exp' with
   | A.PlusOp -> Int(lhs + rhs)
   | A.MinusOp -> Int(lhs - rhs)
   | A.TimesOp -> Int(lhs * rhs)
-  | A.DivideOp -> Int(lhs / rhs)
+  | A.DivideOp -> begin
+       if rhs == 0 then let () = print_endline "RuntimeError: Divide_By_Zero" in exit 255
+       else
+       Int(lhs / rhs)
+    end
   | A.GeOp -> Bool (lhs >= rhs)
   | A.GtOp -> Bool (lhs > rhs)
   | A.EqOp ->  Bool (eq_wrapTy (compute ex1 table) (compute ex2 table))
@@ -113,29 +143,66 @@ match exp' with
     | _ -> Char('?');
   ))
 | A.ArrayIndexExp(symbol, explist) -> ( match (Symbol.lookup symbol !table) with
-  | ListOfElem(length, elems) -> indexList (ListOfElem(length, elems)) explist table
+  | ListOfElem (length, elems) -> indexList (ListOfElem(length, elems)) explist table
   | _ -> ErrorTy)
-| A.NewPairExp(ex1,ex2) ->  PairsTy(ex1, ex2)
-| A.FstExp(exp) -> (match compute exp table with
-  | PairsTy(ex1,ex2) ->  print_pair (PairsTy(ex1,ex2)) table; compute ex1 table
+| A.NewPairExp (ex1,ex2) ->  PairsTy(ex1, ex2,true)
+| A.FstExp (exp) -> (match compute exp table with
+  | PairsTy (ex1,ex2, true) ->  compute ex1 table
   | _ -> ErrorTy)
-| A.SndExp(exp) -> (match compute exp table with
-  | PairsTy(ex1,ex2) -> print_pair (PairsTy(ex1,ex2)) table; compute ex2 table
+| A.SndExp (exp) -> (match compute exp table with
+  | PairsTy (ex1,ex2, true) ->  compute ex2 table
   | _ -> ErrorTy)
+| A.CallExp (ident, explist) -> begin
+    let (ty, field_list,stmt) = Symbol.lookup ident !func_table in
+    let func_scope = ref (Symbol.new_scope !table) in
+    let () = match (field_list, explist) with
+    | [],[] -> eval stmt func_scope
+    | (h::r,h'::r') -> List.map2 (fun x y -> begin
+      let (ty', ident') = x in
+      eval (VarDeclStmt (ty',ident',y),pos) func_scope end) field_list explist; eval stmt func_scope
+    in !function_return
+  end
+
 
 and indexList (ListOfElem(length,elems)) indexExps table =
   match indexExps with
-  | index::[] -> compute (List.nth elems (arithmetic_convert (compute index table))) table
-  | h::r -> indexList (compute (List.nth elems (arithmetic_convert (compute h table))) table) r table
+  | index::[] -> begin
+    let index_num = arithmetic_convert (compute index table) in
+    if index_num < 0 || index_num > length - 1 then let () = print_endline "RuntimeError: Index out of array bound" in exit 255
+    else
+    compute (List.nth elems (arithmetic_convert (compute index table))) table
+    end
+  | h::r -> begin
+    let index_num = arithmetic_convert (compute h table) in
+    if index_num < 0 || index_num > length - 1 then let () = print_endline "RuntimeError: Index out of array bound" in exit 255
+    else
+    indexList (compute (List.nth elems (arithmetic_convert (compute h table))) table) r table
+    end
 
-and print_pair (PairsTy (ex1,ex2)) table = begin ((*Only for debugging use*)
+and print_pair (PairsTy (ex1,ex2,still_valid)) table = begin ((*Only for debugging use*)
     print_string "Pair (";
     printWrap (compute ex1 table);
     print_string ",";
     printWrap (compute ex2 table);
     print_endline ")";) end
 
-let rec matchLHS lhs rhs table =
+and modify_array elems indexExps new_value table =
+    match indexExps with
+    | [] -> []
+    | [exp] -> begin
+      let (Int(num)) = compute exp table in
+      let buffer_list = ref [] in
+      for i = 0 to (List.length elems - 1) do
+         if i != num then
+          buffer_list := !buffer_list @ [List.nth elems i]
+         else
+          buffer_list := !buffer_list @ [new_value]
+      done;
+      !buffer_list;
+    end
+    | _ -> assert false (*TODO: Multidimension modifications*)
+
+and matchLHS lhs rhs table =
   let (lhs', pos) = lhs in
   match lhs' with
   | A.IdentExp(symbol) -> symbol
@@ -145,7 +212,7 @@ let rec matchLHS lhs rhs table =
     | A.IdentExp(symbol) -> (
       let res = compute exp table in
       match res with
-      | PairsTy(ex1,ex2) -> print_pair res table; table := Symbol.insert symbol (PairsTy(rhs,ex2)) (!table); symbol;
+      | PairsTy(ex1,ex2,true) -> print_pair res table; table := Symbol.insert symbol (PairsTy(rhs,ex2,true)) (!table); symbol;
       | _ -> assert false (*Need to throw errors*)
       )
     | A.ArrayIndexExp(symbol,explist) -> (
@@ -166,22 +233,37 @@ let rec matchLHS lhs rhs table =
     match exp' with
     | A.IdentExp(symbol) -> (let res = compute exp table in
       match res with
-      | PairsTy(ex1,ex2) -> print_pair res table; table := Symbol.insert symbol (PairsTy(ex1,rhs)) (!table); symbol;
+      | PairsTy(ex1,ex2,true) -> print_pair res table; table := Symbol.insert symbol (PairsTy(ex1,rhs,true)) (!table); symbol;
       | _ -> assert false (*Need to throw errors*)
     )
-    | A.ArrayIndexExp(symbol,_) -> ("snd[]" ^ symbol))
+    | A.ArrayIndexExp(symbol,_) -> ("snd[]" ^ symbol)
     | A.FstExp(exps) -> matchLHS exps rhs table
     | A.SndExp(exps) -> matchLHS exps rhs table
     | A.NullExp -> (
       table := Symbol.insert "nil" (NullType) (!table);
       Symbol.symbol "nil";)
-    | _ -> Symbol.symbol "what"
+    | _ -> assert false)
   | A.ArrayIndexExp(symbol,explist) -> (
-    let elem_list = Symbol.lookup symbol !table in
+    let res = Symbol.lookup symbol !table in
+    let (ListOfElem (length, elem_list), is_array) = match res with
+    | ListOfElem (length, elem_list) -> (ListOfElem (length, elem_list),true)
+    | String (str) -> (string_to_array str pos, false)
+    | _ -> assert false in
+    let index = List.nth explist 0 in
+    let new_list = modify_array elem_list [index] rhs table in
+    table := Symbol.insert symbol (ListOfElem(length, new_list)) (!table);
     symbol;
     )
 
-  let rec eval singleStmt table = (
+and string_to_array str pos =
+    let length = String.length str in
+    let buffer_list = ref [] in
+    for i = 0 to length -1 do
+      buffer_list := !buffer_list @ [A.LiteralExp(LitChar(String.get str i)),pos]
+    done ;
+    ListOfElem(length,!buffer_list)
+
+and eval singleStmt table = (
     let (singleStmt', pos) = singleStmt in
     match singleStmt' with
     | A.SeqStmt (stmt, stmtlist) -> (eval stmt table; eval stmtlist table;)
@@ -201,12 +283,22 @@ let rec matchLHS lhs rhs table =
       matchLHS (A.SndExp exp, pos) rhs table ;
       Stack.push value stack;
       )
+    | A.AssignStmt((A.ArrayIndexExp(sym,expList),pos), rhs) ->(
+      let value = compute rhs table in
+      matchLHS (A.ArrayIndexExp (sym,expList), pos) rhs table ;
+      Stack.push value stack;
+      )
     | A.AssignStmt(lhs, rhs) ->(
       let value = compute rhs table in
       table := Symbol.insert (matchLHS lhs rhs table) value !table;
       Stack.push value stack;
       )
-    | A.FreeStmt(_) -> ()
+    | A.FreeStmt(exp) -> ((*
+      let value = compute exp table in
+      let (PairsTy(ex1,ex2,still_valid)) = value in
+      if still_valid then let () = still_valid = false in ()
+      else let () = print_newline "RuntimeError: Cannot free a variable that can be already freed." in exit 255
+      )*))
     | A.PrintStmt(newline,exp) -> (
         Stack.push (compute exp table) stack;
         let result = Stack.pop stack in
@@ -253,7 +345,7 @@ let rec matchLHS lhs rhs table =
         | Bool(false) -> eval stmt2 table
         | _ -> print_string ("This is not a boolean expression, cannot used for condition.");
       )
-    | A. ExitStmt (exp) ->(
+    | A.ExitStmt (exp) ->(
       let exit_code = compute exp table in
          match exit_code with
          | Int(i) -> begin
@@ -263,6 +355,10 @@ let rec matchLHS lhs rhs table =
          end
          | _ -> assert false
       )
+    | A.RetStmt (exp) -> begin
+      let value = compute exp table in
+      function_return := value
+    end
     | A.BlockStmt(statment) ->
         let new_table = Symbol.new_scope (!table) in
         let new_table_ref = ref new_table in

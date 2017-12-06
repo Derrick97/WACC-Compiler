@@ -37,6 +37,7 @@ let () =
       let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
       let out = open_out out_filename in
       let ref_table = ref (Symbol.empty) in
+      Interpreter.add_func_dec decs;
       Interpreter.eval stmt ref_table;
       let stmt = Simplify.simplify_stmt stmt in
       (* (Prettyprint.prettyprint_stmt Format.std_formatter (fst stmt)); *)
