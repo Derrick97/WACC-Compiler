@@ -37,7 +37,8 @@ let def (i:(IL.il*int)) =
       | STORE _ -> []
       | MOV (t, _) -> [t]
       | POP ts -> ts
-      | PUSH _ | JUMP _ | COMP _ | CBR _ | RET _ | LABEL _ | NOOP | CALL _ -> [])
+      | PUSH _ | JUMP _ | LTORG | COMP _ | CBR _ | RET _ | LABEL _ | NOOP  | CALL _ -> [])
+
   in
   InOutSet.of_list defs
 
@@ -65,7 +66,8 @@ let use (i:(il*int)):tempset =
       | STORE (_, t, _) -> [t]
       | CBR   (t, _ , _) -> [t]
       | RET   t -> [t]
-      | JUMP _ | LABEL _ | NOOP -> []
+      | JUMP _ | LABEL _ | NOOP  -> []
+      | LTORG -> []
       | MOV (_, op1) -> if is_reg op1 then [get_temp op1] else []
       | PUSH ts | POP ts -> ts
       | CALL _ -> []

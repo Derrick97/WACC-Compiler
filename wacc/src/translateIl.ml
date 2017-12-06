@@ -495,7 +495,8 @@ let rec trans_stmt env frame stmt: ctx = begin
       ignore (trans_stmt env' frame then_exp);
       emit(jump  end_l);
       emit(label false_l);
-      ignore (trans_stmt env' frame else_exp);
+      ignore (trans_stmt env' frame
+                else_exp);
       emit(label end_l);
       env
     end
@@ -563,7 +564,7 @@ and frame_epilogue env (frame: frame): il list = begin
       [add F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size2)] else []
   in
   deallocate_insts @ handle_big_local_size_inst @
-  [pop [F.reg_PC]]
+  [pop [F.reg_PC]] @ [ltorg]
 end
 
 and fixup_allocation frame insts =

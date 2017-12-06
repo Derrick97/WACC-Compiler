@@ -19,8 +19,6 @@ let rec peephole_optimize (insts: Il.il list) =
       SUB (temp2, op2, op) :: peephole_optimize others
   | MOV (temp, op)::DIV (temp2, op2, op3)::others when eq_operand temp op3 ->
       DIV (temp2, op2, op) :: peephole_optimize others
-  | MOV (temp, op)::MUL (temp2, op2, op3)::others when eq_operand temp op3 ->
-      MUL (temp2, op2, op) :: peephole_optimize others
   (*The 3nd case: MOV a b then MOV b a*)
   | MOV (temp, op)::MOV (temp', op')::others when eq_operand temp op' && eq_operand temp' op ->
       MOV (temp, op) :: peephole_optimize others

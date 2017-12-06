@@ -44,7 +44,8 @@ and il =
   | COMP  of temp * temp
   | CBR   of temp * label * label
   | RET   of temp
-  | LABEL of label  [@@deriving show]
+  | LABEL of label
+  | LTORG [@@deriving show]
 
 let print_operand operand =
   match operand with
@@ -81,7 +82,7 @@ let comp t0 t1 = COMP (t0, t1)
 let cbr t th el = CBR (t, th, el)
 let ret t = RET t
 let label l = (LABEL l)
-
+let ltorg = LTORG
 
 type emitter = {
   mutable emit_counter: int;
