@@ -29,6 +29,11 @@ let rec add_func_dec decs =
       add_func_dec r
    end
 
+let check_int_overflow num =
+   if Int64.of_int num > Int64.of_int32 (Int32.max_int) || Int64.of_int num < Int64.of_int32 (Int32.min_int)
+   then let () = print_endline "Runtime Error: Integer Overflow." in exit 0
+   else ()
+
 
 let replaceList index elems newItem = (
   let finalList = [] in
@@ -44,11 +49,11 @@ let rec eq_wrapTy ty1 ty2 =
   (*| PairsTy (fst,snd), PairsTy (fst',snd') -> eq_wrapTy fst fst' && eq_wrapTy snd snd'*)
   | Int(i), Int(j) -> i==j
   | Char(a), Char(b) -> Char.compare a b == 0
-  | String (str1), String (str2) -> String.compare str1 str2 == 0
+  | String (str1), String (str2) -> ty1 == ty2
   | Bool (a), Bool (b) ->  (a && b) || ((not a) && (not b))
   | _ , DefaultTy -> true
   | DefaultTy, _ -> true
-  | _ -> false
+  | _ -> ty1 == ty2
 
 
 let rec print_char_array elems =
@@ -94,7 +99,7 @@ match exp' with
   | A.LitString(str) -> String(str)
   | A.LitBool(boo) -> Bool(boo)
   | A.LitChar(cha) -> Char(cha)
-  | A.LitInt (num) -> Int(num)
+  | A.LitInt (num) -> check_int_overflow num; Int(num)
   | A.LitArray (expList) -> (
     let length = List.length expList in
     ListOfElem(length, expList);
@@ -104,10 +109,12 @@ match exp' with
 | A.BinOpExp (ex1, binop, ex2) -> (
   let lhs = arithmetic_convert (compute ex1 table) in
   let rhs = arithmetic_convert (compute ex2 table) in
+  check_int_overflow lhs;
+  check_int_overflow rhs;
   match binop with
-  | A.PlusOp -> Int(lhs + rhs)
-  | A.MinusOp -> Int(lhs - rhs)
-  | A.TimesOp -> Int(lhs * rhs)
+  | A.PlusOp -> check_int_overflow (lhs + rhs); Int(lhs + rhs)
+  | A.MinusOp -> check_int_overflow (lhs - rhs); Int(lhs - rhs)
+  | A.TimesOp -> check_int_overflow (lhs * rhs); Int(lhs * rhs)
   | A.DivideOp -> begin
        if rhs == 0 then let () = print_endline "RuntimeError: Divide_By_Zero" in exit 255
        else
@@ -126,7 +133,7 @@ match exp' with
   let operand = compute exp table in
   match unop with
   | A.NotOp -> Bool(not(booleanConvert operand));
-  | A.NegOp -> Int(0-(arithmetic_convert operand));
+  | A.NegOp -> check_int_overflow (0-(arithmetic_convert operand)); Int(0-(arithmetic_convert operand));
   | A.LenOp -> (match operand with
     | ListOfElem(length, expList) -> Int(length)
     | String(str) -> Int(String.length str)
@@ -147,9 +154,11 @@ match exp' with
 | A.NewPairExp (ex1,ex2) ->  PairsTy(ex1, ex2,true)
 | A.FstExp (exp) -> (match compute exp table with
   | PairsTy (ex1,ex2, true) ->  compute ex1 table
+  | NullType -> print_endline "RuntimeError: Dereferencing Null"; exit 0
   | _ -> ErrorTy)
 | A.SndExp (exp) -> (match compute exp table with
   | PairsTy (ex1,ex2, true) ->  compute ex2 table
+  | NullType -> print_endline "RuntimeError: Dereferencing Null"; exit 0
   | _ -> ErrorTy)
 | A.CallExp (ident, explist) -> begin
     let (ty, field_list,stmt) = Symbol.lookup ident !func_table in
@@ -205,6 +214,7 @@ and matchLHS lhs rhs table =
       let res = compute exp table in
       match res with
       | PairsTy(ex1,ex2,true) -> table := Symbol.insert symbol (PairsTy(rhs,ex2,true)) (!table); symbol;
+      | NullType -> print_endline "RuntimeError: Dereferencing Null"; exit 0
       | _ -> assert false (*Need to throw errors*)
       )
     | A.ArrayIndexExp(symbol,explist) -> (
@@ -226,6 +236,7 @@ and matchLHS lhs rhs table =
     | A.IdentExp(symbol) -> (let res = compute exp table in
       match res with
       | PairsTy(ex1,ex2,true) -> table := Symbol.insert symbol (PairsTy(ex1,rhs,true)) (!table); symbol;
+      | NullType -> print_endline "RuntimeError: Dereferencing Null"; exit 0
       | _ -> assert false (*Need to throw errors*)
     )
     | A.ArrayIndexExp(symbol,_) -> ("snd[]" ^ symbol)
@@ -284,7 +295,17 @@ and eval singleStmt table = (
       let value = compute rhs table in
       table := Symbol.insert (matchLHS lhs rhs table) value !table;
       )
-    | A.FreeStmt(exp) -> ()
+    | A.FreeStmt(exp) -> begin
+        let (exp', pos) = exp in
+        match exp' with
+        | A.IdentExp(sym) ->
+            let pair = Symbol.lookup sym !table in
+            if eq_wrapTy pair NullType then let () = print_endline "RuntimeError: Dereferencing Null" in exit 0
+            else let (PairsTy(lhs,rhs,valid)) = pair in if valid then table := Symbol.insert sym (PairsTy(lhs,rhs, false)) !table
+            else print_endline "RuntimeError: Double Free Error"; exit 134
+        | A.LiteralExp(LitNull) -> print_endline "RuntimeError: Dereferencing Null"; exit 0
+        | _ -> assert false
+        end
     | A.PrintStmt(newline,exp) -> (
         let result = compute exp table in
         print_wrap result;
