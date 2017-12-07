@@ -1,15 +1,9 @@
 # bin_annot is required for Merlin and other IDE-like tools
 
-# build a local version of menhir since it is NA on HXLY machines
-OCB_FLAGS = -use-ocamlfind -I src -use-menhir -yaccflags --dump,--graph,--explain
-PATH := $(PWD)/../menhir-20170712/build/bin:$(PATH)
-
 OBJDIR := _build
 VPATH = src
 
-ifdef DEBUG
-OCB_FLAGS = -I src -use-menhir -yaccflags --dump,--graph,--trace,--explain
-endif
+OCB_FLAGS = -I src -I src/bin -use-ocamlfind -use-menhir -yaccflags --dump,--graph,--trace,--explain
 
 OCB = ocamlbuild $(OCB_FLAGS)
 
@@ -17,10 +11,10 @@ OCB = ocamlbuild $(OCB_FLAGS)
 	$(OCB) $@
 
 driver.byte:
-	$(OCB) $@
+	$(OCB) src/bin/driver.byte
 
 driver.native:
-	$(OCB) $@
+	$(OCB) src/bin/driver.native
 
 clean:
 	$(OCB) -clean
@@ -31,4 +25,4 @@ wacclib.s:
 test:
 	ocamlbuild -I src -use-ocamlfind tests/test_main.byte && ./test_main.byte
 
-.PHONY: clean wacclib test
+.PHONY: clean wacclib test driver.byte driver.native

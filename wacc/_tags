@@ -1,4 +1,3 @@
-true : bin_annot, debug, use_menhir
+true : bin_annot, debug, use_menhir, package(ocamlgraph), package(ppx_deriving.std), package(unix), package(oUnit)
 <lib>: -traverse
-<src/*>: package(ocamlgraph), package(ppx_deriving.std), package(unix), package(oUnit)
 <tests/*>: package(oUnit), package(ocamlgraph), package(ppx_deriving.std), package(unix)

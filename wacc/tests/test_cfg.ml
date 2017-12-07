@@ -30,5 +30,25 @@ let insts =
    RET ("c"), 6
   ]
 
+let insts2 =
+  [MOV (("a"), (OperImm 5)), 1;
+   MOV (("c"), (OperImm 1)), 2;
+   LABEL "L1", 3;
+   ADD (("c"), (OperReg "c"), (OperReg "c")), 4;
+   ADD (("c"), (OperReg "c"), (OperReg "b")), 5;
+   ADD (("a"), (OperReg "b"), (OperImm 2)), 6;
+   JUMP "L1", 7;
+   LABEL "L2", 8;
+   SUB (("a"), (OperReg "c"), (OperReg "a")), 9;
+   MOV ("c", (OperImm 0)), 10
+  ]
+
 let () =
-  ignore (Liveness.build insts);
+  (* ignore (Liveness.build insts); *)
+  let reachin, reachout = (Constprop.build_reach insts2) in
+  let optimized = Constprop.constant_prop insts2 reachin in
+  List.iter (fun (i, pos) -> begin
+        print_string (Il.show_il i);
+        print_newline();
+      end) optimized;
+  ()
