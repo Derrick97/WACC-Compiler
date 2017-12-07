@@ -686,10 +686,16 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   in
   (* Array.iter (fun (i, _) -> print_endline (Il.show_il i)) insts; *)
   (* build CFG *)
-  let reachin, reachout = (Constprop.build_reach insts) in
-  let insts = Constprop.constant_prop insts reachin in
-  let insts = Array.of_list insts in
-
+  let i = ref 0 in
+  let insts = ref insts in
+  while !i < 3 do
+  let reachin, reachout = (Constprop.build_reach !insts) in
+  let iss = Constprop.constant_prop !insts reachin in
+  insts := Optimize.peephole_optimize (List.map (fun (i, _) -> i) iss)
+           |> List.mapi (fun i x -> (x, i));
+  incr i
+  done;
+  let insts = Array.of_list !insts in
   let liveout: ((Cfg.V.t, Liveness.InOutSet.t) Hashtbl.t) = Liveness.build (Array.to_list insts) in
   let igraph = Liveness.build_interference (Array.to_list insts) liveout in
   (* Liveness.show_interference igraph; *)

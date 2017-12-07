@@ -335,7 +335,8 @@ wacc_print_array:
 	add	fp, sp, #4
 	sub	sp, sp, #8
 	str	r0, [fp, #-8]
-	ldr	r1, [fp, #-8]
+	ldr	r3, [fp, #-8]
+	mov	r1, r3
 	ldr	r0, .L41
 	bl	printf
 	mov	r3, #0
@@ -415,7 +416,8 @@ wacc_print_pair:
 	bl	printf
 	b	.L49
 .L48:
-	ldr	r1, [fp, #-8]
+	ldr	r3, [fp, #-8]
+	mov	r1, r3
 	ldr	r0, .L51+4
 	bl	printf
 .L49:

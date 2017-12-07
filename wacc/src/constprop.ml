@@ -51,9 +51,10 @@ let gen (cfg:CFG.t) is = begin
       | CMP   (_, dst, _, _) -> [i]
       | LOAD  (_, dst, _) -> [i]
       | MOV (t, _) -> [i]
+      | CALL _ -> [i]
       | POP _ -> []
       | STORE _ -> []
-      | PUSH _ | JUMP _ | LTORG | COMP _ | CBR _ | RET _ | LABEL _ | NOOP  | CALL _ -> [])
+      | PUSH _ | JUMP _ | LTORG | COMP _ | CBR _ | RET _ | LABEL _ | NOOP -> [])
 end
 
 let kill (cfg:CFG.t) (is:(il*int)) :ReachSet.t  = begin
@@ -69,9 +70,10 @@ let kill (cfg:CFG.t) (is:(il*int)) :ReachSet.t  = begin
    | EOR   (dst, _, _)
    | ORR   (dst, _, _)
    | CMP   (_, dst, _, _)
-   | LOAD  (_, dst, _) -> diff (defs cfg (dst)) (of_list [i])
-   | MOV _ | POP _ | STORE _
-   | PUSH _ | JUMP _ | LTORG | COMP _ | CBR _ | RET _ | LABEL _ | NOOP  | CALL _ -> empty)
+   | LOAD  (_, dst, _) | MOV (dst, _) -> diff (defs cfg (dst)) (of_list [i])
+   | CALL _ -> diff (defs cfg (Arm.reg_RV)) (of_list [i])
+   | POP _ | STORE _
+   | PUSH _ | JUMP _ | LTORG | COMP _ | CBR _ | RET _ | LABEL _ | NOOP  -> empty)
 end
 
 (** build a livenes graph *)
@@ -153,8 +155,12 @@ let constant_prop
   let reaching_constants (ins, i) = begin
     let ds = ReachSet.elements (Hashtbl.find reachins (ins, i)) in
     let const_def i = (match List.nth insts i with
-        | MOV (t, OperImm c), p -> Some (t, c)
-        | _ -> None) in
+                       | MOV (t, OperImm c), p -> Some (t, c)
+                       | LOAD (_, t, ADDR_LABEL l), p ->
+                          (match int_of_string_opt l with
+                          | Some i -> Some (t, i)
+                          | None -> None)
+                       | _ -> None) in
     let const_reach = ds
                       |> List.map const_def
                       |> List.filter option_mem
@@ -168,13 +174,16 @@ let constant_prop
         | OperReg t0 as op ->
             let matched = (List.filter (fun (t, _) -> t = t0) reach_const) in
             if List.length matched = 1 then
-              OperImm (snd (List.hd matched))
+              (
+              OperImm (snd (List.hd matched)))
             else op
         | op -> op) in function
       | ADD (dst, op0, op1) ->  ADD (dst, may_sub_with_imm op0, may_sub_with_imm op1)
       | SUB (dst, op0, op1) ->  SUB (dst, may_sub_with_imm op0, may_sub_with_imm op1)
       | MUL (dst, op0, op1) ->  MUL (dst, may_sub_with_imm op0, may_sub_with_imm op1)
       | DIV (dst, op0, op1) ->  DIV (dst, may_sub_with_imm op0, may_sub_with_imm op1)
+      | MOV (dst, op) as inst -> let inst' = MOV (dst, may_sub_with_imm op) in
+                                 (* print_endline (IL.show_il inst); print_endline (IL.show_il inst'); *) inst'
       | op -> op in
   List.map
     (fun (ins, i) ->
@@ -182,5 +191,5 @@ let constant_prop
          let reach = reaching_constants (ins, i) in
          (maysub reach ins, i)
        end)
-    insts
+    insts;
 end

@@ -37,11 +37,11 @@ let () =
       let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
       let out = open_out out_filename in
       let root_table = ref (Symbol.empty) in
-      Interpreter.add_func_dec decs;
-      Interpreter.eval stmt root_table;
+      (* Interpreter.add_func_dec decs;
+       * Interpreter.eval stmt root_table; *)
       let stmt = Simplify.simplify_stmt stmt in
       (* (Prettyprint.prettyprint_stmt Format.std_formatter (fst stmt)); *)
-    (*  ignore(TranslateIl.trans_prog table' (decs, stmt) out); *)
+      ignore(TranslateIl.trans_prog table' (decs, stmt) out);
       close_out out;
       ignore(Sys.command (Printf.sprintf "cat wacclib.s >> %s" out_filename));
       ()

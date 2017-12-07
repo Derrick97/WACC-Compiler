@@ -3,7 +3,7 @@
 OBJDIR := _build
 VPATH = src
 
-OCB_FLAGS = -I src -I src/bin -use-ocamlfind -use-menhir -yaccflags --dump,--graph,--trace,--explain
+OCB_FLAGS = -I src -I src/bin -use-ocamlfind -use-menhir
 
 OCB = ocamlbuild $(OCB_FLAGS)
 
@@ -11,10 +11,10 @@ OCB = ocamlbuild $(OCB_FLAGS)
 	$(OCB) $@
 
 driver.byte:
-	$(OCB) src/bin/driver.byte
+	$(OCB) src/driver.byte
 
 driver.native:
-	$(OCB) src/bin/driver.native
+	$(OCB) src/driver.native
 
 clean:
 	$(OCB) -clean
