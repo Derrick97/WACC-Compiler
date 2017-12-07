@@ -36,9 +36,9 @@ let () =
       (* TODO backend code generation *)
       let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
       let out = open_out out_filename in
-      let ref_table = ref (Symbol.empty) in
+      let root_table = ref (Symbol.empty) in
       Interpreter.add_func_dec decs;
-      Interpreter.eval stmt ref_table;
+      Interpreter.eval stmt root_table;
       let stmt = Simplify.simplify_stmt stmt in
       (* (Prettyprint.prettyprint_stmt Format.std_formatter (fst stmt)); *)
     (*  ignore(TranslateIl.trans_prog table' (decs, stmt) out); *)

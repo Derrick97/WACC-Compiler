@@ -18,7 +18,6 @@ let func_table: 'a Symbol.table ref = ref (Symbol.empty)
 
 let function_return: wrapType ref = ref (DefaultTy)
 
-let stack: wrapType Stack.t = (Stack.create ())
 (*let table = ref (Symbol.empty)*)
 
 let rec add_func_dec decs =
@@ -58,7 +57,7 @@ let rec print_char_array elems =
   | (LiteralExp(LitChar(chr)),pos)::r -> print_char chr; print_char_array r
   | _ -> assert false
 
-let printWrap wrapTy = (
+let print_wrap wrapTy = (
   match wrapTy with
   | Int(num) -> print_int num
   | Char(letter) -> print_char letter
@@ -155,7 +154,7 @@ match exp' with
 | A.CallExp (ident, explist) -> begin
     let (ty, field_list,stmt) = Symbol.lookup ident !func_table in
     let func_scope = ref (Symbol.new_scope !table) in
-    let () = match (field_list, explist) with
+    let new_table = match (field_list, explist) with
     | [],[] -> eval stmt func_scope
     | (h::r,h'::r') -> List.map2 (fun x y -> begin
       let (ty', ident') = x in
@@ -178,13 +177,6 @@ and indexList (ListOfElem(length,elems)) indexExps table =
     else
     indexList (compute (List.nth elems (arithmetic_convert (compute h table))) table) r table
     end
-
-and print_pair (PairsTy (ex1,ex2,still_valid)) table = begin ((*Only for debugging use*)
-    print_string "Pair (";
-    printWrap (compute ex1 table);
-    print_string ",";
-    printWrap (compute ex2 table);
-    print_endline ")";) end
 
 and modify_array elems indexExps new_value table =
     match indexExps with
@@ -212,7 +204,7 @@ and matchLHS lhs rhs table =
     | A.IdentExp(symbol) -> (
       let res = compute exp table in
       match res with
-      | PairsTy(ex1,ex2,true) -> print_pair res table; table := Symbol.insert symbol (PairsTy(rhs,ex2,true)) (!table); symbol;
+      | PairsTy(ex1,ex2,true) -> table := Symbol.insert symbol (PairsTy(rhs,ex2,true)) (!table); symbol;
       | _ -> assert false (*Need to throw errors*)
       )
     | A.ArrayIndexExp(symbol,explist) -> (
@@ -233,7 +225,7 @@ and matchLHS lhs rhs table =
     match exp' with
     | A.IdentExp(symbol) -> (let res = compute exp table in
       match res with
-      | PairsTy(ex1,ex2,true) -> print_pair res table; table := Symbol.insert symbol (PairsTy(ex1,rhs,true)) (!table); symbol;
+      | PairsTy(ex1,ex2,true) -> table := Symbol.insert symbol (PairsTy(ex1,rhs,true)) (!table); symbol;
       | _ -> assert false (*Need to throw errors*)
     )
     | A.ArrayIndexExp(symbol,_) -> ("snd[]" ^ symbol)
@@ -266,43 +258,36 @@ and string_to_array str pos =
 and eval singleStmt table = (
     let (singleStmt', pos) = singleStmt in
     match singleStmt' with
-    | A.SeqStmt (stmt, stmtlist) -> (eval stmt table; eval stmtlist table;)
+    | A.SeqStmt (stmt, stmtlist) ->
+      eval stmt table ; eval stmtlist table
     | A.SkipStmt ->  ()
     | A.VarDeclStmt(_,sym,exp) ->(
       let value = compute exp table in
       table := Symbol.insert sym value !table;
-      Stack.push value stack;
       )
     | A.AssignStmt((A.FstExp exp,pos), rhs) ->(
       let value = compute rhs table in
       matchLHS (A.FstExp exp, pos) rhs table;
-      Stack.push value stack;
+      ()
       )
     | A.AssignStmt((A.SndExp exp,pos), rhs) ->(
       let value = compute rhs table in
       matchLHS (A.SndExp exp, pos) rhs table ;
-      Stack.push value stack;
+      ()
       )
     | A.AssignStmt((A.ArrayIndexExp(sym,expList),pos), rhs) ->(
       let value = compute rhs table in
       matchLHS (A.ArrayIndexExp (sym,expList), pos) rhs table ;
-      Stack.push value stack;
+      ()
       )
     | A.AssignStmt(lhs, rhs) ->(
       let value = compute rhs table in
       table := Symbol.insert (matchLHS lhs rhs table) value !table;
-      Stack.push value stack;
       )
-    | A.FreeStmt(exp) -> ((*
-      let value = compute exp table in
-      let (PairsTy(ex1,ex2,still_valid)) = value in
-      if still_valid then let () = still_valid = false in ()
-      else let () = print_newline "RuntimeError: Cannot free a variable that can be already freed." in exit 255
-      )*))
+    | A.FreeStmt(exp) -> ()
     | A.PrintStmt(newline,exp) -> (
-        Stack.push (compute exp table) stack;
-        let result = Stack.pop stack in
-        printWrap result;
+        let result = compute exp table in
+        print_wrap result;
         if newline then print_newline();
         )
     | A.ReadStmt(exp) -> (
@@ -314,29 +299,26 @@ and eval singleStmt table = (
           let num = read_int () in
           let symbol = matchLHS exp exp table in
           table := Symbol.insert symbol (Int(num)) !table;
-          Stack.push value stack;
           end
         | Char(_) -> begin
           let line = read_line () in
           let chr = String.get line 0 in
           let symbol = matchLHS exp exp table in
           table := Symbol.insert symbol (Char(chr)) !table;
-          Stack.push value stack;
           end
         | String(_) -> begin
           let line = read_line () in
           let symbol = matchLHS exp exp table in
           table := Symbol.insert symbol (String(line)) !table;
-          Stack.push value stack;
           end
         | _ -> assert false
       )
     | A.WhileStmt(exp, stmt) -> (
         let cond = compute exp table in
-          match cond with
-          | Bool(true) -> (eval stmt table; eval (A.WhileStmt(exp ,stmt), pos) table;)
-          | Bool(false) -> ();
-          | _ -> print_string ("This is not a boolean expression, cannot used for condition.");
+        match cond with
+          | Bool(true) -> eval stmt table; eval (A.WhileStmt(exp ,stmt), pos) table; ()
+          | Bool(false) -> ()
+          | _ -> print_string "This is not a boolean expression, cannot used for condition."
       )
     | A.IfStmt(exp,stmt1,stmt2) -> (
       let cond = compute exp table in
@@ -344,6 +326,7 @@ and eval singleStmt table = (
         | Bool(true) -> eval stmt1 table
         | Bool(false) -> eval stmt2 table
         | _ -> print_string ("This is not a boolean expression, cannot used for condition.");
+
       )
     | A.ExitStmt (exp) ->(
       let exit_code = compute exp table in
@@ -353,13 +336,14 @@ and eval singleStmt table = (
            else if i < 0 then exit (i+256)
            else exit (256 mod i)
          end
-         | _ -> assert false
+         | _ -> assert false;
       )
     | A.RetStmt (exp) -> begin
       let value = compute exp table in
-      function_return := value
+      function_return := value;
     end
     | A.BlockStmt(statment) ->
         let new_table = Symbol.new_scope (!table) in
         let new_table_ref = ref new_table in
-        eval statment new_table_ref )
+        eval statment new_table_ref;
+         )
