@@ -18,6 +18,17 @@ let suite =
  ]
 ;;
 
+open Il;;
+
+let insts =
+  [MOV (("a"), (OperImm 0)), 0;
+   LABEL "if.cond", 1;
+   ADD (("b"), (OperReg "a"), (OperImm 0)), 2;
+   ADD (("c"), (OperReg "c"), (OperReg "b")), 3;
+   ADD (("a"), (OperReg "b"), (OperImm 2)), 4;
+   JUMP "if.cond", 5;
+   RET ("c"), 6
+  ]
+
 let () =
-  run_test_tt_main suite
-;;
+  ignore (Liveness.build insts);

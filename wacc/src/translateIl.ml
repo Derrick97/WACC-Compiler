@@ -98,17 +98,21 @@ let oper_imm i = Il.OperImm i
 let addr_indirect r offset = (Il.ADDR_INDIRECT (r, offset))
 let addr_label l = (Il.ADDR_LABEL l)
 
-let allocate_local (frame: frame) (size: size) =
-  let offset = frame.frame_offset in
-  let a = InFrame (offset, size) in
-  frame.frame_offset <- offset + size;
-  frame.frame_locals <- Array.append frame.frame_locals [|a|];
-  a
+(* let allocate_local (frame: frame) (size: size) =
+ *   let offset = frame.frame_offset in
+ *   let a = InFrame (offset, size) in
+ *   frame.frame_offset <- offset + size;
+ *   frame.frame_locals <- Array.append frame.frame_locals [|a|];
+ *   a *)
 
 let allocate_temp () = begin
   let c = !counter in
   counter := c+1;
   "t" ^ (string_of_int c)
+end
+
+let allocate_local (frame: frame) (size: size) = begin
+  let a = InReg (allocate_temp()) in  a
 end
 
 let size_of_type = function
@@ -220,7 +224,7 @@ and trans_exp ctx exp =
     | A.LiteralExp    (lit) -> begin
         let open Il in
         (match lit with
-            | A.LitInt i -> emit(load WORD dst (ADDR_LABEL (string_of_int i)))
+            | A.LitInt i -> emit(mov dst (oper_imm i))
             | A.LitString s -> begin
                 let label = new_label() in
                 frags := (STRING (label, s))::!frags;
@@ -234,9 +238,9 @@ and trans_exp ctx exp =
             | _ -> assert false);
         dst
       end
-    | A.BinOpExp      ((lhs), binop, (rhs)) -> begin
-        let (l) = (trans_exp ctx lhs) in
-        let (r) = (trans_exp ctx rhs) in
+    | A.BinOpExp      (lhs, binop, rhs) -> begin
+        let l = (trans_exp ctx lhs) in
+        let r = (trans_exp ctx rhs) in
         let (opl, opr) = (oper_reg l), (oper_reg r) in
         (match binop with
             | A.PlusOp   -> emit (add dst opl opr)
@@ -245,7 +249,7 @@ and trans_exp ctx exp =
             | A.DivideOp -> assert false
             | A.AndOp ->    emit (and_ dst opl opr)
             | A.OrOp  ->    emit (or_ dst opl opr)
-            | A.EqOp -> emit (sub dst opl opr); emit( cmp Il.EQ dst (oper_reg dst) (oper_imm 0))
+            | A.EqOp -> emit (sub dst opl opr); emit(cmp Il.EQ dst (oper_reg dst) (oper_imm 0))
             | A.NeOp -> emit (sub dst opl opr); emit(cmp Il.NE dst (oper_reg dst) (oper_imm 0))
             | A.GeOp -> emit (sub dst opl opr); emit(cmp Il.GE dst (oper_reg dst) (oper_imm 0))
             | A.GtOp -> emit (sub dst opl opr); emit(cmp Il.GT dst (oper_reg dst) (oper_imm 0))
@@ -317,7 +321,13 @@ and trans_call (ctx: ctx)
   let reg_passed, stack_passed = split_reg_stack_passed args in
   (* First we mov the first 4 registers *)
   emit(push Arm.caller_saved_regs);
-  List.iter (fun (d, s) -> emit(mov d (Il.OperReg s))) (zip F.caller_saved_regs reg_passed);
+  List.iter (fun (d, s) -> begin
+        let t = allocate_temp() in
+        emit(mov t (Il.OperReg s));
+        emit(mov d (Il.OperReg t));
+      end
+    )
+    (zip F.caller_saved_regs reg_passed);
   (* The other registers are pushed to stack *)
   List.iter (fun x -> emit (push [x])) (List.rev stack_passed);
   emit(call fname_label);
@@ -521,6 +531,7 @@ let rec trans_stmt env frame stmt: ctx = begin
       let expt = tr exp in
       emit(mov (reg_RV) (oper_reg expt));
       emit(add reg_SP (oper_reg reg_SP) (oper_imm (frame_size frame)));
+      emit(pop []);
       emit(pop [reg_PC]);
       env
     end
@@ -549,7 +560,13 @@ and frame_prologue env (frame: frame): il list = begin
   if (valid_size2 != 0) then
       [sub F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size2)] else []
   in
-   [push [F.reg_LR]] @ allocate_insts @ handle_big_local_size_inst
+  (* let local_regs = ref [] in
+   * iter_locals env (fun acc -> begin
+   *       match acc with
+   *         | InReg (r) -> local_regs := !local_regs @ [r]
+   *         | _ ->  ()
+   *     end); *)
+   [push [F.reg_LR]] @ allocate_insts @ handle_big_local_size_inst @ [push []]
 end
 
 and frame_epilogue env (frame: frame): il list = begin
@@ -563,7 +580,13 @@ and frame_epilogue env (frame: frame): il list = begin
   if (valid_size2 !=0) then
       [add F.reg_SP (oper_reg F.reg_SP) (oper_imm valid_size2)] else []
   in
-  deallocate_insts @ handle_big_local_size_inst @
+  (* let local_regs = ref [] in
+   * iter_locals env (fun acc -> begin
+   *       match acc with
+   *         | InReg (r) -> local_regs := !local_regs @ [r]
+   *         | _ ->  ()
+   * end); *)
+  deallocate_insts @ handle_big_local_size_inst @ [pop []] @
   [pop [F.reg_PC]] @ [ltorg]
 end
 
@@ -596,8 +619,11 @@ and trans_function_declaration (env: ctx) (dec) = begin
   (* add arguments to new environment *)
   List.iteri (fun i (ty, name) -> begin
         if (i <= 3) then
-          let acc = InReg (List.nth F.caller_saved_regs i) in
-          add_binding name ty acc;
+          (* let acc = InReg (List.nth F.caller_saved_regs i) in *)
+          let t = allocate_temp() in
+          emit(IL.mov (t) (oper_reg (List.nth F.caller_saved_regs i)));
+          let acc' = InReg (t) in
+          add_binding name ty acc';
         else
           let sz = size_of_type ty in
           let acc = InFrame (!offset, sz) in
@@ -649,11 +675,22 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   let code = ((emitter()).IL.emit_code) in
   let insts = Array.concat [Array.of_list prologue; code; Array.of_list epilogue] in
   let instsi = Array.mapi (fun i x -> (x, i)) insts in
+  (* Array.iter (fun (i, _) -> print_endline (Il.show_il i)) instsi; *)
   (* build CFG *)
-  let liveout = Liveness.build (Array.to_list instsi) in
+  let liveout: ((Cfg.V.t, Liveness.InOutSet.t) Hashtbl.t) = Liveness.build (Array.to_list instsi) in
   let igraph = Liveness.build_interference (Array.to_list instsi) liveout in
   (* Liveness.show_interference igraph; *)
   let colormap = RA.allocate (Array.to_list instsi) igraph in
+  let a = ref [| |] in
+  Hashtbl.iter (fun k v -> ignore(a := Array.append !a [|(k, v)|]) ) liveout;
+  Array.sort (fun ((_, i), _) ((_, j), _) -> Pervasives.compare i j) !a;
+  (* Array.iter (fun ((k,i), v) ->
+   *     print_int (i);
+   *     print_string (" ");
+   *     print_string (IL.show_il k);
+   *     print_string (": ");
+   *     print_endline (Liveness.string_of_set v);
+   * ) !a; *)
   let open Printf in
   let instsgen = (insts
                   |> Array.to_list

@@ -22,7 +22,7 @@ let build_cfg (instrs: (IL.il * int) list): t = begin
       add_vertex g inst;
       (match inst with
       | LABEL l, j -> Hashtbl.add jump_table l j
-      | _ -> ());
+      | _, _ -> ());
       if (i < (List.length instrs) - 1) then
         let next_inst = List.nth instrs (i+1) in
         (* print_int(i); print_string "-"; print_int (i+1);
@@ -37,11 +37,12 @@ let build_cfg (instrs: (IL.il * int) list): t = begin
   let resolve_jumps n = begin
     match n with
     | JUMP  label, _ -> begin
-        add_edge g ((LABEL label), Hashtbl.find jump_table label) n
+        (* print_endline (Printf.sprintf "%s-%s" label (IL.show_il (fst n))); *)
+        add_edge g n ((LABEL label), Hashtbl.find jump_table label)
       end
     | CBR  (_, l0, l1), _ -> begin
-        add_edge g ((LABEL l0), Hashtbl.find jump_table l0) n;
-        add_edge g ((LABEL l1), Hashtbl.find jump_table l1) n;
+        add_edge g n ((LABEL l0), Hashtbl.find jump_table l0);
+        add_edge g n ((LABEL l1), Hashtbl.find jump_table l1);
       end
     | _ -> ()
   end in

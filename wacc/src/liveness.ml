@@ -73,6 +73,9 @@ let use (i:(il*int)):tempset =
       | CALL _ -> []
     )
 
+let string_of_set s =
+  ("{" ^ (String.concat "," (InOutSet.elements s)) ^ "}")
+
 (** build a livenes graph *)
 let build (instrs: (il*int) list) = begin
   (* solve the dataflow equations
@@ -80,9 +83,6 @@ let build (instrs: (il*int) list) = begin
   *)
   (* first we build the control flow graph *)
   let cfg = CFG.build_cfg instrs in
-  let string_of_set s = begin
-    ("{" ^ (String.concat "," (InOutSet.elements s)) ^ "}")
-  end in
   (* print_endline "initializing def and use sets"; *)
   let (uses: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create 0 in
   let (defs: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create 0 in
@@ -91,16 +91,16 @@ let build (instrs: (il*int) list) = begin
       Hashtbl.add defs i (def i)) instrs;
 
   (* print_endline "defs";
-   * List.iter (fun i -> (
+   * List.iter (fun ((i, _) as i') -> (
    *       print_endline (IL.show_il i);
-   *       print_endline @@ string_of_set (Hashtbl.find defs i);
+   *       print_endline @@ string_of_set (Hashtbl.find defs i');
    *     )) instrs;
    * print_endline "uses";
-   * List.iter (fun i -> (
+   * List.iter (fun ((i, _) as i') -> (
    *       print_endline (IL.show_il i);
-   *       print_endline @@ string_of_set (Hashtbl.find uses i);
-   *     )) instrs; *)
-  (* print_endline "initializing dataflow solver"; *)
+   *       print_endline @@ string_of_set (Hashtbl.find uses i');
+   *     )) instrs;
+   * print_endline "initializing dataflow solver"; *)
   (* initialize *)
 
   let (in_: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create 0 in
@@ -116,6 +116,7 @@ let build (instrs: (il*int) list) = begin
     i := !i + 1;
     let open Printf in
     (* printf "Iteration %d\n" !i; *)
+    let print_set s = (print_endline (string_of_set s)) in
     List.iter (fun n -> begin
           let in'  = Hashtbl.find in_ n in (* in'[n] <- in[n] *)
           let out' = Hashtbl.find out n in (* out'[n] <- out[n] *)
@@ -127,23 +128,27 @@ let build (instrs: (il*int) list) = begin
           let new_out = List.fold_left
               (fun a b -> InOutSet.union a (Hashtbl.find in_ b))
               (InOutSet.empty) ((CFG.succ cfg n)) in (* out[n] = U_{s \in succ(n)} in[s] *)
-          (* print_endline ((IL.show_il n) ^ "------");
+          (* print_endline ((IL.show_il (fst n)) ^ "------");
+           * print_string "old in ";
            * print_set in';
+           * print_string "old out ";
            * print_set out';
+           * print_string "new in ";
            * print_set new_in;
+           * print_string "new out ";
            * print_set new_out;
            * print_endline "------"; *)
           if not((InOutSet.equal in' new_in) && (InOutSet.equal out' new_out)) then
             terminate := false else ();
-          Hashtbl.add in_ n new_in;
-          Hashtbl.add out n new_out;
+          Hashtbl.replace in_ n new_in;
+          Hashtbl.replace out n new_out;
         end) instrs;
-    (* List.iter (fun v ->
+    (* List.iter (fun ((v,_) as v') ->
      *     print_endline (IL.show_il v);
      *     print_string "in  ";
-     *     print_endline @@ string_of_set (Hashtbl.find in_ v);
+     *     print_endline @@ string_of_set (Hashtbl.find in_ v');
      *     print_string "out ";
-     *     print_endline @@ string_of_set (Hashtbl.find out v);
+     *     print_endline @@ string_of_set (Hashtbl.find out v');
      *     print_endline "-----------";
      *   ) instrs; *)
     if not !terminate then loop () else ()
@@ -167,14 +172,23 @@ type igraph = IGraph.t
 let build_interference (insts: (il*int) list) (liveMap: ((il*int), tempset) Hashtbl.t) =
   let igraph = IGraph.create () in
   let iter_inst inst = begin  (* TODO handle move specially *)
-    InOutSet.iter (IGraph.add_vertex igraph) (def inst);
-    InOutSet.iter (IGraph.add_vertex igraph) (use inst);
-    InOutSet.iter (fun d -> begin
-          let ts = Hashtbl.find liveMap inst in
-          (* Add the vertices *)
-          InOutSet.iter (fun t -> if (String.compare d t != 0) (* No edges to self *)
-                          then IGraph.add_edge igraph d t else ()) ts
-        end) (def (inst))
+    match inst with
+    (* | IL.MOV (dst, IL.OperReg src),_ -> begin
+     *     let bs = Hashtbl.find liveMap inst in
+     *     InOutSet.iter (IGraph.add_vertex igraph) bs;
+     *     InOutSet.iter (fun b -> if ((String.compare b src) != 0) then
+     *                       IGraph.add_edge igraph dst b else ()) bs;
+     *   end *)
+    | _ -> begin
+        InOutSet.iter (fun d -> begin
+              let ts = Hashtbl.find liveMap inst in
+              (* Add the vertices *)
+              InOutSet.iter (fun t -> if (String.compare d t != 0) (* No edges to self *)
+                             then IGraph.add_edge igraph d t else ()) ts
+            end) (def (inst));
+        InOutSet.iter (IGraph.add_vertex igraph) (def inst);
+        InOutSet.iter (IGraph.add_vertex igraph) (use inst);
+      end
   end in
   List.iter iter_inst insts;
   igraph
