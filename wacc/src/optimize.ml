@@ -21,7 +21,8 @@ let rec peephole_optimize (insts: Il.il list) =
       DIV (temp2, op2, op) :: peephole_optimize others
   (*The 3nd case: MOV a b then MOV b a*)
   | MOV (temp, op)::MOV (temp', op')::others when eq_operand temp op' && eq_operand temp' op ->
-      MOV (temp, op) :: peephole_optimize others
+     MOV (temp, op) :: peephole_optimize others
+  | (NOOP _::others) -> peephole_optimize others
   | fst::others -> fst::peephole_optimize others
 
 

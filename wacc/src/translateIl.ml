@@ -681,13 +681,16 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   emit(IL.mov (F.reg_RV) (oper_imm 0));
   let code = ((emitter()).IL.emit_code) in
   let insts = Array.concat [Array.of_list prologue; code; Array.of_list epilogue] in
-  let instsi = Array.mapi (fun i x -> (x, i)) insts in
-  (* Array.iter (fun (i, _) -> print_endline (Il.show_il i)) instsi; *)
+  let insts = Optimize.peephole_optimize (Array.to_list insts)
+              |> List.mapi (fun i x -> (x, i))
+              |> Array.of_list
+  in
+  Array.iter (fun (i, _) -> print_endline (Il.show_il i)) insts;
   (* build CFG *)
-  let liveout: ((Cfg.V.t, Liveness.InOutSet.t) Hashtbl.t) = Liveness.build (Array.to_list instsi) in
-  let igraph = Liveness.build_interference (Array.to_list instsi) liveout in
+  let liveout: ((Cfg.V.t, Liveness.InOutSet.t) Hashtbl.t) = Liveness.build (Array.to_list insts) in
+  let igraph = Liveness.build_interference (Array.to_list insts) liveout in
   (* Liveness.show_interference igraph; *)
-  let colormap = RA.allocate (Array.to_list instsi) igraph in
+  let colormap = RA.allocate (Array.to_list insts) igraph in
   let a = ref [| |] in
   Hashtbl.iter (fun k v -> ignore(a := Array.append !a [|(k, v)|]) ) liveout;
   Array.sort (fun ((_, i), _) ((_, j), _) -> Pervasives.compare i j) !a;
@@ -701,8 +704,8 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   let open Printf in
   let instsgen = (insts
                   |> Array.to_list
-                  |> List.filter (fun o -> not(is_noop o))
-                  |> List.map (Codegen.codegen colormap)
+                  |> List.filter (fun (o,_) -> not(is_noop o))
+                  |> List.map (fun (i, _) -> Codegen.codegen colormap i)
                   |> List.concat) in
   (* print out the generated code *)
   fprintf out ".data\n";

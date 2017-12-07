@@ -76,13 +76,16 @@ let use (i:(il*int)):tempset =
 let string_of_set s =
   ("{" ^ (String.concat "," (InOutSet.elements s)) ^ "}")
 
+let print_set s = (print_endline (string_of_set s))
+
 (** build a livenes graph *)
 let build (instrs: (il*int) list) = begin
   (* solve the dataflow equations
      See modern compiler implementation in ML, page 214 Algo 10.4 for pseudo-code.
   *)
-  (* first we build the control flow graph *)
+    (* first we build the control flow graph *)
   let cfg = CFG.build_cfg instrs in
+  let insts_rev = List.rev instrs in
   (* print_endline "initializing def and use sets"; *)
   let (uses: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create 0 in
   let (defs: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create 0 in
@@ -99,15 +102,22 @@ let build (instrs: (il*int) list) = begin
    * List.iter (fun ((i, _) as i') -> (
    *       print_endline (IL.show_il i);
    *       print_endline @@ string_of_set (Hashtbl.find uses i');
-   *     )) instrs;
-   * print_endline "initializing dataflow solver"; *)
+   *     )) instrs; *)
   (* initialize *)
-
-  let (in_: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create 0 in
-  let (out: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create 0 in
+  let nbv = CFG.nb_vertex cfg in
+  print_int nbv;
+  print_endline "initializing dataflow solver";
+  let (in_: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create nbv in
+  let (out: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create nbv in
   CFG.iter_vertex (fun n ->
-      Hashtbl.add in_ n (InOutSet.empty);
-      Hashtbl.add out n (InOutSet.empty);
+      let (_, i) = n in
+      print_int(i);
+      print_string " ";
+      print_int(Hashtbl.hash n);
+      print_newline();
+      flush_all();
+      Hashtbl.replace in_ n (InOutSet.empty);
+      Hashtbl.replace out n (InOutSet.empty);
     ) cfg;
   (* now iteratively solve *)
   let i = ref 0 in
@@ -115,8 +125,8 @@ let build (instrs: (il*int) list) = begin
     let terminate = ref true in
     i := !i + 1;
     let open Printf in
-    (* printf "Iteration %d\n" !i; *)
-    let print_set s = (print_endline (string_of_set s)) in
+    printf "Iteration %d\n" !i;
+    flush_all();
     List.iter (fun n -> begin
           let in'  = Hashtbl.find in_ n in (* in'[n] <- in[n] *)
           let out' = Hashtbl.find out n in (* out'[n] <- out[n] *)
