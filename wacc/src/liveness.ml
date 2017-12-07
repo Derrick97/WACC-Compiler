@@ -105,17 +105,17 @@ let build (instrs: (il*int) list) = begin
    *     )) instrs; *)
   (* initialize *)
   let nbv = CFG.nb_vertex cfg in
-  print_int nbv;
-  print_endline "initializing dataflow solver";
+  (* print_int nbv;
+   * print_endline "initializing dataflow solver"; *)
   let (in_: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create nbv in
   let (out: (CFG.V.t, InOutSet.t) Hashtbl.t) = Hashtbl.create nbv in
   CFG.iter_vertex (fun n ->
       let (_, i) = n in
-      print_int(i);
-      print_string " ";
-      print_int(Hashtbl.hash n);
-      print_newline();
-      flush_all();
+      (* print_int(i);
+       * print_string " ";
+       * print_int(Hashtbl.hash n);
+       * print_newline();
+       * flush_all(); *)
       Hashtbl.replace in_ n (InOutSet.empty);
       Hashtbl.replace out n (InOutSet.empty);
     ) cfg;
@@ -125,7 +125,7 @@ let build (instrs: (il*int) list) = begin
     let terminate = ref true in
     i := !i + 1;
     let open Printf in
-    printf "Iteration %d\n" !i;
+    (* printf "Iteration %d\n" !i; *)
     flush_all();
     List.iter (fun n -> begin
           let in'  = Hashtbl.find in_ n in (* in'[n] <- in[n] *)

@@ -685,7 +685,7 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
               |> List.mapi (fun i x -> (x, i))
               |> Array.of_list
   in
-  Array.iter (fun (i, _) -> print_endline (Il.show_il i)) insts;
+  (* Array.iter (fun (i, _) -> print_endline (Il.show_il i)) insts; *)
   (* build CFG *)
   let liveout: ((Cfg.V.t, Liveness.InOutSet.t) Hashtbl.t) = Liveness.build (Array.to_list insts) in
   let igraph = Liveness.build_interference (Array.to_list insts) liveout in
