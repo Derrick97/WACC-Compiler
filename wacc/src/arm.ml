@@ -36,7 +36,6 @@ and shift =
   | LSL of int
   | LSR of int
   | ROR of int
-  (* TODO support other shifts *)
 
 let reg_SP = "sp"
 let reg_LR = "lr"

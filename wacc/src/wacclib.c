@@ -2,6 +2,7 @@
 #define WACCLIB_H
 
 #include "stdio.h"
+#include "stdint.h"
 #include "stdlib.h"
 #include "string.h"
 
@@ -67,7 +68,7 @@ int wacc_len(void* arr_ptr){
 }
 
 int wacc_print_array(void* ptr) {
-  printf("0x%x",  ptr);
+  printf("0x%x",  (uintptr_t)ptr);
   return 0;
 }
 
@@ -84,7 +85,7 @@ int wacc_print_pair(void* ptr) {
   if (ptr == 0) {
     printf("(nil)");
   } else {
-    printf("0x%x", ptr);
+    printf("0x%x", (uintptr_t)ptr);
   }
   return 0;
 }
@@ -142,6 +143,5 @@ void wacc_free(void* ptr) {
     free(ptr);
   }
 }
-
 
 #endif
