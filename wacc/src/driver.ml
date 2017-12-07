@@ -2,6 +2,7 @@ open Lexing
 open Printf
 
 module A = Ast_v2
+module I = Interpreter
 
 let usage = "The WACC compiler\nUsage:\n"
 let syntax_error_code = 100
@@ -27,16 +28,20 @@ let () =
     let filename = Sys.argv.(1) in
     let lexbuf = Lexing.from_channel (open_in filename) in
     try
-      let (decs, stmt) = parse lexbuf in
+      let (decs, stmt) = parse lexbuf
+      in
       Semantic.check_prog (decs, stmt);
       let table = Semantic.baseenv in
       let table' = Symbol.new_scope (Semantic.add_function_declarations table decs) in
       (* TODO backend code generation *)
       let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
       let out = open_out out_filename in
+      let root_table = ref (Symbol.empty) in
+      Interpreter.add_func_dec decs;
+      Interpreter.eval stmt root_table;
       let stmt = Simplify.simplify_stmt stmt in
       (* (Prettyprint.prettyprint_stmt Format.std_formatter (fst stmt)); *)
-      ignore(TranslateIl.trans_prog table' (decs, stmt) out);
+    (*  ignore(TranslateIl.trans_prog table' (decs, stmt) out); *)
       close_out out;
       ignore(Sys.command (Printf.sprintf "cat wacclib.s >> %s" out_filename));
       ()
