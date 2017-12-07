@@ -171,24 +171,25 @@ type igraph = IGraph.t
 (** Build an interference graph *)
 let build_interference (insts: (il*int) list) (liveMap: ((il*int), tempset) Hashtbl.t) =
   let igraph = IGraph.create () in
+  let open IL in
   let iter_inst inst = begin  (* TODO handle move specially *)
-    match inst with
-    (* | IL.MOV (dst, IL.OperReg src),_ -> begin
-     *     let bs = Hashtbl.find liveMap inst in
-     *     InOutSet.iter (IGraph.add_vertex igraph) bs;
-     *     InOutSet.iter (fun b -> if ((String.compare b src) != 0) then
-     *                       IGraph.add_edge igraph dst b else ()) bs;
-     *   end *)
-    | _ -> begin
-        InOutSet.iter (fun d -> begin
+      (match inst with
+       | IL.MUL (dst, OperReg t0, OperReg t1),_ -> (
+         (if (String.compare dst t0 != 0) then
+            IGraph.add_edge igraph dst t0 else ());
+         (if (String.compare dst t1 != 0) then
+            IGraph.add_edge igraph dst t1 else ());
+         ())
+         | _ -> ()
+      );
+      InOutSet.iter (fun d -> begin
               let ts = Hashtbl.find liveMap inst in
               (* Add the vertices *)
               InOutSet.iter (fun t -> if (String.compare d t != 0) (* No edges to self *)
-                             then IGraph.add_edge igraph d t else ()) ts
-            end) (def (inst));
-        InOutSet.iter (IGraph.add_vertex igraph) (def inst);
-        InOutSet.iter (IGraph.add_vertex igraph) (use inst);
-      end
+                                      then IGraph.add_edge igraph d t else ()) ts
+                       end) (def (inst));
+      InOutSet.iter (IGraph.add_vertex igraph) (def inst);
+      InOutSet.iter (IGraph.add_vertex igraph) (use inst);
   end in
   List.iter iter_inst insts;
   igraph

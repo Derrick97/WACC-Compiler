@@ -224,7 +224,7 @@ and trans_exp ctx exp =
     | A.LiteralExp    (lit) -> begin
         let open Il in
         (match lit with
-            | A.LitInt i -> emit(mov dst (oper_imm i))
+            | A.LitInt i -> emit(load WORD dst (ADDR_LABEL (string_of_int i)))
             | A.LitString s -> begin
                 let label = new_label() in
                 frags := (STRING (label, s))::!frags;
@@ -478,6 +478,12 @@ let rec trans_stmt env frame stmt: ctx = begin
     end
   | A.SkipStmt       -> env
   | A.CallStmt (exp) -> ignore (trans_exp env exp); env
+  | A.ReadStmt ((A.IdentExp (name), _) as exp) -> begin
+      let (ty, acc) = get_access name in
+      let readt = trans_call env ("wacc_read_" ^ (string_of_ty ty)) [] in
+      let () = trans_assign acc readt in
+      env
+    end
   | A.ReadStmt (exp) -> begin
       let addr = addr_of_exp env exp in
       let ty = exp_type env exp in
@@ -586,6 +592,7 @@ and frame_epilogue env (frame: frame): il list = begin
    *         | InReg (r) -> local_regs := !local_regs @ [r]
    *         | _ ->  ()
    * end); *)
+
   deallocate_insts @ handle_big_local_size_inst @ [pop []] @
   [pop [F.reg_PC]] @ [ltorg]
 end

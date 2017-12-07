@@ -97,7 +97,7 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
       if is_reg op then begin
         let op' = get_reg op in
         let op2' = get_reg op2 in
-        [Arm.smull op' op2' op' op2';
+        [Arm.smull t op2' op' op2';
          Arm.cmp op2' (Arm.OperReg (op', Some (ASR 31)));
          Arm.bl ~cond:NE "wacc_throw_overflow_error"]
       end
@@ -105,7 +105,7 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
         let op' = get_reg op in
         let op2' = get_reg op2 in
         [Arm.mov t (arm_op op);
-         Arm.smull op' op2' op' op2';
+         Arm.smull t op2' op' op2';
          Arm.cmp op2' (Arm.OperReg (op', Some (ASR 31)));
          Arm.bl ~cond:NE "wacc_throw_overflow_error"]
       end
