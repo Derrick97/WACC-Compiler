@@ -4,9 +4,6 @@ let rec simplify (exp: A.exp): A.exp =
   let open Ast_v2 in
   let (exp', pos) = exp in
   match exp' with
-  | A.BinOpExp (lhs, A.DivideOp, rhs) -> begin
-      A.CallExp ("wacc_div", [simplify lhs; simplify rhs]), pos
-    end
   | A.BinOpExp (lhs, op, rhs) -> begin
       let (lhs', pos) = simplify lhs in
       let (rhs', pos) = simplify rhs in
