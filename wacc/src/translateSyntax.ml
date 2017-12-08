@@ -1,4 +1,4 @@
-module A = Ast_v2;;
+module A = Ast;;
 module E = Env;;
 module S = Semantic;;
 module F = Arm;;

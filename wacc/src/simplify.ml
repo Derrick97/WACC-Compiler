@@ -1,7 +1,7 @@
-module A = Ast_v2
+module A = Ast;;
 
 let rec simplify (exp: A.exp): A.exp =
-  let open Ast_v2 in
+  let open Ast in
   let (exp', pos) = exp in
   match exp' with
   | A.BinOpExp (lhs, op, rhs) -> begin
@@ -55,7 +55,7 @@ let rec simplify (exp: A.exp): A.exp =
 
 
 let rec simplify_stmt (ast: A.stmt): A.stmt =
-  let open Ast_v2 in
+  let open Ast in
   let (stmt', pos) = ast in
   (match stmt' with
   | A.IfStmt (cond, then_stmt, else_stmt) -> begin

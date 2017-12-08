@@ -3,7 +3,7 @@
 OBJDIR := _build
 VPATH = src
 
-OCB_FLAGS = -I src -I src/bin -use-ocamlfind -use-menhir
+OCB_FLAGS = -I src -I src/optimize -use-ocamlfind -use-menhir
 
 OCB = ocamlbuild $(OCB_FLAGS)
 

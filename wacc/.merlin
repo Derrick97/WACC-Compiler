@@ -1,4 +1,5 @@
 S src
+S src/optimize
 S tests
 B _build/src
 B _build/tests

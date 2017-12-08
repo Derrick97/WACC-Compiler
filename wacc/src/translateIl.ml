@@ -1,5 +1,5 @@
 module IL = Il;;
-module A = Ast_v2;;
+module A = Ast;;
 module E = Env;;
 module S = Semantic;;
 module F = Arm;;
@@ -22,8 +22,10 @@ type frag =
   | STRING of Temp.label * string
   | PROG of string * il list
 
-let frame_size (frame:frame): int = (Array.fold_left (+) 0 (Array.map (fun x -> match x with
-    | InFrame (t, sz) -> sz) frame.frame_locals))
+let frame_size (frame:frame): int
+  = (Array.fold_left (+) 0 (Array.map
+                              (fun x -> match x with
+                                        | InFrame (t, sz) -> sz) frame.frame_locals))
 
 let (frags: frag list ref) = ref []
 let counter = ref 0
@@ -99,13 +101,6 @@ let oper_imm i = Il.OperImm i
 let addr_indirect r offset = (Il.ADDR_INDIRECT (r, offset))
 let addr_label l = (Il.ADDR_LABEL l)
 
-(* let allocate_local (frame: frame) (size: size) =
- *   let offset = frame.frame_offset in
- *   let a = InFrame (offset, size) in
- *   frame.frame_offset <- offset + size;
- *   frame.frame_locals <- Array.append frame.frame_locals [|a|];
- *   a *)
-
 let allocate_temp () = begin
   let c = !counter in
   counter := c+1;
@@ -121,25 +116,13 @@ let size_of_type = function
   | A.IntTy -> 4
   | A.StringTy | A.PairTy _ | A.NullTy | A.PairTyy | A.ArrayTy _ -> 4
 
-let global_env: (Env.env option ref) = ref None
-
-let begin_scope () = match !global_env with
-  | Some scope ->
-      global_env := Some (Symbol.new_scope scope)
-  | _ -> invalid_arg "global env not initialized"
-
-let end_scope () = match !global_env with
-  | Some scope ->
-      global_env := Symbol.parent scope
-  | _ -> invalid_arg "global env not initialized";;
-
-let emitters = Stack.create ();;
-let emitter():Il.emitter = Stack.top emitters;;
-let push_new_emitter () = Stack.push (IL.new_emitter()) emitters;;
-let pop_emitter () = Stack.pop emitters;;
+let emitters = Stack.create ()
+let emitter():Il.emitter = Stack.top emitters
+let push_new_emitter () = Stack.push (IL.new_emitter()) emitters
+let pop_emitter () = Stack.pop emitters
 let emit i = Il.append (emitter()) i;;
 
-push_new_emitter();;
+push_new_emitter()
 
 let rec trans_var (var: access): temp =
   let open Il in
@@ -170,7 +153,7 @@ and trans_mark (ctx) (frame: frame) = begin
         match acc with
         | InFrame (offset, sz) -> begin
             let t = allocate_temp() in
-            emit(Il.load WORD t (addr_indirect F.reg_SP offset));
+            emit(Il.load Il.WORD t (addr_indirect F.reg_SP offset));
             ignore( trans_call ctx "mark_all" [t]);
           end
         | _ -> invalid_arg "not stack local variable"
@@ -210,7 +193,7 @@ and trans_exp ctx exp =
         let rec emit_addressing = (function
             | exp::other -> begin
                 let index = trans_exp ctx exp in
-                trans_call ctx "wacc_check_array_bounds" [addr; index];
+                ignore(trans_call ctx "wacc_check_array_bounds" [addr; index]);
                 List.iter (emit) ([mov o (oper_imm size);
                       mul index (oper_reg index) (oper_reg o); (* compute offset *)
                       add addr  (oper_reg addr)  (oper_reg index);
@@ -248,7 +231,6 @@ and trans_exp ctx exp =
             | A.PlusOp   -> emit (add dst opl opr)
             | A.MinusOp  -> emit (sub dst opl opr)
             | A.TimesOp  -> emit (mul dst opl opr)
-            | A.DivideOp -> assert false
             | A.AndOp ->    emit (and_ dst opl opr)
             | A.OrOp  ->    emit (or_ dst opl opr)
             | A.EqOp -> emit (sub dst opl opr); emit(cmp Il.EQ dst (oper_reg dst) (oper_imm 0))
@@ -257,6 +239,7 @@ and trans_exp ctx exp =
             | A.GtOp -> emit (sub dst opl opr); emit(cmp Il.GT dst (oper_reg dst) (oper_imm 0))
             | A.LeOp -> emit (sub dst opl opr); emit(cmp Il.LE dst (oper_reg dst) (oper_imm 0))
             | A.LtOp -> emit (sub dst opl opr); emit(cmp Il.LT dst (oper_reg dst) (oper_imm 0))
+            | A.DivideOp -> invalid_arg "should be desugared"
             | A.ModOp -> invalid_arg "mod should be handled in frontend");
         dst
       end
@@ -348,8 +331,6 @@ and addr_of_exp (env) (e: A.exp): (Il.addr) =
       let size = if is_string t || is_char_array t then 1 else size_of_type t in
       let o = allocate_temp() in
       let index = trans_exp env exp in
-      let skip_length_inst = if is_string t then [] else
-          [add index (oper_reg index) (oper_imm 4)] in
       let addr = trans_var acc in
       let _ = trans_call env "wacc_check_array_bounds" [addr; index] in
       emit(mov o (oper_imm size));
@@ -361,9 +342,9 @@ and addr_of_exp (env) (e: A.exp): (Il.addr) =
     end
   | ArrayIndexExp _ -> assert false
   | IdentExp (name) -> begin
-      let VarEntry (ty, Some (InFrame (offset, sz) as acc)) (* FIXME *)
+      let VarEntry (ty, Some (InFrame (offset, sz) as acc))
         = (Symbol.lookup name env) in
-      let dst = trans_var acc in
+      ignore(trans_var acc);
       (addr_indirect Arm.reg_SP offset)
     end
   | FstExp (exp) -> begin
@@ -485,7 +466,7 @@ let rec trans_stmt env frame stmt: ctx = begin
     end
   | A.SkipStmt       -> env
   | A.CallStmt (exp) -> ignore (trans_exp env exp); env
-  | A.ReadStmt ((A.IdentExp (name), _) as exp) -> begin
+  | A.ReadStmt ((A.IdentExp (name), _)) -> begin
       let (ty, acc) = get_access name in
       let readt = trans_call env ("wacc_read_" ^ (string_of_ty ty)) [] in
       let () = trans_assign acc readt in
@@ -507,7 +488,6 @@ let rec trans_stmt env frame stmt: ctx = begin
       env
     end
   | A.IfStmt       (cond, then_exp, else_exp) -> begin
-      let open Il in
       let true_l = new_label ~prefix:"if_then" () in
       let false_l = new_label ~prefix:"if_else" () in
       let end_l = new_label ~prefix:"if_end" () in
@@ -539,13 +519,11 @@ let rec trans_stmt env frame stmt: ctx = begin
     end
   | A.ExitStmt (exp) -> failwith "TODO should be desugared"
   | A.RetStmt (exp) -> begin
-      let open F in
-      let open Il in
       let expt = tr exp in
-      emit(mov (reg_RV) (oper_reg expt));
-      emit(add reg_SP (oper_reg reg_SP) (oper_imm (frame_size frame)));
+      emit(mov (F.reg_RV) (oper_reg expt));
+      emit(add F.reg_SP (oper_reg F.reg_SP) (oper_imm (frame_size frame)));
       emit(pop []);
-      emit(pop [reg_PC]);
+      emit(pop [F.reg_PC]);
       env
     end
   | A.BlockStmt (body) -> begin
@@ -676,11 +654,10 @@ and trans_frag (insts) = begin
 end
 
 and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
+  let open Printf in
   let ctx = add_function_decs decs ctx in
   let function_insts = decs |> List.map (trans_function_declaration ctx) in
-  (* let _, gc_init_insts = trans_call ctx "init_gc_ctx" [] in *)
   let functiongen = List.map (trans_frag) (function_insts) |> List.concat in
-  (* List.iter (fun i -> print_endline (Arm.string_of_inst' i)) functiongen; *)
   let frame = new_frame() in
   let endenv = trans_stmt ctx frame stmt in
   let prologue = (frame_prologue ctx frame) in
@@ -688,40 +665,15 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   emit(IL.mov (F.reg_RV) (oper_imm 0));
   let code = ((emitter()).IL.emit_code) in
   let insts = Array.concat [Array.of_list prologue; code; Array.of_list epilogue] in
-  let insts = Optimize.peephole_optimize (Array.to_list insts)
+  let insts = Peephole.optimize (Array.to_list insts)
               |> List.mapi (fun i x -> (x, i))
   in
-  (* Array.iter (fun (i, _) -> print_endline (Il.show_il i)) insts; *)
-  (* build CFG *)
-  let insts = ref insts in
-  if (not(!use_pair_or_array)) then
-    let i = ref 0 in
-    (* print_endline "will perform constant propagation"; *)
-    while !i < 3 do
-      let reachin, reachout = (Constprop.build_reach !insts) in
-      let iss = Constprop.constant_prop !insts reachin in
-      insts := Optimize.peephole_optimize (List.map (fun (i, _) -> i) iss)
-               |> List.mapi (fun i x -> (x, i));
-      incr i
-    done;
-  else ();
-  (* List.iter (fun (i, _) -> print_endline (Il.show_il i)) !insts; *)
-  let insts = Array.of_list !insts in
+  (* Constant propagation *)
+  let insts = (if (not(!use_pair_or_array)) then Constprop.optimize insts else insts) |> Array.of_list in
   let liveout: ((Cfg.V.t, Liveness.InOutSet.t) Hashtbl.t) = Liveness.build (Array.to_list insts) in
   let igraph = Liveness.build_interference (Array.to_list insts) liveout in
   (* Liveness.show_interference igraph; *)
   let colormap = RA.allocate (Array.to_list insts) igraph in
-  let a = ref [| |] in
-  Hashtbl.iter (fun k v -> ignore(a := Array.append !a [|(k, v)|]) ) liveout;
-  Array.sort (fun ((_, i), _) ((_, j), _) -> Pervasives.compare i j) !a;
-  (* Array.iter (fun ((k,i), v) ->
-   *     print_int (i);
-   *     print_string (" ");
-   *     print_string (IL.show_il k);
-   *     print_string (": ");
-   *     print_endline (Liveness.string_of_set v);
-   * ) !a; *)
-  let open Printf in
   let instsgen = (insts
                   |> Array.to_list
                   |> List.filter (fun (o,_) -> not(is_noop o))
@@ -731,7 +683,7 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   fprintf out ".data\n";
   List.(iter (function
       | STRING (label, string) -> pp_string out (label, string)
-      | _ -> failwith "TODO"
+      | _ -> invalid_arg "not a string"
   ) !frags;
      fprintf out ".text\n";
      fprintf out ".global main\n";

@@ -1,6 +1,6 @@
-module A = Ast_v2;;
+module A = Ast;;
 module S = Symbol;;
-open Ast_v2;;
+open Ast;;
 open Env;;
 open Printf;;
 

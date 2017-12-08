@@ -37,7 +37,6 @@ let build_cfg (instrs: (IL.il * int) list): t = begin
   let resolve_jumps n = begin
     match n with
     | JUMP  label, _ -> begin
-        (* print_endline (Printf.sprintf "%s-%s" label (IL.show_il (fst n))); *)
         add_edge g n ((LABEL label), Hashtbl.find jump_table label)
       end
     | CBR  (_, l0, l1), _ -> begin

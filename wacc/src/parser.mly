@@ -1,5 +1,5 @@
 %{
-open Ast_v2
+open Ast
 
 (* This is the function to convert string to symbol,
  * not the type `symbol` *)
@@ -91,14 +91,14 @@ let check_int_overflow num =
 
 %start prog
 
-%type <Ast_v2.t> prog
-%type <Ast_v2.exp> array_elem
+%type <Ast.t> prog
+%type <Ast.exp> array_elem
 
 %%
 (* prog is the main entry in the parser *)
 prog:
-| BEGIN; stat; END; EOF; { ([], $2):Ast_v2.t }
-| BEGIN; funcs; stat; END; EOF; { ($2, $3):Ast_v2.t }
+| BEGIN; stat; END; EOF; { ([], $2):Ast.t }
+| BEGIN; funcs; stat; END; EOF; { ($2, $3):Ast.t }
 
 
 (* function declarations *)

@@ -1,6 +1,7 @@
 exception SyntaxError of string
 
 type pos = Lexing.position
+and 'a identified = 'a * pos
 and symbol = Symbol.symbol
 and ty =
     IntTy
@@ -25,33 +26,35 @@ and binop =
   | AndOp
   | OrOp
   | ModOp
-and unop = NotOp | NegOp | LenOp | OrdOp | ChrOp
-(* exp are expressions that you would normally expect from the LHS of stmt *)
-and exp =
-  | IdentExp      of symbol * pos
-  | ArrayIndexExp of symbol * exp list * pos
-  | LiteralExp  of literal * pos
-  | BinOpExp    of exp * binop * exp * pos
-  | UnOpExp     of unop * exp * pos
-  | NullExp     of pos
-  | NewPairExp  of exp * exp * pos
-  | CallExp     of symbol * (exp list) * pos            (* call a function *)
-  | FstExp      of exp * pos
-  | SndExp      of exp * pos
-(* stmt differentiate from exp for having side effects *)
-and stmt =
-  | SkipStmt of pos
-  | VarDeclStmt of ty * symbol * exp * pos
-  | AssignStmt of exp * exp * pos
-  | ReadStmt of exp * pos
-  | FreeStmt of exp * pos
-  | ExitStmt of exp * pos
-  | PrintStmt of bool * exp * pos
-  | IfStmt of exp * stmt * stmt * pos
-  | WhileStmt of exp * stmt * pos
-  | BlockStmt of stmt * pos
-  | RetStmt of exp * pos
+and unop = NotOp | NegOp | LenOp | OrdOp | ChrOp | IncOp
+and ident = symbol
+and exp' =
+  | IdentExp      of ident
+  | ArrayIndexExp of ident * exp list
+  | LiteralExp    of literal
+  | BinOpExp      of exp * binop * exp
+  | UnOpExp       of unop * exp
+  | NullExp
+  | NewPairExp    of exp * exp
+  | CallExp       of ident * (exp list)
+  | FstExp        of exp
+  | SndExp        of exp
+and exp = exp' identified
+and stmt' =
+  | SkipStmt
+  | CallStmt of exp
+  | VarDeclStmt of ty * ident * exp
+  | AssignStmt of exp * exp
+  | ReadStmt of exp
+  | FreeStmt of exp
+  | ExitStmt of exp
+  | PrintStmt of bool * exp
+  | IfStmt of exp * stmt * stmt
+  | WhileStmt of exp * stmt
+  | BlockStmt of stmt
+  | RetStmt of exp
   | SeqStmt of stmt * stmt
+and stmt = stmt' identified
 and literal =
     LitString of string
   | LitBool of bool
@@ -59,11 +62,10 @@ and literal =
   | LitInt of int
   | LitArray of exp list
   | LitPair of (exp * exp)
-  | Null
-(* for a particular field in function definition *)
-and field = ty * symbol
-and function_dec = FuncDec of ty * symbol * field list * stmt * pos
-and t = function_dec list * stmt
+  | LitNull
+  (* for a particular field in function definition *)
+and field = ty * ident
+and function_dec' = FuncDec of ty * ident * field list * stmt
 
-(* Local Variables: *)
-(* End: *)
+and function_dec = function_dec' identified
+and t = function_dec list * stmt

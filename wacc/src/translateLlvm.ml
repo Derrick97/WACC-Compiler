@@ -1,6 +1,6 @@
 open Llvm
 module S = Semantic
-module A = Ast_v2
+module A = Ast
 
 exception Error of string;;
 
@@ -15,7 +15,7 @@ let void_type = void_type context
 let fty = function_type i32_type [| |]
 let f = define_function "main" fty global_module
 
-open Ast_v2
+open Ast
 open TypeKind
 let rec lltype_of_ty = function
   | IntTy -> i32_type

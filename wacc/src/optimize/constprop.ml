@@ -151,8 +151,8 @@ let option_mem = function
 let constant_prop
     (insts: (il*int) list)
     (reachins: (CFG.V.t, ReachSet.t) Hashtbl.t) = begin
-  let open IL in
-  let reaching_def (ins, i) = begin
+    let open IL in
+    let reaching_def (ins, i) = begin
     let ds = ReachSet.elements (Hashtbl.find reachins (ins, i)) in
     let reach_def i = (match List.nth insts i with
                        | MOV (t, op), p -> Some (t, op)
@@ -175,12 +175,10 @@ let constant_prop
              | _ -> op
             else op
         | op -> op) in function
-      | ADD (dst, op0, op1) ->  ADD (dst, may_sub_with_imm op0, may_sub_with_imm op1)
-      | SUB (dst, op0, op1) ->  SUB (dst, may_sub_with_imm op0, may_sub_with_imm op1)
-      (* | MUL (dst, op0, op1) ->  MUL (dst, may_sub_with_imm op0, may_sub_with_imm op1) *)
-      | DIV (dst, op0, op1) ->  DIV (dst, may_sub_with_imm op0, may_sub_with_imm op1)
-      | MOV (dst, op) as inst -> let inst' = MOV (dst, may_sub_with_imm op) in
-                                 (* print_endline (IL.show_il inst); print_endline (IL.show_il inst'); *) inst'
+      | ADD (dst, op0, op1) ->   ADD (dst, may_sub_with_imm op0, may_sub_with_imm op1)
+      | SUB (dst, op0, op1) ->   SUB (dst, may_sub_with_imm op0, may_sub_with_imm op1)
+      | DIV (dst, op0, op1) ->   DIV (dst, may_sub_with_imm op0, may_sub_with_imm op1)
+      | MOV (dst, op) as inst -> MOV (dst, may_sub_with_imm op)
       | op -> op in
   List.map
     (fun (ins, i) ->
@@ -190,3 +188,15 @@ let constant_prop
        end)
     insts;
 end
+
+let optimize insts =
+  let insts = ref insts in
+  let i = ref 0 in
+  while !i < 3 do
+    let reachin, reachout = (build_reach !insts) in
+    let iss = constant_prop !insts reachin in
+    insts := Peephole.optimize (List.map (fun (i, _) -> i) iss)
+             |> List.mapi (fun i x -> (x, i));
+    incr i
+    done;
+  !insts

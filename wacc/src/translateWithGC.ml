@@ -238,6 +238,7 @@ and allocate_heap env frame ty =
   | _ -> (
       emit(mov t (oper_imm (size_of_type ty)));
       trans_call env frame "malloc" [t])
+
 and trans_exp ctx frame exp =
   let open Il in
   let (exp, pos) = exp in

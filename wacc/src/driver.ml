@@ -1,7 +1,7 @@
 open Lexing
 open Printf
 
-module A = Ast_v2
+module A = Ast
 module I = Interpreter
 
 let usage = "The WACC compiler\nUsage:\n"
@@ -36,7 +36,7 @@ let () =
       (* TODO backend code generation *)
       let out_filename = (Filename.chop_extension (Filename.basename filename)) ^ ".s" in
       let out = open_out out_filename in
-      let root_table = ref (Symbol.empty) in
+      (* let root_table = ref (Symbol.empty) in *)
       (* Interpreter.add_func_dec decs;
        * Interpreter.eval stmt root_table; *)
       let stmt = Simplify.simplify_stmt stmt in
