@@ -6,6 +6,8 @@ import subprocess
 import argparse
 
 wacc_bin = './compile'
+
+
 test_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), 'test/wacc_examples'))
 valid_file_dir = os.path.join(test_dir, 'valid')
 invalid_file_dir = os.path.join(test_dir, 'invalid/syntaxErr')
