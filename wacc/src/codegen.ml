@@ -61,6 +61,7 @@ let relocate (colormap) (i:A.inst'): A.inst' =
   | ORR  (dst, op1, op2) -> ORR (!dst, !op1, !!op2)
   | MUL  (dst, op1, op2) -> MUL (!dst, !op1, !op2)
   | SMULL (r0, r1, r2, r3) -> SMULL (!r0, !r1, !r2, !r1)
+  | MOV  (r, OperImm i) -> LDR (!r, AddrLabel (string_of_int i))
   | MOV  (r, op) -> MOV (!r, !!op)
   | CMP  (r, op) -> CMP (!r, !!op)
   | POP  [] -> POP (Arm.callee_saved_regs)
@@ -148,6 +149,7 @@ let codegen (colormap: (Temp.temp, Temp.temp) Hashtbl.t)
   | RET    t  -> [mov (reg_RV) (A.OperReg(t,None))]
   | LABEL  label -> [A.labels label]
   | NOOP -> [A.labels ""]
+  | MOV (t, OperImm i) -> [load t (arm_addr (ADDR_LABEL (string_of_int i)))]
   | MOV (t, op) -> [mov (t) (arm_op op)]
   | PUSH temp_list -> [push temp_list]
   | POP temp_list ->  [pop  temp_list]

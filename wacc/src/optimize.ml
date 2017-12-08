@@ -11,7 +11,7 @@ let rec peephole_optimize (insts: Il.il list) =
   match insts with
   | [] -> []
   (*The 1st case: MOV a reg into itself*)
-  | MOV (temp, OperImm i)::others -> LOAD (WORD, temp, ADDR_LABEL (string_of_int i))::peephole_optimize others
+  (* | MOV (temp, OperImm i)::others -> LOAD (WORD, temp, ADDR_LABEL (string_of_int i))::peephole_optimize others *)
   | MOV (temp, op)::others when eq_operand temp op -> peephole_optimize others
   (*The 2nd case: MOV a value into a reg and then do arithemetic on that reg immediately *)
   | MOV (temp, op)::ADD (temp2, op2, op3)::others when eq_operand temp op3 ->

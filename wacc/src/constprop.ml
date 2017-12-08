@@ -44,7 +44,6 @@ let gen (cfg:CFG.t) is = begin
       | ADD   (dst, _, _)
       | SUB   (dst, _, _)
       | DIV   (dst, _, _)
-      | MUL   (dst, _, _)
       | AND   (dst, _, _)
       | EOR   (dst, _, _)
       | ORR   (dst, _, _)
@@ -52,6 +51,7 @@ let gen (cfg:CFG.t) is = begin
       | LOAD  (_, dst, _) -> [i]
       | MOV (t, _) -> [i]
       | CALL _ -> [i]
+      | MUL   (dst, _, _) -> [i]
       | POP _ -> []
       | STORE _ -> []
       | PUSH _ | JUMP _ | LTORG | COMP _ | CBR _ | RET _ | LABEL _ | NOOP -> [])
@@ -65,10 +65,10 @@ let kill (cfg:CFG.t) (is:(il*int)) :ReachSet.t  = begin
    | ADD   (dst, _, _)
    | SUB   (dst, _, _)
    | DIV   (dst, _, _)
-   | MUL   (dst, _, _)
    | AND   (dst, _, _)
    | EOR   (dst, _, _)
    | ORR   (dst, _, _)
+   | MUL   (dst, _, _)
    | CMP   (_, dst, _, _)
    | LOAD  (_, dst, _) | MOV (dst, _) -> diff (defs cfg (dst)) (of_list [i])
    | CALL _ -> diff (defs cfg (Arm.reg_RV)) (of_list [i])
@@ -152,35 +152,32 @@ let constant_prop
     (insts: (il*int) list)
     (reachins: (CFG.V.t, ReachSet.t) Hashtbl.t) = begin
   let open IL in
-  let reaching_constants (ins, i) = begin
+  let reaching_def (ins, i) = begin
     let ds = ReachSet.elements (Hashtbl.find reachins (ins, i)) in
-    let const_def i = (match List.nth insts i with
-                       | MOV (t, OperImm c), p -> Some (t, c)
-                       | LOAD (_, t, ADDR_LABEL l), p ->
-                          (match int_of_string_opt l with
-                          | Some i -> Some (t, i)
-                          | None -> None)
+    let reach_def i = (match List.nth insts i with
+                       | MOV (t, op), p -> Some (t, op)
                        | _ -> None) in
     let const_reach = ds
-                      |> List.map const_def
+                      |> List.map reach_def
                       |> List.filter option_mem
                       |> List.map (fun (Some e) -> e)
     in
     const_reach
   end
   in
-  let maysub (reach_const: (temp*int) list) =
+  let maysub (reach_const: (temp*IL.operand) list) =
     let may_sub_with_imm = (function
         | OperReg t0 as op ->
-            let matched = (List.filter (fun (t, _) -> t = t0) reach_const) in
-            if List.length matched = 1 then
-              (
-              OperImm (snd (List.hd matched)))
+           let matched = (List.filter (fun (t, _) -> t = t0) reach_const) in
+           if List.length matched = 1 then
+             match (List.hd matched) with
+             | (_, OperImm i) -> (OperImm i)
+             | _ -> op
             else op
         | op -> op) in function
       | ADD (dst, op0, op1) ->  ADD (dst, may_sub_with_imm op0, may_sub_with_imm op1)
       | SUB (dst, op0, op1) ->  SUB (dst, may_sub_with_imm op0, may_sub_with_imm op1)
-      | MUL (dst, op0, op1) ->  MUL (dst, may_sub_with_imm op0, may_sub_with_imm op1)
+      (* | MUL (dst, op0, op1) ->  MUL (dst, may_sub_with_imm op0, may_sub_with_imm op1) *)
       | DIV (dst, op0, op1) ->  DIV (dst, may_sub_with_imm op0, may_sub_with_imm op1)
       | MOV (dst, op) as inst -> let inst' = MOV (dst, may_sub_with_imm op) in
                                  (* print_endline (IL.show_il inst); print_endline (IL.show_il inst'); *) inst'
@@ -188,7 +185,7 @@ let constant_prop
   List.map
     (fun (ins, i) ->
        begin
-         let reach = reaching_constants (ins, i) in
+         let reach = reaching_def (ins, i) in
          (maysub reach ins, i)
        end)
     insts;

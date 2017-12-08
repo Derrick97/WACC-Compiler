@@ -149,7 +149,7 @@ let rec trans_var (var: access): temp =
        | 4 -> emit(load WORD t (ADDR_INDIRECT (Arm.reg_SP, offset))); t
        | 1 -> emit(load BYTE t (ADDR_INDIRECT (Arm.reg_SP, offset))); t
        | _ -> assert false)
-  | InReg r -> emit(Il.MOV (t, Il.OperReg r)); t
+  | InReg r -> emit(Il.MOV (t, Il.OperReg r)); r
 
 and trans_assign
     (lv: access)
@@ -224,7 +224,7 @@ and trans_exp ctx exp =
     | A.LiteralExp    (lit) -> begin
         let open Il in
         (match lit with
-            | A.LitInt i -> emit(load WORD dst (ADDR_LABEL (string_of_int i)))
+            | A.LitInt i -> emit(mov dst (OperImm i))
             | A.LitString s -> begin
                 let label = new_label() in
                 frags := (STRING (label, s))::!frags;
@@ -368,14 +368,16 @@ and addr_of_exp (env) (e: A.exp): (Il.addr) =
   | FstExp (exp) -> begin
       let dst = trans_exp env exp in
       let _ = trans_call env "wacc_check_pair_null" [dst] in
-      emit (load WORD dst (addr_indirect dst 0));
-      (addr_indirect dst 0)
+      let t = allocate_temp() in
+      emit (load WORD t (addr_indirect dst 0));
+      (addr_indirect t 0)
     end
   | SndExp (exp) -> begin
       let dst = trans_exp env exp  in
       let _ = trans_call env "wacc_check_pair_null" [dst] in
-      emit(load WORD dst (addr_indirect dst 4));
-      (addr_indirect dst 0)
+      let t = allocate_temp() in
+      emit(load WORD t (addr_indirect dst 4));
+      (addr_indirect t 0)
     end
   | _ -> invalid_arg "Not an lvalue"
 
@@ -695,6 +697,7 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
            |> List.mapi (fun i x -> (x, i));
   incr i
   done;
+  (* List.iter (fun (i, _) -> print_endline (Il.show_il i)) !insts; *)
   let insts = Array.of_list !insts in
   let liveout: ((Cfg.V.t, Liveness.InOutSet.t) Hashtbl.t) = Liveness.build (Array.to_list insts) in
   let igraph = Liveness.build_interference (Array.to_list insts) liveout in

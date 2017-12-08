@@ -40,7 +40,7 @@ let () =
       (* Interpreter.add_func_dec decs;
        * Interpreter.eval stmt root_table; *)
       let stmt = Simplify.simplify_stmt stmt in
-      (* (Prettyprint.prettyprint_stmt Format.std_formatter (fst stmt)); *)
+      (* Prettyprint.prettyprint_stmt Format.std_formatter (fst stmt); *)
       ignore(TranslateIl.trans_prog table' (decs, stmt) out);
       close_out out;
       ignore(Sys.command (Printf.sprintf "cat wacclib.s >> %s" out_filename));
