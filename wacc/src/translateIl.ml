@@ -28,6 +28,7 @@ let frame_size (frame:frame): int = (Array.fold_left (+) 0 (Array.map (fun x -> 
 let (frags: frag list ref) = ref []
 let counter = ref 0
 let strings = ref []
+let use_pair_or_array = ref false
 
 let split_offset offset =
   if offset = 0 then (0,0)
@@ -149,7 +150,7 @@ let rec trans_var (var: access): temp =
        | 4 -> emit(load WORD t (ADDR_INDIRECT (Arm.reg_SP, offset))); t
        | 1 -> emit(load BYTE t (ADDR_INDIRECT (Arm.reg_SP, offset))); t
        | _ -> assert false)
-  | InReg r -> emit(Il.MOV (t, Il.OperReg r)); r
+  | InReg r -> emit(Il.MOV (t, Il.OperReg r)); t
 
 and trans_assign
     (lv: access)
@@ -198,6 +199,7 @@ and trans_exp ctx exp =
         trans_var acc
       end
     | A.ArrayIndexExp (ident, exps) -> begin
+        use_pair_or_array := true;
         let (t, acc) = get_access ctx ident in
         let size = if is_string t then 1 else 4 in
         let index = allocate_temp() in
@@ -259,7 +261,6 @@ and trans_exp ctx exp =
         dst
       end
     | A.UnOpExp       (A.NegOp, exp) -> begin
-        (* FIXME a problem with the limitation of ARM architecture *)
         trans_exp ctx ((A.BinOpExp ((A.LiteralExp (A.LitInt 0), pos), A.MinusOp, exp), pos))
       end
     | A.UnOpExp       (unop, exp) -> begin
@@ -366,6 +367,7 @@ and addr_of_exp (env) (e: A.exp): (Il.addr) =
       (addr_indirect Arm.reg_SP offset)
     end
   | FstExp (exp) -> begin
+      use_pair_or_array := true;
       let dst = trans_exp env exp in
       let _ = trans_call env "wacc_check_pair_null" [dst] in
       let t = allocate_temp() in
@@ -373,6 +375,7 @@ and addr_of_exp (env) (e: A.exp): (Il.addr) =
       (addr_indirect t 0)
     end
   | SndExp (exp) -> begin
+      use_pair_or_array := true;
       let dst = trans_exp env exp  in
       let _ = trans_call env "wacc_check_pair_null" [dst] in
       let t = allocate_temp() in
@@ -425,6 +428,7 @@ let rec trans_stmt env frame stmt: ctx = begin
       env
     end
   | A.VarDeclStmt  (A.ArrayTy ty, name, (A.LiteralExp(A.LitArray elements), _)) -> begin
+      use_pair_or_array := true;
       let local_var = allocate_local frame 4 in
       let env' = Symbol.insert name (VarEntry (A.ArrayTy ty, Some local_var)) env in
       let array_length = List.length elements in
@@ -445,6 +449,7 @@ let rec trans_stmt env frame stmt: ctx = begin
   | A.VarDeclStmt (ty, name, (A.NewPairExp (exp, exp'),_)) -> begin
       (* allocate for pair, each pair is represented with 4 * 2
          bytes of addresses on the heap *)
+      use_pair_or_array := true;
       let local_var = allocate_local frame 4 in
       let env' = Symbol.insert name (VarEntry (ty, Some local_var)) env in
       let sizet = allocate_temp() in
@@ -688,15 +693,18 @@ and trans_prog (ctx:ctx) (decs, stmt) (out: out_channel) = begin
   in
   (* Array.iter (fun (i, _) -> print_endline (Il.show_il i)) insts; *)
   (* build CFG *)
-  let i = ref 0 in
   let insts = ref insts in
-  while !i < 3 do
-  let reachin, reachout = (Constprop.build_reach !insts) in
-  let iss = Constprop.constant_prop !insts reachin in
-  insts := Optimize.peephole_optimize (List.map (fun (i, _) -> i) iss)
-           |> List.mapi (fun i x -> (x, i));
-  incr i
-  done;
+  if (not(!use_pair_or_array)) then
+    let i = ref 0 in
+    (* print_endline "will perform constant propagation"; *)
+    while !i < 3 do
+      let reachin, reachout = (Constprop.build_reach !insts) in
+      let iss = Constprop.constant_prop !insts reachin in
+      insts := Optimize.peephole_optimize (List.map (fun (i, _) -> i) iss)
+               |> List.mapi (fun i x -> (x, i));
+      incr i
+    done;
+  else ();
   (* List.iter (fun (i, _) -> print_endline (Il.show_il i)) !insts; *)
   let insts = Array.of_list !insts in
   let liveout: ((Cfg.V.t, Liveness.InOutSet.t) Hashtbl.t) = Liveness.build (Array.to_list insts) in
