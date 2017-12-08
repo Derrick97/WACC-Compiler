@@ -171,7 +171,7 @@ let constant_prop
            let matched = (List.filter (fun (t, _) -> t = t0) reach_const) in
            if List.length matched = 1 then
              match (List.hd matched) with
-             | (_, OperImm i) -> (OperImm i)
+             | (_, OperImm i) when i < (1024) -> (OperImm i)
              | _ -> op
             else op
         | op -> op) in function

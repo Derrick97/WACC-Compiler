@@ -14,6 +14,8 @@ let rec peephole_optimize (insts: Il.il list) =
   (* | MOV (temp, OperImm i)::others -> LOAD (WORD, temp, ADDR_LABEL (string_of_int i))::peephole_optimize others *)
   | MOV (temp, op)::others when eq_operand temp op -> peephole_optimize others
   (*The 2nd case: MOV a value into a reg and then do arithemetic on that reg immediately *)
+  | ((MOV (temp, (OperImm i))))::ADD (temp2, op2, op3)::others when eq_operand temp op3 && i > 1024->
+      ((MOV (temp, (OperImm i))))::ADD (temp2, op2, op3)::(peephole_optimize others)
   | MOV (temp, op)::ADD (temp2, op2, op3)::others when eq_operand temp op3 ->
       ADD (temp2, op2, op) :: peephole_optimize others
   | MOV (temp, op)::SUB (temp2, op2, op3)::others when eq_operand temp op3 ->
